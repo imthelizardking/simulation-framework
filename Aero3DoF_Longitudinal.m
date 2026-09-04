@@ -1,6 +1,6 @@
 classdef Aero3DoF_Longitudinal < BaseAero
     properties
-        CL_alpha (1,1) double = 4.0
+        CL_alpha = 4.0 % scalar, or a Mach-dependent struct (see BaseAero.evalCoeff)
     end
     
     methods
@@ -24,16 +24,19 @@ classdef Aero3DoF_Longitudinal < BaseAero
             vel_dir = vel / v_mag;
             gamma   = atan2(vel(3), vel(1));
             alpha   = pitch - gamma;
-            
+            mach    = v_mag / env.SpeedOfSound;
+
             q_bar = 0.5 * env.Density * v_mag^2;
-            
+
             % Drag
-            f_drag = q_bar * obj.CD0 * obj.RefArea;
+            cd0_val = BaseAero.evalCoeff(obj.CD0, mach);
+            f_drag = q_bar * cd0_val * obj.RefArea;
             F_drag = -f_drag * vel_dir;
-            
+
             % Lift
             effective_alpha = alpha + fin_deflection;
-            f_lift = q_bar * obj.CL_alpha * obj.RefArea * effective_alpha;
+            cl_alpha_val = BaseAero.evalCoeff(obj.CL_alpha, mach);
+            f_lift = q_bar * cl_alpha_val * obj.RefArea * effective_alpha;
             
             lift_dir = [-vel_dir(3); 0; vel_dir(1)];
             if norm(lift_dir) > 0, lift_dir = lift_dir / norm(lift_dir); end

@@ -13,7 +13,7 @@ classdef (Abstract) BaseDynamics < handle
         % holds IDX_EULER algebraically rather than integrating it), but all
         % of them share the same indices so generic code (Simulation,
         % telemetry, visualizers) never has to know which model is running.
-        % Dynamics3DoF_PitchCoupled predates this and keeps its own 8-state
+        % Dynamics3Dof predates this and keeps its own 8-state
         % layout untouched.
         IDX_POS         = 1:3   % [x; y; z]        inertial position (NED)
         IDX_VEL         = 4:6   % [Vx; Vy; Vz]      inertial velocity

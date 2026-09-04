@@ -11,7 +11,7 @@ env    = Environment(1.225, 9.81, [0; 0; 0]);
 % 2. Setup Vehicle
 missile = Munition();
 missile.Name = 'MiniMissile_Optimal';
-missile.Dynamics   = Dynamics3DoF_PitchCoupled();
+missile.Dynamics   = Dynamics3Dof();
 missile.Aero       = Aero3DoF_Longitudinal(0.35, 4.0, 0.01966);
 missile.Propulsion = SolidMotor(1200.0, 2.0);
 

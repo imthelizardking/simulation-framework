@@ -1,6 +1,6 @@
-classdef Dynamics3DoF_PitchCoupled < BaseDynamics
+classdef Dynamics3Dof < BaseDynamics
     methods
-        function obj = Dynamics3DoF_PitchCoupled()
+        function obj = Dynamics3Dof()
             obj.StateDimension = 8; % [x; y; z; vx; vy; vz; pitch; mass]
         end
         

@@ -11,7 +11,7 @@ classdef MunitionFactory
             m.MassProperties.Inertia = diag([0.14, 1.62, 1.62]); % [Ix, Iy, Iz]
             
             % Subsystems
-            m.Dynamics   = Dynamics3DoF_PitchCoupled();
+            m.Dynamics   = Dynamics3Dof();
             % S_ref = pi*(0.155/2)^2 = 0.01887 m^2, typical zero-lift drag CD0 ~ 0.22
             m.Aero       = Aero3DoF_Longitudinal(0.22, 2.5, 0.01887);
             m.Propulsion = []; % Pure ballistic, no motor
@@ -28,7 +28,7 @@ classdef MunitionFactory
             m.MassProperties.Mass = 10.5;
             m.MassProperties.Inertia = diag([0.008, 0.45, 0.45]);
             
-            m.Dynamics   = Dynamics3DoF_PitchCoupled();
+            m.Dynamics   = Dynamics3Dof();
             % d = 0.070 m -> S_ref = 0.00385 m^2, CD0 ~ 0.38
             m.Aero       = Aero3DoF_Longitudinal(0.38, 3.2, 0.00385);
             % Mk 66 Mod 4: ~5900 N average thrust for ~1.1 seconds
@@ -46,7 +46,7 @@ classdef MunitionFactory
             m.MassProperties.Mass = 0.185;
             m.MassProperties.Inertia = eye(3) * 1e-4;
             
-            m.Dynamics   = Dynamics3DoF_PitchCoupled();
+            m.Dynamics   = Dynamics3Dof();
             % S_ref = pi*(0.025/2)^2 = 4.908e-4 m^2
             m.Aero       = Aero3DoF_Longitudinal(0.18, 1.5, 4.908e-4);
             m.Propulsion = [];
@@ -55,6 +55,51 @@ classdef MunitionFactory
             m.Controller = [];
         end
         
+        %% 76mm HE Projectile (Detailed Mach-Dependent Aero Table)
+        function m = create76mmHE()
+            m = Munition('76mm_HE');
+
+            % Illustrative mass properties for a 76mm gun round, d = 0.076 m
+            m.MassProperties.Mass = 6.0;
+            m.MassProperties.Inertia = diag([0.006, 0.085, 0.085]);
+
+            m.Dynamics = Dynamics3Dof();
+
+            aero = AeroTabulated();
+            aero.RefArea   = pi * (0.076/2)^2; % 0.004536 m^2
+            aero.RefLength = 0.076;
+
+            % Illustrative coefficient set - representative drag-bucket /
+            % rising-then-falling lift-slope shape for a spin-stabilized
+            % shell, NOT validated wind-tunnel or CFD data. Replace
+            % Tables.Clean with real data when available. Deliberately
+            % mixes all three representations BaseAero.evalCoeff supports:
+            % CD0/CLA as Mach-Value tables, CDA2/CLA3 as polynomials in
+            % Mach, CDA4 as a plain constant.
+            coeffs.CD0 = struct('Type', 'Table', ...
+                'Mach',  [0 0.7 0.9 0.95 1.0 1.05 1.1 1.2 1.5 2.0 2.5 3.0], ...
+                'Value', [0.19 0.20 0.24 0.30 0.38 0.41 0.42 0.40 0.35 0.30 0.27 0.25]);
+
+            coeffs.CDA2 = struct('Type', 'Polynomial', 'a0', 2.2, 'a1', 1.0, 'a2', -0.12);
+
+            coeffs.CDA4 = 8.5; % plain scalar - constant across Mach
+
+            coeffs.CLA = struct('Type', 'Table', ...
+                'Mach',  [0 0.7 0.9 1.0 1.2 1.5 2.0 2.5 3.0], ...
+                'Value', [2.0 2.1 2.4 2.8 2.6 2.3 2.0 1.8 1.6]);
+
+            coeffs.CLA3 = struct('Type', 'Polynomial', 'a0', -8.0, 'a1', 1.5);
+
+            aero.Tables.Clean   = coeffs;
+            aero.ActiveTableKey = 'Clean';
+            m.Aero = aero;
+
+            m.Propulsion = []; % Pure ballistic, no motor
+            m.Sensors    = {};
+            m.Guidance   = [];
+            m.Controller = [];
+        end
+
         %% APKWS II (Laser-Guided 70mm Hydra variant)
         function m = createAPKWS(prf_code)
             if nargin < 1, prf_code = 1111; end
