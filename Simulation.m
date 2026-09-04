@@ -7,13 +7,31 @@ classdef Simulation < handle
         Designator                = []  % BaseDesignator subclass (optional)
         GroundStation             = []  % GroundStation object (optional)
         Visualizer                = []  % BaseVisualizer subclass (optional)
+        Integrator                = RK4FixedStep()  % BaseIntegrator subclass
         TimeSpan  (1,2) double    = [0 25]
         Dt        (1,1) double    = 0.001
         Telemetry       struct    = struct()
+        % Termination criteria; a field set to [] is disabled. Default is
+        % ground-impact only (MinAltitude) - the one criterion that applies
+        % to every scenario, guided or not. Target-relative criteria
+        % (ImpactDistance, MaxDownrange) are opt-in: enable them per-
+        % scenario for intercept/engagement runs where a "miss" needs its
+        % own stopping condition.
+        Termination struct = struct(...
+            'MaxTime',        [], ...   % s;  stop once t >= MaxTime
+            'ImpactDistance', [], ...   % m;  stop once within this of target
+            'MinAltitude',    0, ...    % m;  stop on descending through this
+            'MaxAltitude',    [], ...   % m;  stop on climbing through this
+            'MaxDownrange',   [])       % m;  stop this far past target in X
+        TerminationReason (1,:) char = ''
     end
     
     methods
         function obj = Simulation(munition, target, env, timespan, dt)
+            % Dock every figure this MATLAB session creates from here on
+            % (Visualizer live views, post-run plots, etc.) - set once here
+            % so no runner script has to repeat it.
+            set(0, 'DefaultFigureWindowStyle', 'docked');
             if nargin > 0, obj.Munition = munition; end
             if nargin > 1, obj.Target = target; end
             if nargin > 2, obj.Environment = env; end
@@ -112,12 +130,14 @@ classdef Simulation < handle
                 end
                 
                 % Check Termination Criteria
-                if obj.checkTermination(X, tgt_bus.pos)
+                [is_term, term_reason] = obj.checkTermination(t, X, tgt_bus.pos);
+                if is_term
+                    obj.TerminationReason = term_reason;
                     break;
                 end
-                
-                % Integrate via RK4
-                X = obj.rk4Step(t, X, dt);
+
+                % Integrate
+                X = obj.Integrator.step(@(tt, XX) obj.evalDerivatives(tt, XX), t, X, dt);
             end
             
             % Truncate telemetry
@@ -128,19 +148,33 @@ classdef Simulation < handle
             obj.Telemetry = tel;
         end
         
-        function is_term = checkTermination(~, X, target_pos)
-            r_tgt = norm(target_pos - X(1:3));
-            is_term = (r_tgt < 3.0) || (X(3) < 0 && norm(X(4:6)) > 0) || ((X(1) - target_pos(1)) > 50.0);
+        function [is_term, reason] = checkTermination(obj, t, X, target_pos)
+            % Evaluates each enabled criterion in obj.Termination (any field
+            % left [] is skipped) and stops on the first one that trips.
+            % MinAltitude/MaxAltitude read X(3) directly, so they assume
+            % whichever vertical-axis convention the active Dynamics model
+            % uses (the legacy 3DoF model and FireControlComputer use Z-up).
+            is_term = false;
+            reason  = '';
+            T = obj.Termination;
+
+            if ~isempty(T.MaxTime) && t >= T.MaxTime
+                is_term = true; reason = 'MaxTime'; return;
+            end
+            if ~isempty(T.ImpactDistance) && norm(target_pos - X(1:3)) < T.ImpactDistance
+                is_term = true; reason = 'ImpactDistance'; return;
+            end
+            if ~isempty(T.MinAltitude) && X(3) < T.MinAltitude && norm(X(4:6)) > 0
+                is_term = true; reason = 'MinAltitude'; return;
+            end
+            if ~isempty(T.MaxAltitude) && X(3) > T.MaxAltitude
+                is_term = true; reason = 'MaxAltitude'; return;
+            end
+            if ~isempty(T.MaxDownrange) && (X(1) - target_pos(1)) > T.MaxDownrange
+                is_term = true; reason = 'MaxDownrange'; return;
+            end
         end
-        
-        function X_next = rk4Step(obj, t, X, dt)
-            k1 = obj.evalDerivatives(t, X);
-            k2 = obj.evalDerivatives(t + 0.5*dt, X + 0.5*dt*k1);
-            k3 = obj.evalDerivatives(t + 0.5*dt, X + 0.5*dt*k2);
-            k4 = obj.evalDerivatives(t + dt, X + dt*k3);
-            X_next = X + (dt / 6) * (k1 + 2*k2 + 2*k3 + k4);
-        end
-        
+
         function dX = evalDerivatives(obj, t, X)
             if ismethod(obj.Munition, 'getDerivatives')
                 dX = obj.Munition.getDerivatives(t, X, obj.Environment);

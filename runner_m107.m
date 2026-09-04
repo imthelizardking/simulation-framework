@@ -36,15 +36,25 @@ v_z = v0_charge7 * sin(sol.Elevation); % Z-Up frame
 shell.Dynamics.InitialState = [launcher_pos; v_x; v_y; v_z; sol.Elevation; shell.MassProperties.Mass];
 
 % 6. Assemble Simulation & Execute
+% NOTE: no Visualizer attached - LiveEngagementPlotter expects a seeker-
+% guided munition (gnc_bus.Sensors.SeekerLOAL, PN/Angle/FOV command bus)
+% and will error against an unguided ballistic shell with no Sensors. Post-
+% flight static plots below are the appropriate fit for a trajectory-only
+% scenario like this one.
 sim = Simulation(shell, target, env, [0 sol.TimeOfFlight * 1.05], 0.005);
-sim.Visualizer = LiveEngagementPlotter(20); % Decimate to 50 Hz UI refresh
 
 fprintf('Starting trajectory integration...\n');
 tic;
 telemetry = sim.run();
-fprintf('Sim finished in %.2f seconds.\n', toc);
+fprintf('Sim finished in %.2f seconds (%.2f s simulated).\n', toc, telemetry.time(end));
 
 % 7. Post-Flight Analysis
 final_pos = telemetry.pos(end, :)';
 actual_miss = norm(final_pos(1:2) - target.Position(1:2));
-fprintf('Actual Impact Miss Distance: %.2f meters\n', actual_miss);
+[apogee, apogee_idx] = max(telemetry.pos(:,3));
+
+fprintf('Termination Reason          : %s\n', sim.TerminationReason);
+fprintf('Apogee                      : %.1f m at t=%.2f s\n', apogee, telemetry.time(apogee_idx));
+fprintf('Actual Impact Miss Distance : %.2f meters\n', actual_miss);
+
+plotTrajectoryProfile(telemetry, target.Position, 'M107 Artillery Trajectory');

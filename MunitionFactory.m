@@ -64,8 +64,13 @@ classdef MunitionFactory
             m.Name = 'APKWS_Guided_Rocket';
             m.MassProperties.Mass = 15.0; % GNC mid-section adds weight
             
-            % Attach SAL Seeker and Guidance
-            m.Sensors    = { LaserSeeker(50, prf_code) };
+            % Attach LOAL Seeker and Guidance (LaserSeeker referenced here
+            % previously does not exist anywhere in the codebase; SeekerLOAL
+            % is the sensor OptimalAngleFOVGuidance/LiveEngagementPlotter
+            % actually expect via sensor_bus.SeekerLOAL). prf_code is kept
+            % as an input for future laser-designator integration but is
+            % not consumed yet.
+            m.Sensors    = { SeekerLOAL(deg2rad(20), 1.2) };
             guid = OptimalAngleFOVGuidance();
             guid.UseFOV = true;
             guid.T_SeekerOn = 1.2; % Seeker uncages after motor burnout
