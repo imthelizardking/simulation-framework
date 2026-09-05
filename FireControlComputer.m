@@ -4,6 +4,8 @@ classdef FireControlComputer < handle
         Gravity      (1,1) double = 9.80665
         ElevationMin (1,1) double = deg2rad(5.0)   % Launcher physical lower limit
         ElevationMax (1,1) double = deg2rad(85.0)  % Launcher physical upper limit
+        AzimuthMin   (1,1) double = -pi             % Traverse limit; -pi/pi = unrestricted (turret/AA mount)
+        AzimuthMax   (1,1) double = pi               % Narrower for a fixed-arc mount (e.g. towed carriage)
         CoordFrame   (1,:) char   = 'Z-Up'         % 'Z-Up' or 'NED'
         
         % Numerical Shooting Parameters
@@ -72,11 +74,17 @@ classdef FireControlComputer < handle
                 
                 theta = theta - delta_th;
                 psi   = psi   - delta_ps;
-                
+
                 % Clamp to mechanical limits
                 theta = max(min(theta, obj.ElevationMax), obj.ElevationMin);
+                psi   = max(min(psi, obj.AzimuthMax), obj.AzimuthMin);
             end
-            
+
+            if (theta < obj.ElevationMin) || (theta > obj.ElevationMax) ...
+                    || (psi < obj.AzimuthMin) || (psi > obj.AzimuthMax)
+                sol.IsValid = false; % converged onto a mechanical stop, not a real solution
+            end
+
             sol.Elevation    = theta;
             sol.Azimuth      = psi;
             sol.TimeOfFlight = tof;
@@ -104,6 +112,9 @@ classdef FireControlComputer < handle
             
             if sol.IsValid
                 if (sol.Elevation < obj.ElevationMin) || (sol.Elevation > obj.ElevationMax)
+                    sol.IsValid = false;
+                end
+                if (sol.Azimuth < obj.AzimuthMin) || (sol.Azimuth > obj.AzimuthMax)
                     sol.IsValid = false;
                 end
             end
