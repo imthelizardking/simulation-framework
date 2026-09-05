@@ -9,7 +9,7 @@ classdef AeroTabulated < BaseAero
     % attack, consistent with the planar Dynamics3Dof state this pairs
     % with - not a full 3D total-yaw angle.
     properties
-        BaseBleed = [] % optional BaseBleedUnit - reduces CD0 while burning
+        BaseBleed = [] % optional Propulsion_DYU - reduces CD0 while burning
     end
     methods
         function [F_aero, M_aero] = getForcesAndMoments(obj, t, X, env, fin_deflection)

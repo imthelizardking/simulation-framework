@@ -1,11 +1,11 @@
-classdef SolidMotor < BasePropulsion
+classdef Propulsion_SolidMotor < BasePropulsion
     properties
         ThrustForce  (1,1) double = 1200.0
         BurnDuration (1,1) double = 2.0
     end
-    
+
     methods
-        function obj = SolidMotor(thrust, burn_time)
+        function obj = Propulsion_SolidMotor(thrust, burn_time)
             if nargin > 0, obj.ThrustForce = thrust; end
             if nargin > 1, obj.BurnDuration = burn_time; end
         end

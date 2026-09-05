@@ -40,7 +40,7 @@ classdef MunitionFactory
             % d = 0.070 m -> S_ref = 0.00385 m^2, CD0 ~ 0.38
             m.Aero       = Aero3DoF_Longitudinal(0.38, 3.2, 0.00385);
             % Mk 66 Mod 4: ~5900 N average thrust for ~1.1 seconds
-            m.Propulsion = SolidMotor(5900.0, 1.1);
+            m.Propulsion = Propulsion_SolidMotor(5900.0, 1.1);
             % Rocket-motor propelled, not a gun-fired charge - Charge stays
             % empty (no propelling-charge concept applies here).
             m.Sensors    = {};
@@ -145,11 +145,11 @@ classdef MunitionFactory
             % typical of modern extended-range shell shaping even before
             % the base-bleed reduction is applied on top.
             aero = Aero3DoF_Longitudinal(0.21, 2.5, 0.01887);
-            % Very basic base-bleed model (see BaseBleedUnit): a fixed
+            % Very basic base-bleed model (see Propulsion_DYU): a fixed
             % fractional CD0 reduction for BurnDuration seconds, full drag
             % after burnout. Values are illustrative, not from a gas-
             % generator burn-rate model.
-            aero.BaseBleed = BaseBleedUnit(30.0, 0.25);
+            aero.BaseBleed = Propulsion_DYU(30.0, 0.25);
             m.Aero = aero;
             m.Charge = ChargeFactory.getDM92(charge_name);
 

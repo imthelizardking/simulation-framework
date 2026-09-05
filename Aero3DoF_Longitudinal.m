@@ -1,7 +1,7 @@
 classdef Aero3DoF_Longitudinal < BaseAero
     properties
         CL_alpha = 4.0 % scalar, or a Mach-dependent struct (see BaseAero.evalCoeff)
-        BaseBleed = [] % optional BaseBleedUnit - reduces CD0 while burning
+        BaseBleed = [] % optional Propulsion_DYU - reduces CD0 while burning
     end
 
     methods
