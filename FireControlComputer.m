@@ -132,12 +132,11 @@ classdef FireControlComputer < handle
             t_max = 90.0;
             integrator = RK4FixedStep();
 
-            v_x = v0 * cos(theta) * cos(psi);
-            v_y = v0 * cos(theta) * sin(psi);
-            v_z = v0 * sin(theta);
-
-            m0 = munition.MassProperties.Mass;
-            X = [r0; v_x; v_y; v_z; theta; m0];
+            % Built via the munition's own buildLaunchState rather than a
+            % hand-assembled vector, so this stays correct regardless of
+            % whether the attached Dynamics is the plain 8-state model or
+            % a spin-augmented 9-state one (or anything else added later).
+            X = munition.buildLaunchState(r0, v0, theta, psi);
             X_prev = X;
 
             deriv_fn = @(tt, XX) obj.evalMunitionDerivatives(munition, tt, XX, env);
@@ -179,19 +178,22 @@ classdef FireControlComputer < handle
         %% bypass branch so the fire-control solver and the real Simulation
         %% are always integrating the exact same physics.
         function dX = evalMunitionDerivatives(~, munition, t, X, env)
-            [F_aero, ~] = munition.Aero.getForcesAndMoments(t, X, env, 0.0);
+            [F_aero, M_aero] = munition.Aero.getForcesAndMoments(t, X, env, 0.0);
             if ~isempty(munition.Propulsion)
-                [F_prop, ~, m_dot] = munition.Propulsion.getThrust(t, env);
+                [F_prop, M_prop, m_dot] = munition.Propulsion.getThrust(t, env);
             else
-                F_prop = [0;0;0]; m_dot = 0.0;
+                F_prop = [0;0;0]; M_prop = [0;0;0]; m_dot = 0.0;
             end
 
             forces.Aero          = F_aero;
             forces.Propulsion    = F_prop;
             forces.FinDeflection = 0.0;
-            moments.Aero         = [0;0;0];
-            moments.Propulsion   = [0;0;0];
-            mass_prop.Mass       = X(8);
+            moments.Aero         = M_aero;
+            moments.Propulsion   = M_prop;
+            % Full MassProperties (not just Mass) - Dynamics3DofSpin's spin
+            % derivative needs Inertia(1,1) too, and reconstructing a
+            % partial struct here previously dropped it.
+            mass_prop            = munition.MassProperties;
 
             dX = munition.Dynamics.computeDerivatives(t, X, forces, moments, mass_prop, m_dot);
         end
