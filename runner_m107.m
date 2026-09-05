@@ -12,7 +12,7 @@ shell = MunitionFactory.createM107Artillery();
 
 % 4. Fire Control Computer (Solves Quadrant Elevation & Wind Crab Angle)
 fcc = FireControlComputer(env.Gravity, 'Z-Up');
-v0_charge7 = 827.0; % Top zone muzzle velocity (m/s)
+v0_charge7 = shell.Charge.MuzzleVelocity; % M119A2 Charge7, see MunitionFactory.createM107Artillery
 launcher_pos = [0; 0; 0];
 
 fprintf('Running Fire Control numerical shooting solver...\n');

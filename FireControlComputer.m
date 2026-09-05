@@ -179,7 +179,7 @@ classdef FireControlComputer < handle
         %% bypass branch so the fire-control solver and the real Simulation
         %% are always integrating the exact same physics.
         function dX = evalMunitionDerivatives(~, munition, t, X, env)
-            [F_aero, ~] = munition.Aero.getForcesAndMoments(X, env, 0.0);
+            [F_aero, ~] = munition.Aero.getForcesAndMoments(t, X, env, 0.0);
             if ~isempty(munition.Propulsion)
                 [F_prop, ~, m_dot] = munition.Propulsion.getThrust(t, env);
             else

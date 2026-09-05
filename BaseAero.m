@@ -8,7 +8,7 @@ classdef (Abstract) BaseAero < handle
         DeploymentRatio (1,1) double = 0.0
     end
     methods (Abstract)
-        [F_aero, M_aero] = getForcesAndMoments(obj, X, env, fin_deflections)
+        [F_aero, M_aero] = getForcesAndMoments(obj, t, X, env, fin_deflections)
     end
     methods (Static)
         function val = evalCoeff(coeff, mach)

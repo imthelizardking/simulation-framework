@@ -19,7 +19,7 @@ shell = MunitionFactory.create76mmHE();
 %    at t=0), so it's the wrong tool now that the target is moving -
 %    solveDirectLead accounts for target velocity plus ballistic drop.
 fcc = FireControlComputer(env.Gravity, 'Z-Up');
-v0 = 800.0; % m/s, muzzle velocity
+v0 = shell.Charge.MuzzleVelocity; % see MunitionFactory.create76mmHE
 launcher_pos = [0; 0; 0];
 
 sol = fcc.solveFiringAngles(launcher_pos, v0, target.getTargetBus(), 'DirectLead');

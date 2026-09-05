@@ -2,13 +2,13 @@
 clear; clc; close all;
 
 launch_angle_deg = 45.0; % edit this to try other quadrant elevations
-v0                = 1100.0; % m/s, M793 muzzle velocity
 
 % 1. Setup Environment (no wind - isolate the effect of launch angle alone)
 env = Environment(1.225, 9.81, [0; 0; 0]);
 
 % 2. Instantiate Vehicle via MunitionFactory
 round = MunitionFactory.create25mmM793();
+v0 = round.Charge.MuzzleVelocity; % see MunitionFactory.create25mmM793
 
 % 3. Initial Launch State (Z-Up frame, planar X-Z launch)
 launcher_pos = [0; 0; 0];

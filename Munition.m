@@ -8,6 +8,7 @@ classdef Munition < handle
         Sensors        cell       = {}  % Cell array of BaseSensor subclasses
         Guidance                  = []  % Holds instance of BaseGuidance subclass
         Controller                = []  % Holds instance of BaseController subclass
+        Charge                    = []  % Holds a ChargeZone (gun-fired munitions only; empty for rocket motors)
         MassProperties struct     = struct('Mass', 3.0, 'Inertia', eye(3))
         LastGNCBus     struct     = struct()
     end
@@ -60,7 +61,7 @@ classdef Munition < handle
             end
             
             if ~isempty(obj.Aero)
-                [F_aero, M_aero] = obj.Aero.getForcesAndMoments(X, env, fin_deflection);
+                [F_aero, M_aero] = obj.Aero.getForcesAndMoments(t, X, env, fin_deflection);
             else
                 F_aero = [0;0;0]; M_aero = [0;0;0];
             end

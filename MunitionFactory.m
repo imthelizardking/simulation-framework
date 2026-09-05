@@ -3,17 +3,19 @@ classdef MunitionFactory
     methods (Static)
         
         %% 155mm M107 HE Artillery Projectile (Unguided Ballistic)
-        function m = createM107Artillery()
+        function m = createM107Artillery(charge_name)
+            if nargin < 1, charge_name = 'Charge7'; end
             m = Munition('M107_155mm');
-            
+
             % Mass properties (NATO standard ~43.2 kg, d = 0.155 m)
             m.MassProperties.Mass = 43.2;
             m.MassProperties.Inertia = diag([0.14, 1.62, 1.62]); % [Ix, Iy, Iz]
-            
+
             % Subsystems
             m.Dynamics   = Dynamics3Dof();
             % S_ref = pi*(0.155/2)^2 = 0.01887 m^2, typical zero-lift drag CD0 ~ 0.22
             m.Aero       = Aero3DoF_Longitudinal(0.22, 2.5, 0.01887);
+            m.Charge     = ChargeFactory.getM119A2(charge_name);
             m.Propulsion = []; % Pure ballistic, no motor
             m.Sensors    = {};
             m.Guidance   = [];
@@ -23,38 +25,41 @@ classdef MunitionFactory
         %% 2.75-inch (70mm) Hydra-70 Unguided Rocket (Mk 66 Motor)
         function m = createHydra70()
             m = Munition('Hydra_70_M151');
-            
+
             % Launch mass ~10.5 kg (burnout mass ~6.2 kg)
             m.MassProperties.Mass = 10.5;
             m.MassProperties.Inertia = diag([0.008, 0.45, 0.45]);
-            
+
             m.Dynamics   = Dynamics3Dof();
             % d = 0.070 m -> S_ref = 0.00385 m^2, CD0 ~ 0.38
             m.Aero       = Aero3DoF_Longitudinal(0.38, 3.2, 0.00385);
             % Mk 66 Mod 4: ~5900 N average thrust for ~1.1 seconds
             m.Propulsion = SolidMotor(5900.0, 1.1);
+            % Rocket-motor propelled, not a gun-fired charge - Charge stays
+            % empty (no propelling-charge concept applies here).
             m.Sensors    = {};
             m.Guidance   = [];
             m.Controller = [];
         end
-        
+
         %% 25mm Bushmaster Target Practice Tracer (M793)
         function m = create25mmM793()
             m = Munition('25mm_M793');
-            
+
             % Projectile mass ~0.185 kg, d = 0.025 m
             m.MassProperties.Mass = 0.185;
             m.MassProperties.Inertia = eye(3) * 1e-4;
-            
+
             m.Dynamics   = Dynamics3Dof();
             % S_ref = pi*(0.025/2)^2 = 4.908e-4 m^2
             m.Aero       = Aero3DoF_Longitudinal(0.18, 1.5, 4.908e-4);
+            m.Charge     = ChargeFactory.getFixed('25mm-Fixed', 1100.0, 5.0);
             m.Propulsion = [];
             m.Sensors    = {};
             m.Guidance   = [];
             m.Controller = [];
         end
-        
+
         %% 35mm HE-T Anti-Aircraft/Anti-Drone Round (Unguided Direct-Fire)
         function m = create35mmHE()
             m = Munition('35mm_HET');
@@ -66,6 +71,7 @@ classdef MunitionFactory
             m.Dynamics = Dynamics3Dof();
             % S_ref = pi*(0.035/2)^2 = 9.62e-4 m^2, typical HE-T CD0 ~ 0.25
             m.Aero = Aero3DoF_Longitudinal(0.25, 2.0, 9.621e-4);
+            m.Charge = ChargeFactory.getFixed('35mm-Fixed', 1175.0, 4.0);
             m.Propulsion = []; % Pure ballistic, no motor
             m.Sensors    = {};
             m.Guidance   = [];
@@ -110,8 +116,38 @@ classdef MunitionFactory
             aero.Tables.Clean   = coeffs;
             aero.ActiveTableKey = 'Clean';
             m.Aero = aero;
+            m.Charge = ChargeFactory.getFixed('76mm-Fixed', 800.0, 3.5);
 
             m.Propulsion = []; % Pure ballistic, no motor
+            m.Sensors    = {};
+            m.Guidance   = [];
+            m.Controller = [];
+        end
+
+        %% MOD274 155mm Base-Bleed HE Projectile (Unguided, Extended Range)
+        function m = createMOD274(charge_name)
+            if nargin < 1, charge_name = '6M'; end
+            m = Munition('MOD274_155mm_BB');
+
+            % Illustrative mass properties for a 155mm base-bleed HE round
+            % (runs a bit heavier than M107 due to the base-bleed unit)
+            m.MassProperties.Mass = 45.0;
+            m.MassProperties.Inertia = diag([0.15, 1.7, 1.7]);
+
+            m.Dynamics = Dynamics3Dof();
+            % Same bore/S_ref as M107; slightly lower baseline CD0 is
+            % typical of modern extended-range shell shaping even before
+            % the base-bleed reduction is applied on top.
+            aero = Aero3DoF_Longitudinal(0.21, 2.5, 0.01887);
+            % Very basic base-bleed model (see BaseBleedUnit): a fixed
+            % fractional CD0 reduction for BurnDuration seconds, full drag
+            % after burnout. Values are illustrative, not from a gas-
+            % generator burn-rate model.
+            aero.BaseBleed = BaseBleedUnit(30.0, 0.25);
+            m.Aero = aero;
+            m.Charge = ChargeFactory.getDM92(charge_name);
+
+            m.Propulsion = []; % Pure ballistic, no gun-launch motor
             m.Sensors    = {};
             m.Guidance   = [];
             m.Controller = [];

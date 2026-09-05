@@ -8,8 +8,11 @@ classdef AeroTabulated < BaseAero
     % (see BaseAero.evalCoeff). alpha here is the 2D pitch-plane angle of
     % attack, consistent with the planar Dynamics3Dof state this pairs
     % with - not a full 3D total-yaw angle.
+    properties
+        BaseBleed = [] % optional BaseBleedUnit - reduces CD0 while burning
+    end
     methods
-        function [F_aero, M_aero] = getForcesAndMoments(obj, X, env, fin_deflection)
+        function [F_aero, M_aero] = getForcesAndMoments(obj, t, X, env, fin_deflection)
             vel   = X(4:6);
             pitch = X(7);
             v_mag = norm(vel);
@@ -28,6 +31,9 @@ classdef AeroTabulated < BaseAero
 
             coeffs = obj.Tables.(obj.ActiveTableKey);
             CD0_v  = BaseAero.evalCoeff(coeffs.CD0,  mach);
+            if ~isempty(obj.BaseBleed)
+                CD0_v = CD0_v * obj.BaseBleed.dragMultiplier(t);
+            end
             CDA2_v = BaseAero.evalCoeff(coeffs.CDA2, mach);
             CDA4_v = BaseAero.evalCoeff(coeffs.CDA4, mach);
             CLA_v  = BaseAero.evalCoeff(coeffs.CLA,  mach);

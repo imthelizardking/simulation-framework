@@ -18,7 +18,7 @@ round = MunitionFactory.create35mmHE();
 %    gun engagement against something moving, rather than a lobbed shot at
 %    a fixed point.
 fcc = FireControlComputer(env.Gravity, 'Z-Up');
-v0 = 1175.0; % m/s, 35mm muzzle velocity
+v0 = round.Charge.MuzzleVelocity; % see MunitionFactory.create35mmHE
 launcher_pos = [0; 0; 0];
 
 sol = fcc.solveFiringAngles(launcher_pos, v0, target.getTargetBus(), 'DirectLead');

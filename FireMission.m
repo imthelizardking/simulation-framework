@@ -7,6 +7,12 @@ classdef FireMission < handle
     % integrator - this class is a thin loop on top of it, building a
     % fresh Munition per round (via MunitionBuilder) so no per-round GNC
     % state can leak between rounds.
+    %
+    % Muzzle velocity is a property of the (munition, charge) pair, not
+    % the weapon - MunitionBuilder must return a Munition with its Charge
+    % set (see MunitionFactory/ChargeFactory). Platform.MaxMuzzleVelocity
+    % is only the weapon's own rated ceiling; run() checks the charge
+    % against it once, up front.
     properties
         Platform                       % WeaponPlatform
         MunitionBuilder                 % function handle, e.g. @() MunitionFactory.create35mmHE()
@@ -36,6 +42,20 @@ classdef FireMission < handle
             fcc.AzimuthMin   = obj.Platform.AzimuthMin;
             fcc.AzimuthMax   = obj.Platform.AzimuthMax;
 
+            % Every round in a mission uses the same munition+charge, so a
+            % weapon/charge mismatch would fail identically every round -
+            % check it once, up front, with a clear error instead of
+            % repeating the same failure NumRounds times.
+            probe = obj.MunitionBuilder();
+            if isempty(probe.Charge)
+                error('FireMission:NoCharge', 'Munition has no Charge assigned - MunitionBuilder must set one.');
+            end
+            if probe.Charge.MuzzleVelocity > obj.Platform.MaxMuzzleVelocity
+                error('FireMission:ChargeIncompatible', ...
+                    'Charge %s (%.1f m/s) exceeds %s''s rated max muzzle velocity (%.1f m/s).', ...
+                    probe.Charge.Name, probe.Charge.MuzzleVelocity, obj.Platform.Name, obj.Platform.MaxMuzzleVelocity);
+            end
+
             dt_rounds = 60.0 / obj.Platform.RateOfFire; % seconds between successive fire times
             t_mission = 0;
 
@@ -54,7 +74,10 @@ classdef FireMission < handle
                 end
 
                 tgt_bus = obj.Target.getTargetBus();
-                v0_round = obj.Platform.MuzzleVelocity + obj.Platform.MuzzleVelocityStdDev * randn();
+
+                munition = obj.MunitionBuilder();
+                charge = munition.Charge;
+                v0_round = charge.MuzzleVelocity + charge.MuzzleVelocityStdDev * randn();
 
                 sol = fcc.solveFiringAngles(obj.LauncherPos, v0_round, tgt_bus, obj.FireMode);
 
@@ -74,7 +97,6 @@ classdef FireMission < handle
                 elev = max(min(elev, obj.Platform.ElevationMax), obj.Platform.ElevationMin);
                 azim = max(min(azim, obj.Platform.AzimuthMax), obj.Platform.AzimuthMin);
 
-                munition = obj.MunitionBuilder();
                 munition.Dynamics.InitialState = munition.Dynamics.buildLaunchState(...
                     obj.LauncherPos, v0_round, elev, azim, munition.MassProperties.Mass);
 
