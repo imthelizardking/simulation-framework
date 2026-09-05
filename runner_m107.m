@@ -5,7 +5,7 @@ clear; clc; close all;
 env = Environment(1.225, 9.81, [0; 5.0; 0]); % 5 m/s crosswind in Y (East)
 
 % 2. Setup Target
-target = StaticTarget([14200; 350; 0]); % Target 14.2 km downrange, 350 m offset
+target = StaticTarget([11200; 350; 0]); % Target 14.2 km downrange, 350 m offset
 
 % 3. Instantiate Vehicle via MunitionFactory (Replaces all manual assembly!)
 shell = MunitionFactory.createM107Artillery();

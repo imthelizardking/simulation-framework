@@ -127,6 +127,7 @@ classdef FireControlComputer < handle
 
             m0 = munition.MassProperties.Mass;
             X = [r0; v_x; v_y; v_z; theta; m0];
+            X_prev = X;
 
             deriv_fn = @(tt, XX) obj.evalMunitionDerivatives(munition, tt, XX, env);
 
@@ -134,12 +135,29 @@ classdef FireControlComputer < handle
             while t < t_max
                 vel = X(4:6);
 
-                % Terminal condition: altitude crosses target altitude while descending
+                % Terminal condition: altitude crosses target altitude while
+                % descending. Linearly interpolates between the last two
+                % samples to the exact crossing point rather than returning
+                % whatever state happens to land on the dt grid - otherwise
+                % the reported impact position is quantized by ~(impact
+                % speed * dt), which for this dt/velocity is a few meters:
+                % coarser than ToleranceMeters, so solveNumericalShooting's
+                % Newton-Raphson could get within a couple of meters of the
+                % true answer and then orbit it forever, never satisfying
+                % its own convergence check.
                 if t > 0.5 && X(3) <= z_target && vel(3) < 0
-                    impact_pos = X(1:3);
+                    z_prev = X_prev(3);
+                    if z_prev ~= X(3)
+                        frac = (z_prev - z_target) / (z_prev - X(3));
+                    else
+                        frac = 0.0;
+                    end
+                    frac = max(0.0, min(1.0, frac));
+                    impact_pos = X_prev(1:3) + frac * (X(1:3) - X_prev(1:3));
                     return;
                 end
 
+                X_prev = X;
                 X = integrator.step(deriv_fn, t, X, dt);
                 t = t + dt;
             end
