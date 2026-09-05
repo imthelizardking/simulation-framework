@@ -111,45 +111,60 @@ classdef FireControlComputer < handle
     end
     
     methods (Access = private)
-        %% Fast 3-DoF Ballistic Integrator (Stripped for Speed)
-        function [impact_pos, t] = simulateFastBallistic(~, munition, r0, v0, theta, psi, env, z_target)
+        %% Fast 3-DoF Ballistic Integrator (coarser step than Simulation,
+        %% but same physics - calls munition.Dynamics.computeDerivatives
+        %% directly rather than re-deriving it, so pitch actually follows
+        %% the flight-path angle the same way the real Simulation does
+        %% instead of staying frozen at the launch angle).
+        function [impact_pos, t] = simulateFastBallistic(obj, munition, r0, v0, theta, psi, env, z_target)
             dt = 0.01; % 10 ms coarse step is plenty for shooting convergence
             t_max = 90.0;
-            
+            integrator = RK4FixedStep();
+
             v_x = v0 * cos(theta) * cos(psi);
             v_y = v0 * cos(theta) * sin(psi);
             v_z = v0 * sin(theta);
-            
+
             m0 = munition.MassProperties.Mass;
             X = [r0; v_x; v_y; v_z; theta; m0];
-            
+
+            deriv_fn = @(tt, XX) obj.evalMunitionDerivatives(munition, tt, XX, env);
+
             t = 0;
             while t < t_max
                 vel = X(4:6);
-                v_mag = norm(vel);
-                
+
                 % Terminal condition: altitude crosses target altitude while descending
                 if t > 0.5 && X(3) <= z_target && vel(3) < 0
                     impact_pos = X(1:3);
                     return;
                 end
-                
-                % Fast physics derivative evaluation
-                [F_aero, ~] = munition.Aero.getForcesAndMoments(X, env, 0.0);
-                if ~isempty(munition.Propulsion)
-                    [F_prop, ~, m_dot] = munition.Propulsion.getThrust(t, env);
-                else
-                    F_prop = [0;0;0]; m_dot = 0.0;
-                end
-                
-                F_grav = [0; 0; -X(8) * env.Gravity];
-                accel = (F_aero + F_prop + F_grav) / X(8);
-                
-                dX = [vel; accel; 0; m_dot];
-                X = X + dX * dt;
+
+                X = integrator.step(deriv_fn, t, X, dt);
                 t = t + dt;
             end
             impact_pos = X(1:3);
+        end
+
+        %% Shared derivative evaluation - mirrors Simulation.evalDerivatives'
+        %% bypass branch so the fire-control solver and the real Simulation
+        %% are always integrating the exact same physics.
+        function dX = evalMunitionDerivatives(~, munition, t, X, env)
+            [F_aero, ~] = munition.Aero.getForcesAndMoments(X, env, 0.0);
+            if ~isempty(munition.Propulsion)
+                [F_prop, ~, m_dot] = munition.Propulsion.getThrust(t, env);
+            else
+                F_prop = [0;0;0]; m_dot = 0.0;
+            end
+
+            forces.Aero          = F_aero;
+            forces.Propulsion    = F_prop;
+            forces.FinDeflection = 0.0;
+            moments.Aero         = [0;0;0];
+            moments.Propulsion   = [0;0;0];
+            mass_prop.Mass       = X(8);
+
+            dX = munition.Dynamics.computeDerivatives(t, X, forces, moments, mass_prop, m_dot);
         end
         
         %% Analytical Direct Lead with Option 2 (Z-Up Frame)
