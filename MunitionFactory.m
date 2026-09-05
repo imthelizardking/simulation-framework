@@ -5,16 +5,22 @@ classdef MunitionFactory
         %% 155mm M107 HE Artillery Projectile (Unguided Ballistic)
         function m = createM107Artillery(charge_name)
             if nargin < 1, charge_name = 'Charge7'; end
-            m = Munition('M107_155mm');
+            % data/createM107Artillery.json overrides the parameters below
+            % if present; otherwise these hardcoded values are used as-is.
+            data = FactoryData.load('createM107Artillery');
+            m = Munition(FactoryData.getOr(data, 'Name', 'M107_155mm'));
 
             % Mass properties (NATO standard ~43.2 kg, d = 0.155 m)
-            m.MassProperties.Mass = 43.2;
-            m.MassProperties.Inertia = diag([0.14, 1.62, 1.62]); % [Ix, Iy, Iz]
+            m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 43.2);
+            m.MassProperties.Inertia = diag(FactoryData.getOr(data, 'Inertia', [0.14, 1.62, 1.62])); % [Ix, Iy, Iz]
 
             % Subsystems
             m.Dynamics   = Dynamics3Dof();
             % S_ref = pi*(0.155/2)^2 = 0.01887 m^2, typical zero-lift drag CD0 ~ 0.22
-            m.Aero       = Aero3DoF_Longitudinal(0.22, 2.5, 0.01887);
+            m.Aero       = Aero3DoF_Longitudinal(...
+                FactoryData.getOr(data, 'CD0', 0.22), ...
+                FactoryData.getOr(data, 'CL_alpha', 2.5), ...
+                FactoryData.getOr(data, 'RefArea', 0.01887));
             m.Charge     = ChargeFactory.getM119A2(charge_name);
             m.Propulsion = []; % Pure ballistic, no motor
             m.Sensors    = {};
