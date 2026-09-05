@@ -29,18 +29,15 @@ fprintf('Predicted Flight Time   : %.2f s\n', sol.TimeOfFlight);
 fprintf('Convergence Miss Error  : %.3f m\n', sol.MissDistance);
 
 % 5. Apply Solved Initial State to Munition
-v_x = v0_charge7 * cos(sol.Elevation) * cos(sol.Azimuth);
-v_y = v0_charge7 * cos(sol.Elevation) * sin(sol.Azimuth);
-v_z = v0_charge7 * sin(sol.Elevation); % Z-Up frame
-
-shell.Dynamics.InitialState = [launcher_pos; v_x; v_y; v_z; sol.Elevation; shell.MassProperties.Mass];
+shell.Dynamics.InitialState = shell.Dynamics.buildLaunchState(...
+    launcher_pos, v0_charge7, sol.Elevation, sol.Azimuth, shell.MassProperties.Mass);
 
 % 6. Assemble Simulation & Execute
-% NOTE: no Visualizer attached - LiveEngagementPlotter expects a seeker-
-% guided munition (gnc_bus.Sensors.SeekerLOAL, PN/Angle/FOV command bus)
-% and will error against an unguided ballistic shell with no Sensors. Post-
-% flight static plots below are the appropriate fit for a trajectory-only
-% scenario like this one.
+% NOTE: no Visualizer attached - LiveEngagementPlotter works fine against
+% an unguided ballistic shell too (it degrades its seeker/FOV and command-
+% breakdown panels gracefully when absent), but a post-flight static plot
+% is still the better fit for a pure trajectory-generation scenario like
+% this one - there's no live engagement decision-making to watch unfold.
 sim = Simulation(shell, target, env, [0 sol.TimeOfFlight * 1.05], 0.005);
 
 fprintf('Starting trajectory integration...\n');

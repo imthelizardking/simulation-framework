@@ -1,56 +1,69 @@
-%% Scenario: 76mm HE Projectile with Detailed Mach-Dependent Aero Table
+%% Scenario: 76mm HE Land-to-Air Engagement (Detailed Mach-Dependent Aero Table)
 clear; clc; close all;
 
 % 1. Setup Environment (standard atmosphere, no wind)
 env = Environment(1.225, 9.81, [0; 0; 0]);
 
-% 2. Setup Target
-target = StaticTarget([9000; 0; 0]); % 9 km downrange
+% 2. Setup Target: same inbound target as runner_sam_engagement.m (the
+%    "drone" used there), so the 76mm gun and the guided interceptor can
+%    be compared against an identical threat.
+target = ConstantVelocityTarget([8000; 0; 3000], [-250; 0; 0]);
 
 % 3. Instantiate Vehicle via MunitionFactory (uses AeroTabulated - see
 %    MunitionFactory.create76mmHE for the full CD0/CDA2/CDA4/CLA/CLA3
 %    coefficient set)
 shell = MunitionFactory.create76mmHE();
 
-% 4. Fire Control Computer (Solves Quadrant Elevation)
+% 4. Fire Control: analytical direct-lead solve. solveNumericalShooting
+%    has no notion of target velocity (it aims at wherever the target is
+%    at t=0), so it's the wrong tool now that the target is moving -
+%    solveDirectLead accounts for target velocity plus ballistic drop.
 fcc = FireControlComputer(env.Gravity, 'Z-Up');
 v0 = 800.0; % m/s, muzzle velocity
 launcher_pos = [0; 0; 0];
 
-fprintf('Running Fire Control numerical shooting solver...\n');
-sol = fcc.solveNumericalShooting(shell, launcher_pos, v0, target.getTargetBus(), env, 'Low');
+sol = fcc.solveFiringAngles(launcher_pos, v0, target.getTargetBus(), 'DirectLead');
 
 if ~sol.IsValid
-    error('Target is out of range or solution failed to converge!');
+    error('No valid direct-lead solution (target out of envelope or geometry infeasible).');
 end
 
-fprintf('=== Solution Converged in %d Iterations ===\n', sol.Iterations);
-fprintf('Quadrant Elevation (QE) : %.2f deg\n', rad2deg(sol.Elevation));
-fprintf('Predicted Flight Time   : %.2f s\n', sol.TimeOfFlight);
-fprintf('Convergence Miss Error  : %.3f m\n', sol.MissDistance);
+fprintf('=== Direct-Lead Solution ===\n');
+fprintf('Elevation                : %.2f deg\n', rad2deg(sol.Elevation));
+fprintf('Azimuth                  : %.2f deg\n', rad2deg(sol.Azimuth));
+fprintf('Predicted Intercept Time : %.3f s\n', sol.TimeOfFlight);
 
 % 5. Apply Solved Initial State
-v_x = v0 * cos(sol.Elevation);
-v_z = v0 * sin(sol.Elevation);
-shell.Dynamics.InitialState = [launcher_pos; v_x; 0; v_z; sol.Elevation; shell.MassProperties.Mass];
+shell.Dynamics.InitialState = shell.Dynamics.buildLaunchState(...
+    launcher_pos, v0, sol.Elevation, sol.Azimuth, shell.MassProperties.Mass);
 
-% 6. Assemble Simulation & Execute
-sim = Simulation(shell, target, env, [0 sol.TimeOfFlight * 1.05], 0.005);
+% 6. Assemble Simulation & Execute. Unguided direct-fire round with no
+%    terminal correction - ImpactDistance is a large-HE proximity-effect
+%    radius rather than a tight direct-hit tolerance, since
+%    solveDirectLead ignores drag entirely: over this longer, higher-drag
+%    trajectory than the 35mm case, the shell decelerates substantially
+%    and arrives later than predicted, so expect a more noticeable lead
+%    error here. TimeSpan is padded well past the predicted intercept
+%    time to give the (slower-than-predicted) real shell room to arrive.
+sim = Simulation(shell, target, env, [0 sol.TimeOfFlight * 2], 0.005);
+sim.Termination.ImpactDistance = 5.0;
+sim.Termination.MaxDownrange   = 200.0;
 
-fprintf('Starting trajectory integration...\n');
+fprintf('Firing 76mm round...\n');
 tic;
 telemetry = sim.run();
 fprintf('Sim finished in %.2f seconds (%.2f s simulated).\n', toc, telemetry.time(end));
 
-% 7. Post-Flight Analysis
+% 7. Post-Engagement Analysis
 final_pos = telemetry.pos(end, :)';
-actual_miss = norm(final_pos(1:2) - target.Position(1:2));
+final_tgt = telemetry.target_pos(end, :)';
+miss_dist = norm(final_pos - final_tgt);
 [apogee, apogee_idx] = max(telemetry.pos(:,3));
 max_mach = max(vecnorm(telemetry.vel, 2, 2)) / env.SpeedOfSound;
 
-fprintf('Termination Reason          : %s\n', sim.TerminationReason);
-fprintf('Apogee                      : %.1f m at t=%.2f s\n', apogee, telemetry.time(apogee_idx));
-fprintf('Peak Mach Number            : %.2f\n', max_mach);
-fprintf('Actual Impact Miss Distance : %.2f meters\n', actual_miss);
+fprintf('Termination Reason  : %s\n', sim.TerminationReason);
+fprintf('Apogee              : %.1f m at t=%.2f s\n', apogee, telemetry.time(apogee_idx));
+fprintf('Peak Mach Number    : %.2f\n', max_mach);
+fprintf('Final Miss Distance : %.2f m\n', miss_dist);
 
-plotTrajectoryProfile(telemetry, target.Position, '76mm HE Trajectory (Tabulated Aero)');
+plotTrajectoryProfile(telemetry, final_tgt, '76mm Land-to-Air Engagement');

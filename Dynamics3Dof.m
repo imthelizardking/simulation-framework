@@ -3,7 +3,17 @@ classdef Dynamics3Dof < BaseDynamics
         function obj = Dynamics3Dof()
             obj.StateDimension = 8; % [x; y; z; vx; vy; vz; pitch; mass]
         end
-        
+
+        function X0 = buildLaunchState(~, launcher_pos, v0, elevation, azimuth, mass)
+            % Assembles [pos; vel; pitch; mass] from firing angles and
+            % launch speed, so callers pass elevation/azimuth directly
+            % instead of hand-deriving vx/vy/vz via trig each time.
+            v_x = v0 * cos(elevation) * cos(azimuth);
+            v_y = v0 * cos(elevation) * sin(azimuth);
+            v_z = v0 * sin(elevation);
+            X0 = [launcher_pos; v_x; v_y; v_z; elevation; mass];
+        end
+
         function dX = computeDerivatives(~, ~, X, forces, ~, ~, m_dot)
             vel   = X(4:6);
             pitch = X(7);

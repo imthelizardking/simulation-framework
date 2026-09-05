@@ -36,7 +36,7 @@ classdef LiveEngagementPlotter < BaseVisualizer
             obj.h_main_ax = axes(obj.FigureHandle);
             hold(obj.h_main_ax, 'on'); grid(obj.h_main_ax, 'on'); box(obj.h_main_ax, 'on');
             xlabel(obj.h_main_ax, 'Range X (m)'); ylabel(obj.h_main_ax, 'Altitude Z (m)');
-            title(obj.h_main_ax, 'Cost-Based Guidance vs Classical Engagement');
+            title(obj.h_main_ax, 'Engagement Trajectory');
             axis(obj.h_main_ax, bounds);
             
             obj.h_fov_upper = plot(obj.h_main_ax, NaN, NaN, '--', 'Color', [0 0.8 0], 'LineWidth', 1.2);
@@ -86,38 +86,55 @@ classdef LiveEngagementPlotter < BaseVisualizer
             set(obj.h_missile_head, 'XData', pos(1), 'YData', pos(3));
             set(obj.h_target_head, 'XData', target_state.pos(1), 'YData', target_state.pos(3));
             
-            guid = gnc_bus.Guidance;
-            seeker = gnc_bus.Sensors.SeekerLOAL;
-            
-            fov_len = seeker.Range + 100;
-            max_fov = deg2rad(20);
-            x_up = pos(1) + fov_len * cos(pitch + max_fov);
-            z_up = pos(3) + fov_len * sin(pitch + max_fov);
-            x_dn = pos(1) + fov_len * cos(pitch - max_fov);
-            z_dn = pos(3) + fov_len * sin(pitch - max_fov);
-            
-            fov_color = [0 0.8 0];
-            if seeker.IsBlind, fov_color = [1 0 0]; end
-            set(obj.h_fov_upper, 'XData', [pos(1), x_up], 'YData', [pos(3), z_up], 'Color', fov_color);
-            set(obj.h_fov_lower, 'XData', [pos(1), x_dn], 'YData', [pos(3), z_dn], 'Color', fov_color);
-            
-            tot_cmd = abs(guid.AccPN) + abs(guid.AccAngle) + abs(guid.AccFOV);
-            if tot_cmd > 0
-                pct_pn  = round(100 * abs(guid.AccPN) / tot_cmd);
-                pct_ang = round(100 * abs(guid.AccAngle) / tot_cmd);
-                pct_fov = round(100 * abs(guid.AccFOV) / tot_cmd);
+            % Seeker/FOV cone and PN-Angle-FOV command breakdown only apply
+            % to a seeker-guided munition; an unguided direct-fire round
+            % has neither, so both sections degrade gracefully instead of
+            % erroring on a missing field.
+            has_seeker = isfield(gnc_bus, 'Sensors') && isfield(gnc_bus.Sensors, 'SeekerLOAL');
+            if has_seeker
+                seeker = gnc_bus.Sensors.SeekerLOAL;
+                fov_len = seeker.Range + 100;
+                max_fov = deg2rad(20);
+                x_up = pos(1) + fov_len * cos(pitch + max_fov);
+                z_up = pos(3) + fov_len * sin(pitch + max_fov);
+                x_dn = pos(1) + fov_len * cos(pitch - max_fov);
+                z_dn = pos(3) + fov_len * sin(pitch - max_fov);
+
+                fov_color = [0 0.8 0];
+                if seeker.IsBlind, fov_color = [1 0 0]; end
+                set(obj.h_fov_upper, 'XData', [pos(1), x_up], 'YData', [pos(3), z_up], 'Color', fov_color);
+                set(obj.h_fov_lower, 'XData', [pos(1), x_dn], 'YData', [pos(3), z_dn], 'Color', fov_color);
+                set(obj.h_fov_text, 'String', sprintf('FOV: %.1f deg', rad2deg(seeker.LookAngle)));
+            else
+                set(obj.h_fov_upper, 'XData', NaN, 'YData', NaN);
+                set(obj.h_fov_lower, 'XData', NaN, 'YData', NaN);
+                set(obj.h_fov_text, 'String', 'FOV: n/a (unguided)');
+            end
+
+            has_breakdown = isfield(gnc_bus, 'Guidance') && all(isfield(gnc_bus.Guidance, {'AccPN','AccAngle','AccFOV'}));
+            if has_breakdown
+                guid = gnc_bus.Guidance;
+                tot_cmd = abs(guid.AccPN) + abs(guid.AccAngle) + abs(guid.AccFOV);
+                if tot_cmd > 0
+                    pct_pn  = round(100 * abs(guid.AccPN) / tot_cmd);
+                    pct_ang = round(100 * abs(guid.AccAngle) / tot_cmd);
+                    pct_fov = round(100 * abs(guid.AccFOV) / tot_cmd);
+                else
+                    pct_pn = 0; pct_ang = 0; pct_fov = 0;
+                end
+                set(obj.h_txt_pn,  'String', sprintf('%d%%', pct_pn));
+                set(obj.h_txt_ang, 'String', sprintf('%d%%', pct_ang));
+                set(obj.h_txt_fov, 'String', sprintf('%d%%', pct_fov));
             else
                 pct_pn = 0; pct_ang = 0; pct_fov = 0;
+                set(obj.h_txt_pn,  'String', 'n/a');
+                set(obj.h_txt_ang, 'String', 'n/a');
+                set(obj.h_txt_fov, 'String', 'n/a');
             end
-            
             set(obj.h_bar_pn,  'XData', [0 pct_pn pct_pn 0]);
             set(obj.h_bar_ang, 'XData', [0 pct_ang pct_ang 0]);
             set(obj.h_bar_fov, 'XData', [0 pct_fov pct_fov 0]);
-            set(obj.h_txt_pn,  'String', sprintf('%d%%', pct_pn));
-            set(obj.h_txt_ang, 'String', sprintf('%d%%', pct_ang));
-            set(obj.h_txt_fov, 'String', sprintf('%d%%', pct_fov));
-            
-            set(obj.h_fov_text, 'String', sprintf('FOV: %.1f deg', rad2deg(seeker.LookAngle)));
+
             set(obj.h_time_speed_text, 'String', sprintf('Time: %.3f s\nSpeed: %d m/s', t, round(speed)));
         end
         

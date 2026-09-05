@@ -55,6 +55,23 @@ classdef MunitionFactory
             m.Controller = [];
         end
         
+        %% 35mm HE-T Anti-Aircraft/Anti-Drone Round (Unguided Direct-Fire)
+        function m = create35mmHE()
+            m = Munition('35mm_HET');
+
+            % Illustrative mass properties for a 35mm AA gun round, d = 0.035 m
+            m.MassProperties.Mass = 0.55;
+            m.MassProperties.Inertia = diag([0.0004, 0.006, 0.006]);
+
+            m.Dynamics = Dynamics3Dof();
+            % S_ref = pi*(0.035/2)^2 = 9.62e-4 m^2, typical HE-T CD0 ~ 0.25
+            m.Aero = Aero3DoF_Longitudinal(0.25, 2.0, 9.621e-4);
+            m.Propulsion = []; % Pure ballistic, no motor
+            m.Sensors    = {};
+            m.Guidance   = [];
+            m.Controller = [];
+        end
+
         %% 76mm HE Projectile (Detailed Mach-Dependent Aero Table)
         function m = create76mmHE()
             m = Munition('76mm_HE');

@@ -13,9 +13,8 @@ round = MunitionFactory.create25mmM793();
 % 3. Initial Launch State (Z-Up frame, planar X-Z launch)
 launcher_pos = [0; 0; 0];
 launch_angle = deg2rad(launch_angle_deg);
-v_x = v0 * cos(launch_angle);
-v_z = v0 * sin(launch_angle);
-round.Dynamics.InitialState = [launcher_pos; v_x; 0; v_z; launch_angle; round.MassProperties.Mass];
+round.Dynamics.InitialState = round.Dynamics.buildLaunchState(...
+    launcher_pos, v0, launch_angle, 0, round.MassProperties.Mass);
 
 % 4. Assemble Simulation & Execute
 % No target for this scenario - default Termination (ground impact via

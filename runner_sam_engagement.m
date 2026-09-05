@@ -5,7 +5,7 @@ clear; clc; close all;
 env = Environment(1.225, 9.81, [0; 0; 0]); % No wind, standard atmosphere
 
 % 2. Setup Inbound Target (constant velocity, closing on the launch site)
-target = ManeuveringTarget([8000; 0; 3000], [-250; 0; 0]);
+target = ConstantVelocityTarget([8000; 0; 3000], [-250; 0; 0]);
 
 % 3. Instantiate Guided Interceptor via MunitionFactory
 missile = MunitionFactory.createAPKWS();
@@ -18,9 +18,8 @@ los_vec      = target.Position - launcher_pos;
 launch_elev  = atan2(los_vec(3), los_vec(1));
 v0_rail      = 60.0; % m/s, rail-launch speed before motor ignition
 
-v_x = v0_rail * cos(launch_elev);
-v_z = v0_rail * sin(launch_elev);
-missile.Dynamics.InitialState = [launcher_pos; v_x; 0; v_z; launch_elev; missile.MassProperties.Mass];
+missile.Dynamics.InitialState = missile.Dynamics.buildLaunchState(...
+    launcher_pos, v0_rail, launch_elev, 0, missile.MassProperties.Mass);
 
 fprintf('Launch elevation: %.1f deg\n', rad2deg(launch_elev));
 
