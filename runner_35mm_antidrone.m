@@ -33,8 +33,7 @@ fprintf('Azimuth                  : %.2f deg\n', rad2deg(sol.Azimuth));
 fprintf('Predicted Intercept Time : %.3f s\n', sol.TimeOfFlight);
 
 % 5. Apply Solved Initial State
-round.Dynamics.InitialState = round.Dynamics.buildLaunchState(...
-    launcher_pos, v0, sol.Elevation, sol.Azimuth, round.MassProperties.Mass);
+round.Dynamics.InitialState = round.buildLaunchState(launcher_pos, v0, sol.Elevation, sol.Azimuth);
 
 % 6. Assemble Simulation & Execute. Unguided direct-fire round with no
 %    terminal correction - ImpactDistance is set to a proximity-fuse-like

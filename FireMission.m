@@ -97,8 +97,8 @@ classdef FireMission < handle
                 elev = max(min(elev, obj.Platform.ElevationMax), obj.Platform.ElevationMin);
                 azim = max(min(azim, obj.Platform.AzimuthMax), obj.Platform.AzimuthMin);
 
-                munition.Dynamics.InitialState = munition.Dynamics.buildLaunchState(...
-                    obj.LauncherPos, v0_round, elev, azim, munition.MassProperties.Mass);
+                munition.Dynamics.InitialState = munition.buildLaunchState(...
+                    obj.LauncherPos, v0_round, elev, azim);
 
                 sim = Simulation(munition, obj.Target, obj.Environment, ...
                     [0, sol.TimeOfFlight * obj.TimeOfFlightPad], obj.Dt);

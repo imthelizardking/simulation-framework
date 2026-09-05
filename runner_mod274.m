@@ -31,8 +31,7 @@ fprintf('Predicted Flight Time   : %.2f s\n', sol.TimeOfFlight);
 fprintf('Convergence Miss Error  : %.3f m\n', sol.MissDistance);
 
 % 5. Apply Solved Initial State
-shell.Dynamics.InitialState = shell.Dynamics.buildLaunchState(...
-    launcher_pos, v0, sol.Elevation, sol.Azimuth, shell.MassProperties.Mass);
+shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0, sol.Elevation, sol.Azimuth);
 
 % 6. Assemble Simulation & Execute
 sim = Simulation(shell, target, env, [0 sol.TimeOfFlight * 1.05], 0.005);

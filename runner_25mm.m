@@ -13,8 +13,7 @@ v0 = round.Charge.MuzzleVelocity; % see MunitionFactory.create25mmM793
 % 3. Initial Launch State (Z-Up frame, planar X-Z launch)
 launcher_pos = [0; 0; 0];
 launch_angle = deg2rad(launch_angle_deg);
-round.Dynamics.InitialState = round.Dynamics.buildLaunchState(...
-    launcher_pos, v0, launch_angle, 0, round.MassProperties.Mass);
+round.Dynamics.InitialState = round.buildLaunchState(launcher_pos, v0, launch_angle, 0);
 
 % 4. Assemble Simulation & Execute
 % No target for this scenario - default Termination (ground impact via

@@ -15,12 +15,28 @@ classdef MunitionFactory
             m.MassProperties.Inertia = diag(FactoryData.getOr(data, 'Inertia', [0.14, 1.62, 1.62])); % [Ix, Iy, Iz]
 
             % Subsystems
-            m.Dynamics   = Dynamics3Dof();
-            % S_ref = pi*(0.155/2)^2 = 0.01887 m^2, typical zero-lift drag CD0 ~ 0.22
-            m.Aero       = Aero3DoF_Longitudinal(...
-                FactoryData.getOr(data, 'CD0', 0.22), ...
-                FactoryData.getOr(data, 'CL_alpha', 2.5), ...
-                FactoryData.getOr(data, 'RefArea', 0.01887));
+            m.Dynamics   = Dynamics3DofSpin();
+            % S_ref = pi*(0.155/2)^2 = 0.01887 m^2, typical zero-lift drag CD0 ~ 0.22.
+            % Gun-fired and rifled - spin-stabilized, hence AeroTabulatedSpin
+            % rather than the plain Aero3DoF_Longitudinal: CDA2/CDA4/CLA3 are
+            % zeroed out to reproduce the old CD0/CL_alpha-only buildup
+            % exactly, with Cl_p/CMagnus_pa added on top for spin damping and
+            % Magnus drift. Illustrative magnitudes (McCoy-typical order), not
+            % validated wind-tunnel data - same caveat as the rest of this file.
+            aero = AeroTabulatedSpin();
+            aero.RefArea   = FactoryData.getOr(data, 'RefArea', 0.01887);
+            aero.RefLength = 0.155;
+            coeffs.CD0       = FactoryData.getOr(data, 'CD0', 0.22);
+            coeffs.CDA2      = 0;
+            coeffs.CDA4      = 0;
+            coeffs.CLA       = FactoryData.getOr(data, 'CL_alpha', 2.5);
+            coeffs.CLA3      = 0;
+            coeffs.Cl_p      = -0.03;
+            coeffs.CMagnus_pa = 1.2;
+            aero.Tables.Clean   = coeffs;
+            aero.ActiveTableKey = 'Clean';
+            m.Aero = aero;
+            m.TwistRate  = 20; % calibers/turn, illustrative (typical 155mm/39-cal tube figure)
             m.Charge     = ChargeFactory.getM119A2(charge_name);
             m.Propulsion = []; % Pure ballistic, no motor
             m.Sensors    = {};
@@ -48,6 +64,32 @@ classdef MunitionFactory
             m.Controller = [];
         end
 
+        %% Fin-Stabilized Practice Dart (Basic Plain 3DoF Longitudinal Demo)
+        function m = createFinStabilizedDart()
+            % Deliberately the simplest munition in this factory: plain
+            % Dynamics3Dof + Aero3DoF_Longitudinal, no spin, no charge
+            % zones, no guidance - a clean baseline for the basic
+            % pitch-plane lift/drag/pitch-follower model on its own,
+            % unclouded by any of the spin-stabilized machinery the other
+            % presets now use. Illustrative hand-thrown fin-stabilized
+            % dart, d = 0.02 m.
+            m = Munition('FinStabilized_Dart');
+
+            m.MassProperties.Mass = 0.1;
+            m.MassProperties.Inertia = eye(3) * 1e-5; % unused by Dynamics3Dof - no real attitude dynamics there
+
+            m.Dynamics = Dynamics3Dof();
+            % S_ref = pi*(0.02/2)^2 = 3.14e-4 m^2. CL_alpha is high relative
+            % to the gun-fired shells above - tail fins give a strong,
+            % genuinely-stabilizing lift-curve slope with no spin needed.
+            m.Aero = Aero3DoF_Longitudinal(0.3, 5.0, 3.14e-4);
+            m.Charge = ChargeFactory.getFixed('Hand-Thrown', 30.0, 1.0);
+            m.Propulsion = []; % Thrown, not fired or motor-propelled
+            m.Sensors    = {};
+            m.Guidance   = [];
+            m.Controller = [];
+        end
+
         %% 25mm Bushmaster Target Practice Tracer (M793)
         function m = create25mmM793()
             m = Munition('25mm_M793');
@@ -56,9 +98,24 @@ classdef MunitionFactory
             m.MassProperties.Mass = 0.185;
             m.MassProperties.Inertia = eye(3) * 1e-4;
 
-            m.Dynamics   = Dynamics3Dof();
-            % S_ref = pi*(0.025/2)^2 = 4.908e-4 m^2
-            m.Aero       = Aero3DoF_Longitudinal(0.18, 1.5, 4.908e-4);
+            m.Dynamics   = Dynamics3DofSpin();
+            % S_ref = pi*(0.025/2)^2 = 4.908e-4 m^2. Rifled/spin-stabilized -
+            % AeroTabulatedSpin with CDA2/CDA4/CLA3 zeroed reproduces the old
+            % CD0/CL_alpha-only buildup, plus illustrative Cl_p/CMagnus_pa.
+            aero = AeroTabulatedSpin();
+            aero.RefArea   = 4.908e-4;
+            aero.RefLength = 0.025;
+            coeffs.CD0        = 0.18;
+            coeffs.CDA2       = 0;
+            coeffs.CDA4       = 0;
+            coeffs.CLA        = 1.5;
+            coeffs.CLA3       = 0;
+            coeffs.Cl_p       = -0.02;
+            coeffs.CMagnus_pa = 0.6;
+            aero.Tables.Clean   = coeffs;
+            aero.ActiveTableKey = 'Clean';
+            m.Aero = aero;
+            m.TwistRate  = 20; % calibers/turn, illustrative
             m.Charge     = ChargeFactory.getFixed('25mm-Fixed', 1100.0, 5.0);
             m.Propulsion = [];
             m.Sensors    = {};
@@ -74,9 +131,25 @@ classdef MunitionFactory
             m.MassProperties.Mass = 0.55;
             m.MassProperties.Inertia = diag([0.0004, 0.006, 0.006]);
 
-            m.Dynamics = Dynamics3Dof();
-            % S_ref = pi*(0.035/2)^2 = 9.62e-4 m^2, typical HE-T CD0 ~ 0.25
-            m.Aero = Aero3DoF_Longitudinal(0.25, 2.0, 9.621e-4);
+            m.Dynamics = Dynamics3DofSpin();
+            % S_ref = pi*(0.035/2)^2 = 9.62e-4 m^2, typical HE-T CD0 ~ 0.25.
+            % Rifled/spin-stabilized - AeroTabulatedSpin with CDA2/CDA4/CLA3
+            % zeroed reproduces the old CD0/CL_alpha-only buildup, plus
+            % illustrative Cl_p/CMagnus_pa.
+            aero = AeroTabulatedSpin();
+            aero.RefArea   = 9.621e-4;
+            aero.RefLength = 0.035;
+            coeffs.CD0        = 0.25;
+            coeffs.CDA2       = 0;
+            coeffs.CDA4       = 0;
+            coeffs.CLA        = 2.0;
+            coeffs.CLA3       = 0;
+            coeffs.Cl_p       = -0.025;
+            coeffs.CMagnus_pa = 0.8;
+            aero.Tables.Clean   = coeffs;
+            aero.ActiveTableKey = 'Clean';
+            m.Aero = aero;
+            m.TwistRate = 25; % calibers/turn, illustrative
             m.Charge = ChargeFactory.getFixed('35mm-Fixed', 1175.0, 4.0);
             m.Propulsion = []; % Pure ballistic, no motor
             m.Sensors    = {};
@@ -92,9 +165,9 @@ classdef MunitionFactory
             m.MassProperties.Mass = 6.0;
             m.MassProperties.Inertia = diag([0.006, 0.085, 0.085]);
 
-            m.Dynamics = Dynamics3Dof();
+            m.Dynamics = Dynamics3DofSpin();
 
-            aero = AeroTabulated();
+            aero = AeroTabulatedSpin();
             aero.RefArea   = pi * (0.076/2)^2; % 0.004536 m^2
             aero.RefLength = 0.076;
 
@@ -119,9 +192,15 @@ classdef MunitionFactory
 
             coeffs.CLA3 = struct('Type', 'Polynomial', 'a0', -8.0, 'a1', 1.5);
 
+            % Spin-stabilized extras (AeroTabulatedSpin) - illustrative
+            % constants, same caveat as the CD/CL buildup above.
+            coeffs.Cl_p       = -0.03;
+            coeffs.CMagnus_pa = 1.0;
+
             aero.Tables.Clean   = coeffs;
             aero.ActiveTableKey = 'Clean';
             m.Aero = aero;
+            m.TwistRate = 25; % calibers/turn, illustrative
             m.Charge = ChargeFactory.getFixed('76mm-Fixed', 800.0, 3.5);
 
             m.Propulsion = []; % Pure ballistic, no motor
@@ -140,17 +219,32 @@ classdef MunitionFactory
             m.MassProperties.Mass = 45.0;
             m.MassProperties.Inertia = diag([0.15, 1.7, 1.7]);
 
-            m.Dynamics = Dynamics3Dof();
+            m.Dynamics = Dynamics3DofSpin();
             % Same bore/S_ref as M107; slightly lower baseline CD0 is
             % typical of modern extended-range shell shaping even before
-            % the base-bleed reduction is applied on top.
-            aero = Aero3DoF_Longitudinal(0.21, 2.5, 0.01887);
+            % the base-bleed reduction is applied on top. Same rifled/
+            % spin-stabilized treatment as M107 - AeroTabulatedSpin with
+            % CDA2/CDA4/CLA3 zeroed reproduces the old CD0/CL_alpha-only
+            % buildup, plus illustrative Cl_p/CMagnus_pa.
+            aero = AeroTabulatedSpin();
+            aero.RefArea   = 0.01887;
+            aero.RefLength = 0.155;
+            coeffs.CD0        = 0.21;
+            coeffs.CDA2       = 0;
+            coeffs.CDA4       = 0;
+            coeffs.CLA        = 2.5;
+            coeffs.CLA3       = 0;
+            coeffs.Cl_p       = -0.03;
+            coeffs.CMagnus_pa = 1.2;
+            aero.Tables.Clean   = coeffs;
+            aero.ActiveTableKey = 'Clean';
             % Very basic base-bleed model (see Propulsion_DYU): a fixed
             % fractional CD0 reduction for BurnDuration seconds, full drag
             % after burnout. Values are illustrative, not from a gas-
             % generator burn-rate model.
             aero.BaseBleed = Propulsion_DYU(30.0, 0.25);
             m.Aero = aero;
+            m.TwistRate = 20; % calibers/turn, illustrative (same tube family as M107)
             m.Charge = ChargeFactory.getDM92(charge_name);
 
             m.Propulsion = []; % Pure ballistic, no gun-launch motor

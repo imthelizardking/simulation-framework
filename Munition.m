@@ -10,14 +10,29 @@ classdef Munition < handle
         Controller                = []  % Holds instance of BaseController subclass
         Charge                    = []  % Holds a ChargeZone (gun-fired munitions only; empty for rocket motors)
         MassProperties struct     = struct('Mass', 3.0, 'Inertia', eye(3))
+        TwistRate      (1,1) double = 0.0 % rifling twist, calibers/turn; 0 = not applicable (fin-stabilized/no spin)
         LastGNCBus     struct     = struct()
     end
-    
+
     methods
         function obj = Munition(name)
             if nargin > 0, obj.Name = name; end
         end
-        
+
+        function X0 = buildLaunchState(obj, launcher_pos, v0, elevation, azimuth)
+            % Assembles the Dynamics-specific launch state, adding the
+            % muzzle spin rate (from TwistRate + the round's bore
+            % diameter) on top for a Dynamics3DofSpin munition - so
+            % callers get one call site regardless of whether the munition
+            % spins or not.
+            if isa(obj.Dynamics, 'Dynamics3DofSpin') && obj.TwistRate > 0
+                spin0 = Dynamics3DofSpin.spinRateFromTwist(v0, obj.TwistRate, obj.Aero.RefLength);
+                X0 = obj.Dynamics.buildLaunchState(launcher_pos, v0, elevation, azimuth, obj.MassProperties.Mass, spin0);
+            else
+                X0 = obj.Dynamics.buildLaunchState(launcher_pos, v0, elevation, azimuth, obj.MassProperties.Mass);
+            end
+        end
+
         function updateGNC(obj, t, env, target)
             sensor_bus = struct();
             for i = 1:numel(obj.Sensors)

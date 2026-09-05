@@ -1,15 +1,109 @@
 classdef DynamicsMPMM < BaseDynamics
-    % Blueprint: Modified Point-Mass Model (STANAG 4355-style). Meant to
-    % integrate only position/velocity/spin; IDX_EULER is meant to be
-    % derived algebraically (yaw of repose) rather than integrated.
-    % computeDerivatives is an interface-only stub, not yet implemented.
+    % Blueprint: Modified Point-Mass Model (STANAG 4355-style) for
+    % spin-stabilized projectiles. Integrates position, velocity, and spin
+    % rate (IDX_BODYRATE(1)); IDX_EULER is deliberately left unintegrated
+    % (its derivative is held at zero) and is instead available on demand
+    % via computeYawOfRepose()/yawOfReposeForce() - the quasi-steady
+    % attitude offset that would need a coupled Aero model (feeding
+    % delta_r back in as an effective angle of attack) to actually drive
+    % F_aero. That coupling isn't wired up yet, so this class isn't
+    % attached to any MunitionFactory preset - see Dynamics3DofSpin +
+    % AeroTabulatedSpin for the simpler, already-wired spin treatment
+    % (integrated spin + Magnus force, no yaw-of-repose feedback either).
+    % mass_prop.Inertia is expected in the same diag([Ix,Iy,Iz])
+    % convention MunitionFactory already uses elsewhere.
+    properties
+        RefArea   (1,1) double = 0.01887 % S_ref (m^2)
+        RefLength (1,1) double = 0.155   % d_ref (m)
+        % Overturning moment coefficient slope (per rad). POSITIVE for a
+        % spin-stabilized shell (destabilizing without spin) - opposite
+        % sign convention from a fin-stabilized body's restoring Cm_alpha.
+        % Scalar, or a Mach-dependent Table/Polynomial struct (see
+        % BaseAero.evalCoeff).
+        CMalpha = 2.0
+        % Normal-force coefficient slope (per rad), same representation
+        % options as CMalpha - converts a yaw-of-repose angle into the
+        % resulting side force in yawOfReposeForce().
+        CLalpha = 2.5
+    end
+
     methods
         function obj = DynamicsMPMM()
             obj.StateDimension = BaseDynamics.FULL_STATE_DIM;
         end
 
-        function dX = computeDerivatives(~, ~, ~, ~, ~, ~, ~)
+        function dX = computeDerivatives(~, ~, X, forces, moments, mass_prop, m_dot)
+            m  = mass_prop.Mass;
+            Ix = mass_prop.Inertia(1,1);
+
+            F_total = forces.Aero + forces.Propulsion + [0; 0; -m * 9.81];
+
             dX = zeros(BaseDynamics.FULL_STATE_DIM, 1);
+            dX(BaseDynamics.IDX_POS) = X(BaseDynamics.IDX_VEL);
+            dX(BaseDynamics.IDX_VEL) = F_total / m;
+            % Spin-damping moment about the (velocity-aligned) spin axis;
+            % valid while the yaw of repose stays small. IDX_EULER stays
+            % algebraic (see class comment), so its derivative is left at
+            % zero here rather than integrated.
+            dX(BaseDynamics.IDX_BODYRATE(1)) = moments.Aero(1) / Ix;
+            dX(BaseDynamics.IDX_MASS) = m_dot;
+        end
+
+        function delta_r = computeYawOfRepose(obj, X, env, mass_prop)
+            % Quasi-steady "yaw of repose": the small equilibrium angle
+            % between a spin-stabilized shell's nose axis and its velocity
+            % vector, caused by gyroscopic precession balancing the
+            % overturning moment against the rate gravity curves the
+            % trajectory (see e.g. McCoy, "Modern Exterior Ballistics", or
+            % Carlucci & Jacobson, "Ballistics: Theory and Design of Guns
+            % and Ammunition"). At equilibrium the gyroscopic moment from
+            % spin balances the aerodynamic overturning moment:
+            %
+            %   I_x * p * Omega = M_alpha(delta_r)
+            %
+            % and with a locally-linear overturning moment
+            % M_alpha = q_bar*S*d*CMalpha*delta_r, solving for delta_r:
+            %
+            %   delta_r = (I_x * p * Omega) / (q_bar * S * d * CMalpha)
+            %
+            % where Omega = (v x g) / |v|^2 is the vector rate at which
+            % gravity curves the velocity vector. This is the classical
+            % source of "spin drift": the resulting normal force
+            % q_bar*S*CLalpha*delta_r (see yawOfReposeForce) pushes the
+            % shell sideways, not just down.
+            flow  = BaseAero.computeFlowState(X, env);
+            vel   = flow.vel;
+            v_mag = flow.v_mag;
+            if v_mag < 1e-3
+                delta_r = [0; 0; 0];
+                return;
+            end
+            p     = X(BaseDynamics.IDX_BODYRATE(1));
+            Ix    = mass_prop.Inertia(1,1);
+            g_vec = [0; 0; -env.Gravity];
+            Omega = cross(vel, g_vec) / v_mag^2;
+            q_bar = flow.q_bar;
+            CMa   = BaseAero.evalCoeff(obj.CMalpha, flow.mach);
+            denom = q_bar * obj.RefArea * obj.RefLength * CMa;
+            if abs(denom) < 1e-9
+                delta_r = [0; 0; 0];
+                return;
+            end
+            delta_r = (Ix * p / denom) * Omega;
+        end
+
+        function F_side = yawOfReposeForce(obj, X, env, mass_prop)
+            % Normal force generated by the yaw of repose - the classical,
+            % typically-dominant source of spin drift (distinct from the
+            % separate Magnus force AeroTabulatedSpin models).
+            delta_r = obj.computeYawOfRepose(X, env, mass_prop);
+            flow    = BaseAero.computeFlowState(X, env);
+            if flow.v_mag < 1e-3
+                F_side = [0; 0; 0];
+                return;
+            end
+            CLa   = BaseAero.evalCoeff(obj.CLalpha, flow.mach);
+            F_side = flow.q_bar * obj.RefArea * CLa * delta_r;
         end
     end
 end

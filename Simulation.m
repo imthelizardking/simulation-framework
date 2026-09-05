@@ -105,7 +105,22 @@ classdef Simulation < handle
                     'Environment',  obj.Environment, ...
                     'Designator',   des_bus, ...
                     'GroundUplink', uplink_data);
-                
+
+                % Re-authoritative CurrentState before GNC reads it: the
+                % integrator's derivative evaluations (RK4's intermediate
+                % k1..k4 sub-steps) set Dynamics.CurrentState as a side
+                % effect of every call, so by this point in the loop it
+                % holds whichever sub-step X was last evaluated at during
+                % the PREVIOUS iteration's integration - not the properly
+                % combined X this iteration actually starts from. Guidance/
+                % sensors must see the real current state, not that stale
+                % intermediate value.
+                if isprop(obj.Munition, 'Dynamics') && ~isempty(obj.Munition.Dynamics)
+                    obj.Munition.Dynamics.CurrentState = X;
+                elseif isprop(obj.Munition, 'CurrentState')
+                    obj.Munition.CurrentState = X;
+                end
+
                 if ismethod(obj.Munition, 'updateGNC')
                     obj.Munition.updateGNC(t, obj.Environment, tgt_bus);
                 end

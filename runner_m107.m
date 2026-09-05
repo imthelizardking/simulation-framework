@@ -29,8 +29,7 @@ fprintf('Predicted Flight Time   : %.2f s\n', sol.TimeOfFlight);
 fprintf('Convergence Miss Error  : %.3f m\n', sol.MissDistance);
 
 % 5. Apply Solved Initial State to Munition
-shell.Dynamics.InitialState = shell.Dynamics.buildLaunchState(...
-    launcher_pos, v0_charge7, sol.Elevation, sol.Azimuth, shell.MassProperties.Mass);
+shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0_charge7, sol.Elevation, sol.Azimuth);
 
 % 6. Assemble Simulation & Execute
 % NOTE: no Visualizer attached - LiveEngagementPlotter works fine against

@@ -9,7 +9,7 @@ classdef LongitudinalFinController < BaseController
             gamma = atan2(vel(3), vel(1));
             alpha = pitch - gamma;
             
-            q_bar = 0.5 * env.Density * v_mag^2;
+            q_bar = 0.5 * env.getDensity(nav_state(3)) * v_mag^2;
             denom = q_bar * veh_cfg.Aero.CL_alpha * veh_cfg.Aero.RefArea;
             
             if denom < 1e-6

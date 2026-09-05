@@ -40,5 +40,31 @@ classdef (Abstract) BaseAero < handle
                     error('BaseAero:evalCoeff', 'Unknown aero coefficient Type: %s', coeff.Type);
             end
         end
+
+        function flow = computeFlowState(X, env)
+            % Shared velocity/Mach/dynamic-pressure calculation every
+            % concrete Aero (and DynamicsMPMM's yaw-of-repose) class needs -
+            % reads density/speed-of-sound at the current altitude (X(3),
+            % Z-up) from env rather than duplicating this per class.
+            % vel_dir/gamma are zeroed when v_mag is ~0 rather than
+            % producing NaN; callers still decide their own "too slow to
+            % matter" early-return threshold.
+            vel   = X(4:6);
+            v_mag = norm(vel);
+            altitude = X(3);
+
+            flow.vel   = vel;
+            flow.v_mag = v_mag;
+            flow.mach  = v_mag / env.getSpeedOfSound(altitude);
+            flow.q_bar = 0.5 * env.getDensity(altitude) * v_mag^2;
+
+            if v_mag > 1e-3
+                flow.vel_dir = vel / v_mag;
+                flow.gamma   = atan2(vel(3), vel(1));
+            else
+                flow.vel_dir = [0; 0; 0];
+                flow.gamma   = 0;
+            end
+        end
     end
 end

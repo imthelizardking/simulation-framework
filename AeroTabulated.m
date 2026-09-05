@@ -13,21 +13,18 @@ classdef AeroTabulated < BaseAero
     end
     methods
         function [F_aero, M_aero] = getForcesAndMoments(obj, t, X, env, fin_deflection)
-            vel   = X(4:6);
             pitch = X(7);
-            v_mag = norm(vel);
 
-            if v_mag < 1e-3
+            flow = BaseAero.computeFlowState(X, env);
+            if flow.v_mag < 1e-3
                 F_aero = [0; 0; 0];
                 M_aero = [0; 0; 0];
                 return;
             end
-
-            vel_dir = vel / v_mag;
-            gamma   = atan2(vel(3), vel(1));
-            alpha   = (pitch - gamma) + fin_deflection;
-            mach    = v_mag / env.SpeedOfSound;
-            q_bar   = 0.5 * env.Density * v_mag^2;
+            vel_dir = flow.vel_dir;
+            mach    = flow.mach;
+            q_bar   = flow.q_bar;
+            alpha   = (pitch - flow.gamma) + fin_deflection;
 
             coeffs = obj.Tables.(obj.ActiveTableKey);
             CD0_v  = BaseAero.evalCoeff(coeffs.CD0,  mach);

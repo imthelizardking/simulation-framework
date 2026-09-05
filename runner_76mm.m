@@ -34,8 +34,7 @@ fprintf('Azimuth                  : %.2f deg\n', rad2deg(sol.Azimuth));
 fprintf('Predicted Intercept Time : %.3f s\n', sol.TimeOfFlight);
 
 % 5. Apply Solved Initial State
-shell.Dynamics.InitialState = shell.Dynamics.buildLaunchState(...
-    launcher_pos, v0, sol.Elevation, sol.Azimuth, shell.MassProperties.Mass);
+shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0, sol.Elevation, sol.Azimuth);
 
 % 6. Assemble Simulation & Execute. Unguided direct-fire round with no
 %    terminal correction - ImpactDistance is a large-HE proximity-effect
@@ -59,7 +58,8 @@ final_pos = telemetry.pos(end, :)';
 final_tgt = telemetry.target_pos(end, :)';
 miss_dist = norm(final_pos - final_tgt);
 [apogee, apogee_idx] = max(telemetry.pos(:,3));
-max_mach = max(vecnorm(telemetry.vel, 2, 2)) / env.SpeedOfSound;
+speed_of_sound_series = arrayfun(@(h) env.getSpeedOfSound(h), telemetry.pos(:,3));
+max_mach = max(vecnorm(telemetry.vel, 2, 2) ./ speed_of_sound_series);
 
 fprintf('Termination Reason  : %s\n', sim.TerminationReason);
 fprintf('Apogee              : %.1f m at t=%.2f s\n', apogee, telemetry.time(apogee_idx));
