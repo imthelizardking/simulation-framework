@@ -2,7 +2,7 @@
 classdef Simulation < handle
     properties
         Munition                  = []  % Munition container OR raw BaseDynamics object
-        Target                    = []  % BaseTarget subclass OR struct
+        Target                    = []  % TargetBase subclass OR struct
         Environment               = []  % Environment object
         Designator                = []  % BaseDesignator subclass (optional)
         GroundStation             = []  % GroundStation object (optional)
@@ -22,8 +22,19 @@ classdef Simulation < handle
             'ImpactDistance', [], ...   % m;  stop once within this of target
             'MinAltitude',    0, ...    % m;  stop on descending through this
             'MaxAltitude',    [], ...   % m;  stop on climbing through this
-            'MaxDownrange',   [])       % m;  stop this far past target in X
+            'MaxDownrange',   [], ...   % m;  stop this far past target in X
+            'PassedTarget',   false)    % stop once range-to-target starts increasing (closest approach is behind it) - see evalTerminationCriteria
         TerminationReason (1,:) char = ''
+        LastState          double       = []  % X at the moment run() terminated - needed by triggerFragmentation
+        % Fragmentation hand-off (only used if Munition.BurstTime is set -
+        % see checkTermination/triggerFragmentation): once the main flight
+        % terminates with reason 'Burst', run() hands off to a
+        % ParticleSwarmSimulation built from Munition.spawnParticles.
+        ParticleVisualizer     = []  % BaseVisualizer subclass for the post-burst swarm phase
+        ParticleTermination    struct = struct()  % overrides ParticleSwarmSimulation's default Termination if non-empty
+        ParticleTimeSpan  (1,2) double = [0 15]
+        ParticleDt              double = []  % [] = reuse obj.Dt
+        ParticleSwarm           = []  % holds the resulting ParticleSwarmSimulation after triggerFragmentation
     end
     
     methods
@@ -145,49 +156,57 @@ classdef Simulation < handle
                 end
                 
                 % Check Termination Criteria
-                [is_term, term_reason] = obj.checkTermination(t, X, tgt_bus.pos);
+                [is_term, term_reason] = obj.checkTermination(t, X, tgt_bus.pos, tgt_bus.vel);
                 if is_term
                     obj.TerminationReason = term_reason;
+                    obj.LastState = X;
                     break;
                 end
 
                 % Integrate
                 X = obj.Integrator.step(@(tt, XX) obj.evalDerivatives(tt, XX), t, X, dt);
             end
-            
+
             % Truncate telemetry
             fields = fieldnames(tel);
             for i = 1:numel(fields)
                 tel.(fields{i}) = tel.(fields{i})(1:step_count, :);
             end
             obj.Telemetry = tel;
-        end
-        
-        function [is_term, reason] = checkTermination(obj, t, X, target_pos)
-            % Evaluates each enabled criterion in obj.Termination (any field
-            % left [] is skipped) and stops on the first one that trips.
-            % MinAltitude/MaxAltitude read X(3) directly, so they assume
-            % whichever vertical-axis convention the active Dynamics model
-            % uses (the legacy 3DoF model and FireControlComputer use Z-up).
-            is_term = false;
-            reason  = '';
-            T = obj.Termination;
 
-            if ~isempty(T.MaxTime) && t >= T.MaxTime
-                is_term = true; reason = 'MaxTime'; return;
+            if strcmp(obj.TerminationReason, 'Burst')
+                obj.triggerFragmentation();
             end
-            if ~isempty(T.ImpactDistance) && norm(target_pos - X(1:3)) < T.ImpactDistance
-                is_term = true; reason = 'ImpactDistance'; return;
+        end
+
+        function [is_term, reason] = checkTermination(obj, t, X, target_pos, target_vel)
+            % Burst preempts the standard criteria: it isn't a hit/miss
+            % read on the parent body, it's a hand-off to the fragment
+            % swarm (see triggerFragmentation), so it must win any
+            % coincidental tie with e.g. MinAltitude at the same step.
+            if isa(obj.Munition, 'Munition') && ~isempty(obj.Munition.BurstTime) && t >= obj.Munition.BurstTime
+                is_term = true; reason = 'Burst'; return;
             end
-            if ~isempty(T.MinAltitude) && X(3) < T.MinAltitude && norm(X(4:6)) > 0
-                is_term = true; reason = 'MinAltitude'; return;
+            [is_term, reason] = Simulation.evalTerminationCriteria(obj.Termination, t, X, target_pos, target_vel);
+        end
+
+        function triggerFragmentation(obj)
+            % Hands off from the just-terminated single-body flight to a
+            % lockstep multi-particle swarm phase (see spawnParticles for
+            % the burst kinematics, ParticleSwarmSimulation for the
+            % per-particle lockstep loop).
+            particles = obj.Munition.spawnParticles(obj.LastState, obj.Environment);
+
+            dt = obj.Dt;
+            if ~isempty(obj.ParticleDt), dt = obj.ParticleDt; end
+
+            swarm = ParticleSwarmSimulation(particles, obj.Target, obj.Environment, obj.ParticleTimeSpan, dt);
+            if ~isempty(fieldnames(obj.ParticleTermination))
+                swarm.Termination = obj.ParticleTermination;
             end
-            if ~isempty(T.MaxAltitude) && X(3) > T.MaxAltitude
-                is_term = true; reason = 'MaxAltitude'; return;
-            end
-            if ~isempty(T.MaxDownrange) && (X(1) - target_pos(1)) > T.MaxDownrange
-                is_term = true; reason = 'MaxDownrange'; return;
-            end
+            swarm.Visualizer = obj.ParticleVisualizer;
+            swarm.run();
+            obj.ParticleSwarm = swarm;
         end
 
         function dX = evalDerivatives(obj, t, X)
@@ -216,6 +235,54 @@ classdef Simulation < handle
             else
                 tgt_bus = struct('pos', [0;0;0], 'vel', [0;0;0], 'accel', [0;0;0], ...
                                  'LaserReflectivity', 0.3, 'ThermalSignature', 300, 'RCS', 1.0);
+            end
+        end
+    end
+
+    methods (Static)
+        function [is_term, reason] = evalTerminationCriteria(T, t, X, target_pos, target_vel)
+            % Shared by Simulation.checkTermination and
+            % ParticleSwarmSimulation (each fragment is checked against the
+            % same criteria shape - ImpactDistance = "meets the target",
+            % MinAltitude/MaxDownrange/PassedTarget = "loses its chance").
+            % Evaluates each enabled criterion in T (any field left []/false
+            % is skipped) and stops on the first one that trips.
+            % MinAltitude/MaxAltitude read X(3) directly, so they assume
+            % whichever vertical-axis convention the active Dynamics model
+            % uses (Z-up here).
+            is_term = false;
+            reason  = '';
+
+            if ~isempty(T.MaxTime) && t >= T.MaxTime
+                is_term = true; reason = 'MaxTime'; return;
+            end
+            if ~isempty(T.ImpactDistance) && norm(target_pos - X(1:3)) < T.ImpactDistance
+                is_term = true; reason = 'ImpactDistance'; return;
+            end
+            if ~isempty(T.MinAltitude) && X(3) < T.MinAltitude && norm(X(4:6)) > 0
+                is_term = true; reason = 'MinAltitude'; return;
+            end
+            if ~isempty(T.MaxAltitude) && X(3) > T.MaxAltitude
+                is_term = true; reason = 'MaxAltitude'; return;
+            end
+            if isfield(T, 'PassedTarget') && T.PassedTarget
+                % d(range)/dt = (los . v_rel) / range, where los points
+                % from the body to the target and v_rel is the target's
+                % velocity relative to the body. >= 0 means range is no
+                % longer shrinking - closest approach is already behind
+                % it, so any hit is already reflected in ImpactDistance
+                % above and it will only diverge from here.
+                los = target_pos - X(1:3);
+                range_now = norm(los);
+                if range_now > 1e-6
+                    closing_rate = dot(los, target_vel - X(4:6)) / range_now;
+                    if closing_rate >= 0
+                        is_term = true; reason = 'PassedTarget'; return;
+                    end
+                end
+            end
+            if ~isempty(T.MaxDownrange) && (X(1) - target_pos(1)) > T.MaxDownrange
+                is_term = true; reason = 'MaxDownrange'; return;
             end
         end
     end

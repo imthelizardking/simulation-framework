@@ -12,6 +12,8 @@ classdef Munition < handle
         MassProperties struct     = struct('Mass', 3.0, 'Inertia', eye(3))
         TwistRate      (1,1) double = 0.0 % rifling twist, calibers/turn; 0 = not applicable (fin-stabilized/no spin)
         LastGNCBus     struct     = struct()
+        BurstTime                 = []  % s since launch at which fragmentation triggers; [] = never bursts
+        ParticleModel             = []  % BaseParticleModel subclass instance, consumed by spawnParticles
     end
 
     methods
@@ -88,6 +90,71 @@ classdef Munition < handle
             moments.Aero         = M_aero;
             
             dX = obj.Dynamics.computeDerivatives(t, X, forces, moments, obj.MassProperties, m_dot);
+        end
+
+        function particles = spawnParticles(obj, X, ~)
+            % Releases obj.ParticleModel's particles at burst state X.
+            % Builds a body frame from the velocity vector: forward/spin
+            % axis = velocity unit vector, same coincident-spin-axis
+            % assumption Dynamics3DofSpin already documents, so this adds
+            % no new approximation. The lateral axes are an arbitrary (but
+            % consistent) Gram-Schmidt completion - the particle pattern is
+            % rotationally symmetric about this axis, so the true (untracked)
+            % roll angle at burst has no physical effect on the result.
+            %
+            % Each particle's velocity is rigid-body kinematics
+            % v = v_cg + spin_rate*(fwd x r) plus the model's own
+            % ejectionVelocities() (zero for ForwardExplosionParticleModel).
+            if isempty(obj.ParticleModel)
+                error('Munition:spawnParticles', '%s has no ParticleModel set.', obj.Name);
+            end
+
+            pos = X(1:3);
+            vel = X(4:6);
+            v_mag = norm(vel);
+            if v_mag > 1e-3
+                fwd = vel / v_mag;
+            else
+                fwd = [1; 0; 0];
+            end
+            if numel(X) >= 9
+                spin_rate = X(9);
+            else
+                spin_rate = 0.0;
+            end
+
+            up_ref = [0; 0; 1];
+            if abs(dot(fwd, up_ref)) > 0.99
+                up_ref = [1; 0; 0];
+            end
+            lat1 = cross(up_ref, fwd); lat1 = lat1 / norm(lat1);
+            lat2 = cross(fwd, lat1);
+            R = [fwd, lat1, lat2]; % body -> world, columns are body axes in world coords
+
+            model = obj.ParticleModel;
+            n = model.numParticles();
+            v_ejection_body = model.ejectionVelocities();
+
+            particles = cell(n, 1);
+            for i = 1:n
+                r_world = R * model.Positions(i, :)';
+                v_kick_world = R * v_ejection_body(i, :)';
+                v_spin_world = cross(spin_rate * fwd, r_world);
+
+                p_pos = pos + r_world;
+                p_vel = vel + v_spin_world + v_kick_world;
+
+                p = Particle(sprintf('%s_Frag%03d', obj.Name, i), ...
+                    model.Shape, model.Dimensions, model.CD, model.ReferenceAreaMode, model.ParticleMass);
+
+                pitch0 = 0.0;
+                if norm(p_vel) > 1e-3
+                    pitch0 = atan2(p_vel(3), p_vel(1));
+                end
+                p.Dynamics.InitialState = [p_pos; p_vel; pitch0; model.ParticleMass];
+
+                particles{i} = p;
+            end
         end
     end
 end

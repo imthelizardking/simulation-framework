@@ -27,14 +27,32 @@ concrete implementations selected per scenario:
 | Guidance | `BaseGuidance` | `OptimalAngleFOVGuidance`, `SeekerLOAL` |
 | Control | `BaseController` | `LongitudinalFinController` |
 | Sensors | `BaseSensor` | `OffboardRadar`, `DataLinkReceiver` |
-| Targets | `BaseTarget` | `StaticTarget`, `ConstantVelocityTarget` |
+| Targets | `TargetBase` | `TargetStatic`, `TargetConstantVelocity` |
 | Integration | `BaseIntegrator` | `RK4FixedStep`, `RK4AdaptiveNearEncounter` |
-| Visualization | `BaseVisualizer` | `LiveEngagementPlotter` |
+| Visualization | `BaseVisualizer` | `LiveEngagementPlotter`, `ParticleSwarmPlotter` |
+| Fragmentation | `BaseParticleModel` | `ForwardExplosionParticleModel` |
 
 Everything is wired together by [`Simulation.m`](Simulation.m), which steps the target,
 designator, ground station, and munition GNC/dynamics in lockstep, logs telemetry each
 step, and stops on the first tripped termination criterion (impact, altitude bounds,
 max downrange, or max time).
+
+A `Munition` can optionally carry a `BurstTime` and a `ParticleModel`
+([`BaseParticleModel.m`](BaseParticleModel.m)): once `Simulation.run()` reaches
+`BurstTime`, the single-body flight stops and `Munition.spawnParticles`
+releases a swarm of `Particle`s (`Particle < Munition`, flying under
+`Dynamics3Dof` + the drag-only `AeroParticle`, no lift/GNC) - each fragment
+inherits the parent's forward velocity plus a spin-induced side velocity
+(`v = v_cg + spin_rate x r`), per the one particle-release model implemented
+so far, [`ForwardExplosionParticleModel.m`](ForwardExplosionParticleModel.m).
+[`ParticleModelFactory.m`](ParticleModelFactory.m) provides ready-made
+cylindrical fragment layouts for 25mm/35mm/76mm rounds.
+[`ParticleSwarmSimulation.m`](ParticleSwarmSimulation.m) then runs every
+fragment lockstep (each with its own drag coefficient and reference area,
+selectable as the shape's minimum or maximum presented cross-section via
+`ReferenceAreaMode`) until it reaches the target or loses its chance, shown
+live in a second, zoomed-in plot
+([`ParticleSwarmPlotter.m`](ParticleSwarmPlotter.m)).
 
 [`FireControlComputer.m`](FireControlComputer.m) solves for the launch elevation/azimuth
 and predicted time-of-flight needed to hit a given target (numerical shooting solver over
@@ -68,6 +86,7 @@ a munition (via `MunitionFactory`), solve or specify the launch conditions, run 
 | [`runner_76mm.m`](runner_76mm.m) | 76mm naval HE |
 | [`runner_fin_stabilized_dart.m`](runner_fin_stabilized_dart.m) | Fin-stabilized kinetic dart |
 | [`runner_sam_engagement.m`](runner_sam_engagement.m) | Laser/seeker-guided intercept engagement |
+| [`runner_35mm_fragmentation.m`](runner_35mm_fragmentation.m) | 35mm HE burst mid-flight into a fragment swarm vs. anti-drone target |
 
 Run any of them directly in MATLAB from the repo root, e.g.:
 
