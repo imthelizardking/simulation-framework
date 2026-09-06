@@ -33,7 +33,7 @@ fprintf('\nMunitionFactory.createMOD274 coefficients confirmed overridden by Fac
 %% 3. Fire it (fixed QE - the test drag values are too high for the
 %    FireControlComputer's normal 25 km shooting solution to converge)
 env = Environment(1.225, 9.81, [0; 0; 0]);
-target = StaticTarget([3000; 0; 0]); % nominal only - not solved for
+target = TargetStatic([3000; 0; 0]); % nominal only - not solved for
 launcher_pos = [0; 0; 0];
 v0 = shell.Charge.MuzzleVelocity;
 elevation = deg2rad(45);

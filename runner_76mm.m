@@ -7,7 +7,7 @@ env = Environment(1.225, 9.81, [0; 0; 0]);
 % 2. Setup Target: same inbound target as runner_sam_engagement.m (the
 %    "drone" used there), so the 76mm gun and the guided interceptor can
 %    be compared against an identical threat.
-target = ConstantVelocityTarget([8000; 0; 3000], [-250; 0; 0]);
+target = TargetConstantVelocity([8000; 0; 3000], [-250; 0; 0]);
 
 % 3. Instantiate Vehicle via MunitionFactory (uses AeroTabulated - see
 %    MunitionFactory.create76mmHE for the full CD0/CDA2/CDA4/CLA/CLA3

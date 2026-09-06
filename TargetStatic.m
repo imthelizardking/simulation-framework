@@ -1,9 +1,9 @@
-%% File: StaticTarget.m
-classdef StaticTarget < BaseTarget
+%% File: TargetStatic.m
+classdef TargetStatic < TargetBase
     methods
-        function obj = StaticTarget(pos, reflectivity)
+        function obj = TargetStatic(pos, reflectivity)
             if nargin < 1, pos = [0; 0; 0]; end
-            obj@BaseTarget('StaticTarget', pos, [0; 0; 0]);
+            obj@TargetBase('TargetStatic', pos, [0; 0; 0]);
             if nargin > 1, obj.LaserReflectivity = reflectivity; end
         end
         

@@ -1,9 +1,9 @@
-%% File: ConstantVelocityTarget.m
-classdef ConstantVelocityTarget < BaseTarget
+%% File: TargetConstantVelocity.m
+classdef TargetConstantVelocity < TargetBase
     methods
-        function obj = ConstantVelocityTarget(pos, vel)
+        function obj = TargetConstantVelocity(pos, vel)
             if nargin < 2, vel = [0; 0; 0]; end
-            obj@BaseTarget('ConstantVelocityTarget', pos, vel);
+            obj@TargetBase('TargetConstantVelocity', pos, vel);
         end
 
         function step(obj, ~, dt, ~)

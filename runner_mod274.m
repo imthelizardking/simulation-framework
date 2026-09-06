@@ -6,7 +6,7 @@ env = Environment(1.225, 9.81, [0; 0; 0]); % No wind - isolate the base-bleed ef
 
 % 2. Setup Target: 25 km downrange - well beyond M107's ~21 km max range
 %    at comparable charge energy, which is exactly the point of base bleed.
-target = StaticTarget([25000; 0; 0]);
+target = TargetStatic([25000; 0; 0]);
 
 % 3. Instantiate Vehicle via MunitionFactory (DM92 6M = 943 m/s, the
 %    munition's rated maximum; see MunitionFactory.createMOD274)

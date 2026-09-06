@@ -7,7 +7,7 @@ env = Environment(1.225, 9.81, [0; 0; 0]);
 % 2. Setup Target: small commercial quadcopter (DJI-class), level flight
 %    at a typical cruise speed (~14 m/s here), crossing/closing on the gun
 %    position at a modest patrol altitude.
-target = ConstantVelocityTarget([1000; 200; 120], [-12; 8; 0]);
+target = TargetConstantVelocity([1000; 200; 120], [-12; 8; 0]);
 
 % 3. Instantiate Munition via MunitionFactory
 round = MunitionFactory.create35mmHE();

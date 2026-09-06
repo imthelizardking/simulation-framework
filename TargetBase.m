@@ -1,5 +1,5 @@
-%% File: BaseTarget.m
-classdef (Abstract) BaseTarget < handle
+%% File: TargetBase.m
+classdef (Abstract) TargetBase < handle
     properties
         Name              (1,:) char   = 'Target'
         Position          (3,1) double = [0; 0; 0]
@@ -11,7 +11,7 @@ classdef (Abstract) BaseTarget < handle
     end
     
     methods
-        function obj = BaseTarget(name, pos, vel)
+        function obj = TargetBase(name, pos, vel)
             if nargin > 0, obj.Name = name; end
             if nargin > 1, obj.Position = pos; end
             if nargin > 2, obj.Velocity = vel; end

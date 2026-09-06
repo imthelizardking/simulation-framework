@@ -5,7 +5,7 @@ clear; clc; close all;
 env = Environment(1.225, 9.81, [0; 0; 0]);
 
 % 2. Setup Target: same DJI-class drone as runner_35mm_antidrone.m
-target = ConstantVelocityTarget([1000; 200; 120], [-12; 8; 0]);
+target = TargetConstantVelocity([1000; 200; 120], [-12; 8; 0]);
 
 % 3. Weapon Platform: 35mm twin AA mount (muzzle velocity dispersion,
 %    aiming jitter, traverse limits, cyclic rate all come from here)

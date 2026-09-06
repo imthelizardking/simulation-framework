@@ -5,7 +5,7 @@ clear; clc; close all;
 env = Environment(1.225, 9.81, [0; 0; 0]); % No wind, standard atmosphere
 
 % 2. Setup Inbound Target (constant velocity, closing on the launch site)
-target = ConstantVelocityTarget([8000; 0; 3000], [-250; 0; 0]);
+target = TargetConstantVelocity([8000; 0; 3000], [-250; 0; 0]);
 
 % 3. Instantiate Guided Interceptor via MunitionFactory
 missile = MunitionFactory.createAPKWS();

@@ -16,7 +16,7 @@ classdef FireMission < handle
     properties
         Platform                       % WeaponPlatform
         MunitionBuilder                 % function handle, e.g. @() MunitionFactory.create35mmHE()
-        Target                          % BaseTarget subclass, advanced across the whole mission
+        Target                          % TargetBase subclass, advanced across the whole mission
         Environment                    % Environment
         LauncherPos     (3,1) double = [0;0;0]
         FireMode        (1,:) char   = 'DirectLead' % passed to FireControlComputer.solveFiringAngles
