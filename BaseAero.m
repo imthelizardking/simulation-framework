@@ -10,6 +10,28 @@ classdef (Abstract) BaseAero < handle
     methods (Abstract)
         [F_aero, M_aero] = getForcesAndMoments(obj, t, X, env, fin_deflections)
     end
+    methods
+        function loadTable(obj, name, key)
+            % Loads a named coefficient set from data/<name>.<ext> (any
+            % format FactoryData understands - json/xml/fci/xlsx/mat/txt/
+            % sldd) and stores it under obj.Tables.(key), then makes it
+            % the active table. The loaded struct's fields (CD0, CDA2,
+            % CLA, Cl_p, ...) are whatever the concrete Aero subclass's
+            % getForcesAndMoments expects from Tables.(ActiveTableKey) -
+            % this method doesn't validate shape, it just gets the data
+            % from disk to that property.
+            if nargin < 3 || isempty(key)
+                key = 'Clean';
+            end
+            data = FactoryData.load(name);
+            if isempty(data)
+                error('BaseAero:loadTable', ...
+                    'No data file found for "%s" (looked for data/%s.<ext>)', name, name);
+            end
+            obj.Tables.(key) = data;
+            obj.ActiveTableKey = key;
+        end
+    end
     methods (Static)
         function val = evalCoeff(coeff, mach)
             % Evaluates one aero coefficient at a given Mach number. coeff is:
