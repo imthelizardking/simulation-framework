@@ -28,7 +28,7 @@ fprintf('Launch elevation: %.1f deg\n', rad2deg(launch_elev));
 %    (ImpactDistance) or a clean flyby past the target (MaxDownrange).
 sim = Simulation(missile, target, env, [0 30], 0.005);
 sim.Termination.ImpactDistance = 3.0;
-sim.Termination.MaxDownrange   = 50.0;
+sim.Termination.MaxDownrange   = 500.0;
 sim.Visualizer = LiveEngagementPlotter(20);
 
 fprintf('Starting engagement simulation...\n');
