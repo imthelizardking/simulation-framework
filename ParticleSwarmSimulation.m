@@ -25,7 +25,7 @@ classdef ParticleSwarmSimulation < handle
         % stopping condition.
         Termination struct = struct(...
             'MaxTime',        12.0, ...
-            'ImpactDistance', 2.0, ...
+            'ImpactDistance', 0.05, ...
             'MinAltitude',    0, ...
             'MaxAltitude',    [], ...
             'MaxDownrange',   500.0, ...
@@ -47,9 +47,8 @@ classdef ParticleSwarmSimulation < handle
 
         function tel = run(obj)
             n  = numel(obj.Particles);
-            dt = obj.Dt;
-            time_array = obj.TimeSpan(1):dt:obj.TimeSpan(2);
-            N_steps = numel(time_array);
+            dt_nominal = obj.Dt;
+            t_end = obj.TimeSpan(2);
 
             obj.States = cell(n, 1);
             for i = 1:n
@@ -58,11 +57,16 @@ classdef ParticleSwarmSimulation < handle
             end
             obj.Alive = true(n, 1);
 
+            % Step count isn't known up front once dt varies with range-to-
+            % target (obj.Integrator.computeStepSize), so telemetry starts
+            % sized for a fixed-dt run and grows (doubling) if a particle
+            % needs more samples than that near the target.
+            cap = max(16, ceil((t_end - obj.TimeSpan(1)) / max(dt_nominal, 1e-9)) + 1);
             tel = cell(n, 1);
             for i = 1:n
-                tel{i}.time = zeros(N_steps, 1);
-                tel{i}.pos  = zeros(N_steps, 3);
-                tel{i}.vel  = zeros(N_steps, 3);
+                tel{i}.time = zeros(cap, 1);
+                tel{i}.pos  = zeros(cap, 3);
+                tel{i}.vel  = zeros(cap, 3);
                 tel{i}.steps = 0;
                 tel{i}.TerminationReason = '';
             end
@@ -73,8 +77,20 @@ classdef ParticleSwarmSimulation < handle
                 obj.Visualizer.init(obj.States, tgt_bus, obj.Alive);
             end
 
-            for k = 1:N_steps
-                t = time_array(k);
+            t = obj.TimeSpan(1);
+            while t < t_end
+                % Swarm-wide step size: the minimum obj.Integrator would
+                % pick across all still-alive particles, so a fixed-dt
+                % Integrator behaves exactly as before, and an adaptive one
+                % (e.g. RK4AdaptiveNearEncounter) shrinks dt for the WHOLE
+                % swarm the moment its closest particle needs it - keeping
+                % every particle on the same t each iteration (lockstep),
+                % which a live Visualizer depends on.
+                dt = dt_nominal;
+                alive_idx = find(obj.Alive);
+                for i = alive_idx'
+                    dt = min(dt, obj.Integrator.computeStepSize(t, obj.States{i}, tgt_bus.pos, dt_nominal));
+                end
 
                 if isobject(obj.Target) && ismethod(obj.Target, 'step')
                     obj.Target.step(t, dt, obj.meanAlivePosition());
@@ -86,6 +102,9 @@ classdef ParticleSwarmSimulation < handle
                     X = obj.States{i};
 
                     s = tel{i}.steps + 1;
+                    if s > numel(tel{i}.time)
+                        tel{i} = obj.growTelemetry(tel{i});
+                    end
                     tel{i}.steps  = s;
                     tel{i}.time(s) = t;
                     tel{i}.pos(s, :) = X(1:3)';
@@ -111,6 +130,8 @@ classdef ParticleSwarmSimulation < handle
                 if ~any(obj.Alive)
                     break;
                 end
+
+                t = t + dt;
             end
 
             for i = 1:n
@@ -124,6 +145,13 @@ classdef ParticleSwarmSimulation < handle
     end
 
     methods (Access = private)
+        function tel_i = growTelemetry(~, tel_i)
+            new_cap = numel(tel_i.time) * 2;
+            tel_i.time(end+1:new_cap)   = 0;
+            tel_i.pos(end+1:new_cap, :) = 0;
+            tel_i.vel(end+1:new_cap, :) = 0;
+        end
+
         function tgt_bus = resolveTargetBus(obj)
             if isobject(obj.Target) && ismethod(obj.Target, 'getTargetBus')
                 tgt_bus = obj.Target.getTargetBus();

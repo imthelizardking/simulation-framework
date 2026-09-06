@@ -34,6 +34,7 @@ classdef Simulation < handle
         ParticleTermination    struct = struct()  % overrides ParticleSwarmSimulation's default Termination if non-empty
         ParticleTimeSpan  (1,2) double = [0 15]
         ParticleDt              double = []  % [] = reuse obj.Dt
+        ParticleIntegrator     = []  % [] = ParticleSwarmSimulation's own default (RK4FixedStep)
         ParticleSwarm           = []  % holds the resulting ParticleSwarmSimulation after triggerFragmentation
     end
     
@@ -205,6 +206,9 @@ classdef Simulation < handle
                 swarm.Termination = obj.ParticleTermination;
             end
             swarm.Visualizer = obj.ParticleVisualizer;
+            if ~isempty(obj.ParticleIntegrator)
+                swarm.Integrator = obj.ParticleIntegrator;
+            end
             swarm.run();
             obj.ParticleSwarm = swarm;
         end

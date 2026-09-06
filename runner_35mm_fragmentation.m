@@ -70,8 +70,18 @@ sim.Visualizer = LiveEngagementPlotter(5);
 % closing on the target, rather than running out a fixed clock), just
 % with a tighter ImpactDistance suited to these small fragments.
 sim.ParticleVisualizer = ParticleSwarmPlotter(5);
-sim.ParticleTermination = struct('MaxTime', 12.0, 'ImpactDistance', 2.5, ...
+sim.ParticleTermination = struct('MaxTime', 12.0, 'ImpactDistance', 0.05, ...
     'MinAltitude', 0, 'MaxAltitude', [], 'MaxDownrange', 500.0, 'PassedTarget', true);
+
+% A 5 cm hit sphere is smaller than one fixed dt=0.001 step at fragment
+% speed (0.001 s * a few hundred m/s = tens of cm) - a sample could easily
+% straddle the target without ever landing inside it. Shrinks dt for the
+% whole swarm once its closest fragment is within EngageRange, down to a
+% floor fine enough that even a fast fragment samples well inside 5 cm.
+adaptive_dt = RK4AdaptiveNearEncounter();
+adaptive_dt.EngageRange = STANDOFF_RANGE + 5.0;
+adaptive_dt.MinDt       = 2e-5; % ~2 cm spacing at 1000 m/s
+sim.ParticleIntegrator = adaptive_dt;
 
 fprintf('Firing 35mm round (burst at t=%.3f s)...\n', round.BurstTime);
 tic;

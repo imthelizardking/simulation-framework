@@ -87,6 +87,7 @@ a munition (via `MunitionFactory`), solve or specify the launch conditions, run 
 | [`runner_fin_stabilized_dart.m`](runner_fin_stabilized_dart.m) | Fin-stabilized kinetic dart |
 | [`runner_sam_engagement.m`](runner_sam_engagement.m) | Laser/seeker-guided intercept engagement |
 | [`runner_35mm_fragmentation.m`](runner_35mm_fragmentation.m) | 35mm HE burst mid-flight into a fragment swarm vs. anti-drone target |
+| [`runner_25mm_fragmentation.m`](runner_25mm_fragmentation.m) | 25mm natural-fragmentation burst (10m standoff) vs. anti-drone target |
 
 Run any of them directly in MATLAB from the repo root, e.g.:
 
