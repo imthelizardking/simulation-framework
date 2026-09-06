@@ -70,8 +70,8 @@ sim.Visualizer = LiveEngagementPlotter(5);
 % closing on the target, rather than running out a fixed clock), just
 % with a tighter ImpactDistance suited to these small fragments.
 sim.ParticleVisualizer = ParticleSwarmPlotter(5);
-sim.ParticleTermination = struct('MaxTime', 12.0, 'ImpactDistance', 0.05, ...
-    'MinAltitude', 0, 'MaxAltitude', [], 'MaxDownrange', 500.0, 'PassedTarget', true);
+sim.ParticleTermination = struct('MaxTime', 8.0, 'ImpactDistance', 0.05, ...
+    'MinAltitude', 0, 'MaxAltitude', [], 'MaxDownrange', 20.0, 'PassedTarget', true);
 
 % A 5 cm hit sphere is smaller than one fixed dt=0.001 step at fragment
 % speed (0.001 s * a few hundred m/s = tens of cm) - a sample could easily
