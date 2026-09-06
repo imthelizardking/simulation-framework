@@ -5,8 +5,9 @@ classdef MunitionFactory
         %% 155mm M107 HE Artillery Projectile (Unguided Ballistic)
         function m = createM107Artillery(charge_name)
             if nargin < 1, charge_name = 'Charge7'; end
-            % data/createM107Artillery.json overrides the parameters below
-            % if present; otherwise these hardcoded values are used as-is.
+            % A data/createM107Artillery.<json|xml|xlsx|mat|txt|sldd> file
+            % overrides the parameters below if present (see FactoryData);
+            % otherwise these hardcoded values are used as-is.
             data = FactoryData.load('createM107Artillery');
             m = Munition(FactoryData.getOr(data, 'Name', 'M107_155mm'));
 
@@ -214,6 +215,11 @@ classdef MunitionFactory
             if nargin < 1, charge_name = '6M'; end
             m = Munition('MOD274_155mm_BB');
 
+            % A data/createMOD274Artillery.<json|xml|xlsx|mat|txt|sldd>
+            % file overrides CD0/CDA2 below if present (see FactoryData) -
+            % CDA maps to CD0, CDA2 maps to CDA2.
+            data = FactoryData.load('createMOD274Artillery');
+
             % Illustrative mass properties for a 155mm base-bleed HE round
             % (runs a bit heavier than M107 due to the base-bleed unit)
             m.MassProperties.Mass = 45.0;
@@ -229,8 +235,8 @@ classdef MunitionFactory
             aero = AeroTabulatedSpin();
             aero.RefArea   = 0.01887;
             aero.RefLength = 0.155;
-            coeffs.CD0        = 0.21;
-            coeffs.CDA2       = 0;
+            coeffs.CD0        = FactoryData.getOr(data, 'CDA', 0.21);
+            coeffs.CDA2       = FactoryData.getOr(data, 'CDA2', 0);
             coeffs.CDA4       = 0;
             coeffs.CLA        = 2.5;
             coeffs.CLA3       = 0;
@@ -275,6 +281,6 @@ classdef MunitionFactory
             m.Guidance   = guid;
             m.Controller = LongitudinalFinController();
         end
-        
+
     end
 end

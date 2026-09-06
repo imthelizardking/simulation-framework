@@ -18,6 +18,20 @@ classdef (Abstract) BaseAero < handle
             %       -> linearly interpolated, clamped to the table's Mach range
             %   - struct('Type','Polynomial', 'a0',.., 'a1',.., 'a2',.., ...)
             %       -> value = sum(a_i * mach^i) over whichever a-fields are present
+            %   - struct('Type','PiecewisePolynomial', 'Mach',[...], 'Coeffs',[...], 'Order',[...], 'Boundary',...)
+            %       -> Mach-regime table (McCoy/PRODAS-style, or NATO Fire
+            %       Control Interface's segmented format): each row of
+            %       Coeffs is a local polynomial a0/a1/.. (Order gives each
+            %       column's power of mach) valid over one Mach segment;
+            %       the query mach (clamped to the table's range, like
+            %       Table above) picks its segment's row and is evaluated
+            %       against it directly - no interpolation between rows.
+            %       Boundary (default 'Lower') says which end of its
+            %       segment each Mach value is: 'Lower' - Mach(i) is that
+            %       segment's start (McCoy/PRODAS/text-table style, last
+            %       breakpoint <= query wins); 'Upper' - Mach(i) is that
+            %       segment's end (FCI's Maximum_Mach, first breakpoint
+            %       >= query wins).
             if ~isstruct(coeff)
                 val = coeff;
                 return;
@@ -35,6 +49,17 @@ classdef (Abstract) BaseAero < handle
                             order = str2double(tok{1});
                             val = val + coeff.(fn{i}) * mach^order;
                         end
+                    end
+                case 'PiecewisePolynomial'
+                    m_clamped = min(max(mach, min(coeff.Mach)), max(coeff.Mach));
+                    if isfield(coeff, 'Boundary') && strcmpi(coeff.Boundary, 'Upper')
+                        segIdx = find(coeff.Mach >= m_clamped, 1, 'first');
+                    else
+                        segIdx = find(coeff.Mach <= m_clamped, 1, 'last');
+                    end
+                    val = 0;
+                    for k = 1:numel(coeff.Order)
+                        val = val + coeff.Coeffs(segIdx, k) * m_clamped^coeff.Order(k);
                     end
                 otherwise
                     error('BaseAero:evalCoeff', 'Unknown aero coefficient Type: %s', coeff.Type);
