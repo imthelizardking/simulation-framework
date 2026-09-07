@@ -117,7 +117,7 @@ classdef MunitionFactory
 
             % Projectile mass ~0.185 kg, d = 0.025 m
             m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 0.185);
-            m.MassProperties.Inertia = eye(3) * 1e-4;
+            m.MassProperties.Inertia = diag(FactoryData.getOr(data, 'Inertia', [1e-4, 1e-4, 1e-4]));
 
             m.Dynamics   = Dynamics3DofSpin();
             % S_ref = pi*(0.025/2)^2 = 4.908e-4 m^2. Rifled/spin-stabilized -
@@ -125,7 +125,7 @@ classdef MunitionFactory
             % CD0/CL_alpha-only buildup, plus illustrative Cl_p/CMagnus_pa.
             aero = AeroTabulatedSpin();
             aero.RefArea   = FactoryData.getOr(data, 'RefArea', 4.908e-4);
-            aero.RefLength = 0.025;
+            aero.RefLength = FactoryData.getOr(data, 'RefLength', 0.025);
             coeffs.CD0        = FactoryData.getOr(data, 'CD0', 0.18);
             coeffs.CDA2       = FactoryData.getOr(data, 'CDA2', 0);
             coeffs.CDA4       = FactoryData.getOr(data, 'CDA4', 0);
@@ -163,7 +163,7 @@ classdef MunitionFactory
             % illustrative Cl_p/CMagnus_pa.
             aero = AeroTabulatedSpin();
             aero.RefArea   = FactoryData.getOr(data, 'RefArea', 9.621e-4);
-            aero.RefLength = 0.035;
+            aero.RefLength = FactoryData.getOr(data, 'RefLength', 0.035);
             coeffs.CD0        = FactoryData.getOr(data, 'CD0', 0.25);
             coeffs.CDA2       = FactoryData.getOr(data, 'CDA2', 0);
             coeffs.CDA4       = FactoryData.getOr(data, 'CDA4', 0);
@@ -200,7 +200,7 @@ classdef MunitionFactory
 
             aero = AeroTabulatedSpin();
             aero.RefArea   = FactoryData.getOr(data, 'RefArea', pi * (0.076/2)^2); % 0.004536 m^2
-            aero.RefLength = 0.076;
+            aero.RefLength = FactoryData.getOr(data, 'RefLength', 0.076);
 
             % Illustrative coefficient set - representative drag-bucket /
             % rising-then-falling lift-slope shape for a spin-stabilized
