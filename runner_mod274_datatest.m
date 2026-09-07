@@ -1,5 +1,5 @@
 %% Test: FactoryData table-parsing override for MunitionFactory.createMOD274
-% Exercises data/createMOD274Artillery.json, which overrides CD0/CDA2 with
+% Exercises data/createMOD274.json, which overrides CD0/CDA2 with
 % a "Mach a0 a1" per-breakpoint polynomial table (BaseAero.evalCoeff's
 % PiecewisePolynomial case) instead of the hardcoded scalar defaults in
 % MunitionFactory.createMOD274. The table's numbers are illustrative test
@@ -10,8 +10,8 @@
 clear; clc; close all;
 
 %% 1. Confirm the data file parses as expected
-data = FactoryData.load('createMOD274Artillery');
-fprintf('=== Parsed data/createMOD274Artillery.json ===\n');
+data = FactoryData.load('createMOD274');
+fprintf('=== Parsed data/createMOD274.json ===\n');
 disp(data);
 fprintf('CDA  (-> CD0)  : Type=%s, Mach breakpoints=[%s]\n', data.CDA.Type,  num2str(data.CDA.Mach));
 fprintf('CDA2 (-> CDA2) : Type=%s, Mach breakpoints=[%s]\n', data.CDA2.Type, num2str(data.CDA2.Mach));

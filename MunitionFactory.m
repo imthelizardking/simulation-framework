@@ -5,9 +5,9 @@ classdef MunitionFactory
         %% 155mm M107 HE Artillery Projectile (Unguided Ballistic)
         function m = createM107Artillery(charge_name)
             if nargin < 1, charge_name = 'Charge7'; end
-            % A data/createM107Artillery.<json|xml|xlsx|mat|txt|sldd> file
-            % overrides the parameters below if present (see FactoryData);
-            % otherwise these hardcoded values are used as-is.
+            % A data/createM107Artillery.<json|xml|fci|xlsx|mat|txt|sldd>
+            % file overrides the parameters below if present (see
+            % FactoryData); otherwise these hardcoded values are used as-is.
             data = FactoryData.load('createM107Artillery');
             m = Munition(FactoryData.getOr(data, 'Name', 'M107_155mm'));
 
@@ -47,17 +47,26 @@ classdef MunitionFactory
         
         %% 2.75-inch (70mm) Hydra-70 Unguided Rocket (Mk 66 Motor)
         function m = createHydra70()
-            m = Munition('Hydra_70_M151');
+            % A data/createHydra70.<json|xml|fci|xlsx|mat|txt|sldd> file
+            % overrides the parameters below if present (see FactoryData);
+            % otherwise these hardcoded values are used as-is.
+            data = FactoryData.load('createHydra70');
+            m = Munition(FactoryData.getOr(data, 'Name', 'Hydra_70_M151'));
 
             % Launch mass ~10.5 kg (burnout mass ~6.2 kg)
-            m.MassProperties.Mass = 10.5;
-            m.MassProperties.Inertia = diag([0.008, 0.45, 0.45]);
+            m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 10.5);
+            m.MassProperties.Inertia = diag(FactoryData.getOr(data, 'Inertia', [0.008, 0.45, 0.45]));
 
             m.Dynamics   = Dynamics3Dof();
             % d = 0.070 m -> S_ref = 0.00385 m^2, CD0 ~ 0.38
-            m.Aero       = Aero3DoF_Longitudinal(0.38, 3.2, 0.00385);
+            m.Aero       = Aero3DoF_Longitudinal( ...
+                FactoryData.getOr(data, 'CD0', 0.38), ...
+                FactoryData.getOr(data, 'CL_alpha', 3.2), ...
+                FactoryData.getOr(data, 'RefArea', 0.00385));
             % Mk 66 Mod 4: ~5900 N average thrust for ~1.1 seconds
-            m.Propulsion = Propulsion_SolidMotor(5900.0, 1.1);
+            m.Propulsion = Propulsion_SolidMotor( ...
+                FactoryData.getOr(data, 'Thrust', 5900.0), ...
+                FactoryData.getOr(data, 'BurnTime', 1.1));
             % Rocket-motor propelled, not a gun-fired charge - Charge stays
             % empty (no propelling-charge concept applies here).
             m.Sensors    = {};
@@ -74,16 +83,23 @@ classdef MunitionFactory
             % unclouded by any of the spin-stabilized machinery the other
             % presets now use. Illustrative hand-thrown fin-stabilized
             % dart, d = 0.02 m.
-            m = Munition('FinStabilized_Dart');
+            % A data/createFinStabilizedDart.<json|xml|fci|xlsx|mat|txt|sldd>
+            % file overrides the parameters below if present (see
+            % FactoryData); otherwise these hardcoded values are used as-is.
+            data = FactoryData.load('createFinStabilizedDart');
+            m = Munition(FactoryData.getOr(data, 'Name', 'FinStabilized_Dart'));
 
-            m.MassProperties.Mass = 0.1;
+            m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 0.1);
             m.MassProperties.Inertia = eye(3) * 1e-5; % unused by Dynamics3Dof - no real attitude dynamics there
 
             m.Dynamics = Dynamics3Dof();
             % S_ref = pi*(0.02/2)^2 = 3.14e-4 m^2. CL_alpha is high relative
             % to the gun-fired shells above - tail fins give a strong,
             % genuinely-stabilizing lift-curve slope with no spin needed.
-            m.Aero = Aero3DoF_Longitudinal(0.3, 5.0, 3.14e-4);
+            m.Aero = Aero3DoF_Longitudinal( ...
+                FactoryData.getOr(data, 'CD0', 0.3), ...
+                FactoryData.getOr(data, 'CL_alpha', 5.0), ...
+                FactoryData.getOr(data, 'RefArea', 3.14e-4));
             m.Charge = ChargeFactory.getFixed('Hand-Thrown', 30.0, 1.0);
             m.Propulsion = []; % Thrown, not fired or motor-propelled
             m.Sensors    = {};
@@ -93,10 +109,14 @@ classdef MunitionFactory
 
         %% 25mm Bushmaster Target Practice Tracer (M793)
         function m = create25mmM793()
-            m = Munition('25mm_M793');
+            % A data/create25mmM793.<json|xml|fci|xlsx|mat|txt|sldd> file
+            % overrides the parameters below if present (see FactoryData);
+            % otherwise these hardcoded values are used as-is.
+            data = FactoryData.load('create25mmM793');
+            m = Munition(FactoryData.getOr(data, 'Name', '25mm_M793'));
 
             % Projectile mass ~0.185 kg, d = 0.025 m
-            m.MassProperties.Mass = 0.185;
+            m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 0.185);
             m.MassProperties.Inertia = eye(3) * 1e-4;
 
             m.Dynamics   = Dynamics3DofSpin();
@@ -104,19 +124,19 @@ classdef MunitionFactory
             % AeroTabulatedSpin with CDA2/CDA4/CLA3 zeroed reproduces the old
             % CD0/CL_alpha-only buildup, plus illustrative Cl_p/CMagnus_pa.
             aero = AeroTabulatedSpin();
-            aero.RefArea   = 4.908e-4;
+            aero.RefArea   = FactoryData.getOr(data, 'RefArea', 4.908e-4);
             aero.RefLength = 0.025;
-            coeffs.CD0        = 0.18;
-            coeffs.CDA2       = 0;
-            coeffs.CDA4       = 0;
-            coeffs.CLA        = 1.5;
-            coeffs.CLA3       = 0;
-            coeffs.Cl_p       = -0.02;
-            coeffs.CMagnus_pa = 0.6;
+            coeffs.CD0        = FactoryData.getOr(data, 'CD0', 0.18);
+            coeffs.CDA2       = FactoryData.getOr(data, 'CDA2', 0);
+            coeffs.CDA4       = FactoryData.getOr(data, 'CDA4', 0);
+            coeffs.CLA        = FactoryData.getOr(data, 'CLA', 1.5);
+            coeffs.CLA3       = FactoryData.getOr(data, 'CLA3', 0);
+            coeffs.Cl_p       = FactoryData.getOr(data, 'Cl_p', -0.02);
+            coeffs.CMagnus_pa = FactoryData.getOr(data, 'CMagnus_pa', 0.6);
             aero.Tables.Clean   = coeffs;
             aero.ActiveTableKey = 'Clean';
             m.Aero = aero;
-            m.TwistRate  = 20; % calibers/turn, illustrative
+            m.TwistRate  = FactoryData.getOr(data, 'TwistRate', 20); % calibers/turn, illustrative
             m.Charge     = ChargeFactory.getFixed('25mm-Fixed', 1100.0, 5.0);
             m.Propulsion = [];
             m.Sensors    = {};
@@ -126,11 +146,15 @@ classdef MunitionFactory
 
         %% 35mm HE-T Anti-Aircraft/Anti-Drone Round (Unguided Direct-Fire)
         function m = create35mmHE()
-            m = Munition('35mm_HET');
+            % A data/create35mmHE.<json|xml|fci|xlsx|mat|txt|sldd> file
+            % overrides the parameters below if present (see FactoryData);
+            % otherwise these hardcoded values are used as-is.
+            data = FactoryData.load('create35mmHE');
+            m = Munition(FactoryData.getOr(data, 'Name', '35mm_HET'));
 
             % Illustrative mass properties for a 35mm AA gun round, d = 0.035 m
-            m.MassProperties.Mass = 0.55;
-            m.MassProperties.Inertia = diag([0.0004, 0.006, 0.006]);
+            m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 0.55);
+            m.MassProperties.Inertia = diag(FactoryData.getOr(data, 'Inertia', [0.0004, 0.006, 0.006]));
 
             m.Dynamics = Dynamics3DofSpin();
             % S_ref = pi*(0.035/2)^2 = 9.62e-4 m^2, typical HE-T CD0 ~ 0.25.
@@ -138,19 +162,19 @@ classdef MunitionFactory
             % zeroed reproduces the old CD0/CL_alpha-only buildup, plus
             % illustrative Cl_p/CMagnus_pa.
             aero = AeroTabulatedSpin();
-            aero.RefArea   = 9.621e-4;
+            aero.RefArea   = FactoryData.getOr(data, 'RefArea', 9.621e-4);
             aero.RefLength = 0.035;
-            coeffs.CD0        = 0.25;
-            coeffs.CDA2       = 0;
-            coeffs.CDA4       = 0;
-            coeffs.CLA        = 2.0;
-            coeffs.CLA3       = 0;
-            coeffs.Cl_p       = -0.025;
-            coeffs.CMagnus_pa = 0.8;
+            coeffs.CD0        = FactoryData.getOr(data, 'CD0', 0.25);
+            coeffs.CDA2       = FactoryData.getOr(data, 'CDA2', 0);
+            coeffs.CDA4       = FactoryData.getOr(data, 'CDA4', 0);
+            coeffs.CLA        = FactoryData.getOr(data, 'CLA', 2.0);
+            coeffs.CLA3       = FactoryData.getOr(data, 'CLA3', 0);
+            coeffs.Cl_p       = FactoryData.getOr(data, 'Cl_p', -0.025);
+            coeffs.CMagnus_pa = FactoryData.getOr(data, 'CMagnus_pa', 0.8);
             aero.Tables.Clean   = coeffs;
             aero.ActiveTableKey = 'Clean';
             m.Aero = aero;
-            m.TwistRate = 25; % calibers/turn, illustrative
+            m.TwistRate = FactoryData.getOr(data, 'TwistRate', 25); % calibers/turn, illustrative
             m.Charge = ChargeFactory.getFixed('35mm-Fixed', 1175.0, 4.0);
             m.Propulsion = []; % Pure ballistic, no motor
             m.Sensors    = {};
@@ -160,48 +184,57 @@ classdef MunitionFactory
 
         %% 76mm HE Projectile (Detailed Mach-Dependent Aero Table)
         function m = create76mmHE()
-            m = Munition('76mm_HE');
+            % A data/create76mmHE.<json|xml|fci|xlsx|mat|txt|sldd> file
+            % overrides any of the parameters below if present (see
+            % FactoryData) - including individual coefficients, so a file
+            % can replace just CD0 with real data while CDA2/CLA/etc. keep
+            % their illustrative defaults.
+            data = FactoryData.load('create76mmHE');
+            m = Munition(FactoryData.getOr(data, 'Name', '76mm_HE'));
 
             % Illustrative mass properties for a 76mm gun round, d = 0.076 m
-            m.MassProperties.Mass = 6.0;
-            m.MassProperties.Inertia = diag([0.006, 0.085, 0.085]);
+            m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 6.0);
+            m.MassProperties.Inertia = diag(FactoryData.getOr(data, 'Inertia', [0.006, 0.085, 0.085]));
 
             m.Dynamics = Dynamics3DofSpin();
 
             aero = AeroTabulatedSpin();
-            aero.RefArea   = pi * (0.076/2)^2; % 0.004536 m^2
+            aero.RefArea   = FactoryData.getOr(data, 'RefArea', pi * (0.076/2)^2); % 0.004536 m^2
             aero.RefLength = 0.076;
 
             % Illustrative coefficient set - representative drag-bucket /
             % rising-then-falling lift-slope shape for a spin-stabilized
-            % shell, NOT validated wind-tunnel or CFD data. Replace
-            % Tables.Clean with real data when available. Deliberately
+            % shell, NOT validated wind-tunnel or CFD data. Deliberately
             % mixes all three representations BaseAero.evalCoeff supports:
             % CD0/CLA as Mach-Value tables, CDA2/CLA3 as polynomials in
             % Mach, CDA4 as a plain constant.
-            coeffs.CD0 = struct('Type', 'Table', ...
+            defaultCD0 = struct('Type', 'Table', ...
                 'Mach',  [0 0.7 0.9 0.95 1.0 1.05 1.1 1.2 1.5 2.0 2.5 3.0], ...
                 'Value', [0.19 0.20 0.24 0.30 0.38 0.41 0.42 0.40 0.35 0.30 0.27 0.25]);
 
-            coeffs.CDA2 = struct('Type', 'Polynomial', 'a0', 2.2, 'a1', 1.0, 'a2', -0.12);
+            defaultCDA2 = struct('Type', 'Polynomial', 'a0', 2.2, 'a1', 1.0, 'a2', -0.12);
 
-            coeffs.CDA4 = 8.5; % plain scalar - constant across Mach
-
-            coeffs.CLA = struct('Type', 'Table', ...
+            defaultCLA = struct('Type', 'Table', ...
                 'Mach',  [0 0.7 0.9 1.0 1.2 1.5 2.0 2.5 3.0], ...
                 'Value', [2.0 2.1 2.4 2.8 2.6 2.3 2.0 1.8 1.6]);
 
-            coeffs.CLA3 = struct('Type', 'Polynomial', 'a0', -8.0, 'a1', 1.5);
+            defaultCLA3 = struct('Type', 'Polynomial', 'a0', -8.0, 'a1', 1.5);
+
+            coeffs.CD0  = FactoryData.getOr(data, 'CD0', defaultCD0);
+            coeffs.CDA2 = FactoryData.getOr(data, 'CDA2', defaultCDA2);
+            coeffs.CDA4 = FactoryData.getOr(data, 'CDA4', 8.5); % plain scalar - constant across Mach
+            coeffs.CLA  = FactoryData.getOr(data, 'CLA', defaultCLA);
+            coeffs.CLA3 = FactoryData.getOr(data, 'CLA3', defaultCLA3);
 
             % Spin-stabilized extras (AeroTabulatedSpin) - illustrative
             % constants, same caveat as the CD/CL buildup above.
-            coeffs.Cl_p       = -0.03;
-            coeffs.CMagnus_pa = 1.0;
+            coeffs.Cl_p       = FactoryData.getOr(data, 'Cl_p', -0.03);
+            coeffs.CMagnus_pa = FactoryData.getOr(data, 'CMagnus_pa', 1.0);
 
             aero.Tables.Clean   = coeffs;
             aero.ActiveTableKey = 'Clean';
             m.Aero = aero;
-            m.TwistRate = 25; % calibers/turn, illustrative
+            m.TwistRate = FactoryData.getOr(data, 'TwistRate', 25); % calibers/turn, illustrative
             m.Charge = ChargeFactory.getFixed('76mm-Fixed', 800.0, 3.5);
 
             m.Propulsion = []; % Pure ballistic, no motor
@@ -213,17 +246,18 @@ classdef MunitionFactory
         %% MOD274 155mm Base-Bleed HE Projectile (Unguided, Extended Range)
         function m = createMOD274(charge_name)
             if nargin < 1, charge_name = '6M'; end
-            m = Munition('MOD274_155mm_BB');
 
-            % A data/createMOD274Artillery.<json|xml|xlsx|mat|txt|sldd>
-            % file overrides CD0/CDA2 below if present (see FactoryData) -
-            % CDA maps to CD0, CDA2 maps to CDA2.
-            data = FactoryData.load('createMOD274Artillery');
+            % A data/createMOD274.<json|xml|fci|xlsx|mat|txt|sldd> file
+            % overrides the parameters below if present (see FactoryData) -
+            % CDA maps to CD0, CDA2 maps to CDA2 (matches the field names
+            % used by this round's real source data).
+            data = FactoryData.load('createMOD274');
+            m = Munition(FactoryData.getOr(data, 'Name', 'MOD274_155mm_BB'));
 
             % Illustrative mass properties for a 155mm base-bleed HE round
             % (runs a bit heavier than M107 due to the base-bleed unit)
-            m.MassProperties.Mass = 45.0;
-            m.MassProperties.Inertia = diag([0.15, 1.7, 1.7]);
+            m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 45.0);
+            m.MassProperties.Inertia = diag(FactoryData.getOr(data, 'Inertia', [0.15, 1.7, 1.7]));
 
             m.Dynamics = Dynamics3DofSpin();
             % Same bore/S_ref as M107; slightly lower baseline CD0 is
@@ -233,15 +267,15 @@ classdef MunitionFactory
             % CDA2/CDA4/CLA3 zeroed reproduces the old CD0/CL_alpha-only
             % buildup, plus illustrative Cl_p/CMagnus_pa.
             aero = AeroTabulatedSpin();
-            aero.RefArea   = 0.01887;
+            aero.RefArea   = FactoryData.getOr(data, 'RefArea', 0.01887);
             aero.RefLength = 0.155;
             coeffs.CD0        = FactoryData.getOr(data, 'CDA', 0.21);
             coeffs.CDA2       = FactoryData.getOr(data, 'CDA2', 0);
             coeffs.CDA4       = 0;
-            coeffs.CLA        = 2.5;
+            coeffs.CLA        = FactoryData.getOr(data, 'CLA', 2.5);
             coeffs.CLA3       = 0;
-            coeffs.Cl_p       = -0.03;
-            coeffs.CMagnus_pa = 1.2;
+            coeffs.Cl_p       = FactoryData.getOr(data, 'Cl_p', -0.03);
+            coeffs.CMagnus_pa = FactoryData.getOr(data, 'CMagnus_pa', 1.2);
             aero.Tables.Clean   = coeffs;
             aero.ActiveTableKey = 'Clean';
             % Very basic base-bleed model (see Propulsion_DYU): a fixed
@@ -250,7 +284,7 @@ classdef MunitionFactory
             % generator burn-rate model.
             aero.BaseBleed = Propulsion_DYU(30.0, 0.25);
             m.Aero = aero;
-            m.TwistRate = 20; % calibers/turn, illustrative (same tube family as M107)
+            m.TwistRate = FactoryData.getOr(data, 'TwistRate', 20); % calibers/turn, illustrative (same tube family as M107)
             m.Charge = ChargeFactory.getDM92(charge_name);
 
             m.Propulsion = []; % Pure ballistic, no gun-launch motor
@@ -265,19 +299,28 @@ classdef MunitionFactory
             
             % Start from Hydra base and add GNC kit
             m = MunitionFactory.createHydra70();
-            m.Name = 'APKWS_Guided_Rocket';
-            m.MassProperties.Mass = 15.0; % GNC mid-section adds weight
-            
+
+            % A data/createAPKWS.<json|xml|fci|xlsx|mat|txt|sldd> file
+            % overrides the parameters below if present (see FactoryData);
+            % otherwise these hardcoded values are used as-is. Hydra70's
+            % own data/createHydra70.<ext> file (if any) still applies
+            % underneath, since createHydra70() is called above.
+            data = FactoryData.load('createAPKWS');
+            m.Name = FactoryData.getOr(data, 'Name', 'APKWS_Guided_Rocket');
+            m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 15.0); % GNC mid-section adds weight
+
             % Attach LOAL Seeker and Guidance (LaserSeeker referenced here
             % previously does not exist anywhere in the codebase; SeekerLOAL
             % is the sensor OptimalAngleFOVGuidance/LiveEngagementPlotter
             % actually expect via sensor_bus.SeekerLOAL). prf_code is kept
             % as an input for future laser-designator integration but is
             % not consumed yet.
-            m.Sensors    = { SeekerLOAL(deg2rad(20), 1.2) };
+            seeker_fov_deg = FactoryData.getOr(data, 'SeekerFOV_deg', 20);
+            t_seeker_on    = FactoryData.getOr(data, 'T_SeekerOn', 1.2); % Seeker uncages after motor burnout
+            m.Sensors    = { SeekerLOAL(deg2rad(seeker_fov_deg), t_seeker_on) };
             guid = OptimalAngleFOVGuidance();
             guid.UseFOV = true;
-            guid.T_SeekerOn = 1.2; % Seeker uncages after motor burnout
+            guid.T_SeekerOn = t_seeker_on;
             m.Guidance   = guid;
             m.Controller = LongitudinalFinController();
         end
