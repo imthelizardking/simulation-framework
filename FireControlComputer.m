@@ -328,5 +328,54 @@ classdef FireControlComputer < handle
         function rad = mil2rad(mil)
             rad = mil * (pi / 3200);
         end
+
+        function [t_burst, telemetry] = solveBurstTimeForStandoff(munition_builder, launcher_pos, v0, elevation, azimuth, target, env, standoff, timespan, dt, impact_distance, max_downrange)
+            % Runs a fresh "recon" flight (its own munition/target
+            % instances, so the caller's real round/target are untouched)
+            % at the given launch conditions and finds the time the round
+            % is `standoff` meters from the (possibly moving) target -
+            % the shared basis for both a pre-fire nominal burst-time
+            % estimate (fed the charge's nominal muzzle velocity) and a
+            % post-fire correction once the round's actual muzzle
+            % velocity is measured (call this again with that measured
+            % v0 in place of the nominal one - elevation/azimuth stay the
+            % same, since those are already fixed by the time muzzle
+            % velocity is known).
+            if nargin < 11 || isempty(impact_distance), impact_distance = min(2.0, standoff / 2); end
+            if nargin < 12 || isempty(max_downrange), max_downrange = 100.0; end
+
+            recon_round = munition_builder();
+            recon_round.Dynamics.InitialState = recon_round.buildLaunchState(launcher_pos, v0, elevation, azimuth);
+            recon_target = TargetConstantVelocity(target.Position, target.Velocity);
+
+            recon_sim = Simulation(recon_round, recon_target, env, timespan, dt);
+            recon_sim.Termination.ImpactDistance = impact_distance;
+            recon_sim.Termination.MaxDownrange   = max_downrange;
+            recon_tel = recon_sim.run();
+
+            t_burst = FireControlComputer.findRangeCrossingTime(recon_tel, standoff);
+            if nargout > 1
+                telemetry = recon_tel;
+            end
+        end
+
+        function t_burst = findRangeCrossingTime(telemetry, standoff)
+            % Finds the (interpolated) time at which telemetry.range last
+            % crosses down through `standoff` meters - i.e. the instant
+            % the round is `standoff` meters from the target, still
+            % closing toward intercept.
+            range_ = telemetry.range;
+            time_  = telemetry.time;
+            idx = find(range_(1:end-1) >= standoff & range_(2:end) < standoff, 1, 'last');
+            if isempty(idx)
+                error('FireControlComputer:findRangeCrossingTime', ...
+                    'Range never crossed %.1f m during the recon flight (min range reached = %.1f m).', ...
+                    standoff, min(range_));
+            end
+            r0 = range_(idx);   r1 = range_(idx+1);
+            t0 = time_(idx);    t1 = time_(idx+1);
+            frac = (r0 - standoff) / (r0 - r1);
+            t_burst = t0 + frac * (t1 - t0);
+        end
     end
 end

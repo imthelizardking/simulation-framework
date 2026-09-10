@@ -50,18 +50,10 @@ fprintf('Predicted Intercept Time : %.3f s\n', sol.TimeOfFlight);
 STANDOFF_RANGE = 10.0; % m; burst this far short of the target
 round.Dynamics.InitialState = round.buildLaunchState(launcher_pos, v0, sol.Elevation, sol.Azimuth);
 
-recon_round  = MunitionFactory.create25mmM793();
-recon_round.Dynamics.InitialState = recon_round.buildLaunchState(launcher_pos, v0, sol.Elevation, sol.Azimuth);
-recon_target = TargetConstantVelocity(target.Position, target.Velocity);
-
-recon_sim = Simulation(recon_round, recon_target, env, [0 5], 0.001);
-recon_sim.Termination.ImpactDistance = 2.0;
-recon_sim.Termination.MaxDownrange   = 100.0;
-recon_tel = recon_sim.run();
-
-round.BurstTime = findRangeCrossingTime(recon_tel, STANDOFF_RANGE);
-fprintf('Burst standoff time      : %.3f s (range = %.1f m at that instant)\n', ...
-    round.BurstTime, interp1(recon_tel.time, recon_tel.range, round.BurstTime));
+round.BurstTime = FireControlComputer.solveBurstTimeForStandoff(...
+    @MunitionFactory.create25mmM793, launcher_pos, v0, sol.Elevation, sol.Azimuth, ...
+    target, env, STANDOFF_RANGE, [0 5], 0.001, 2.0, 100.0);
+fprintf('Burst standoff time      : %.3f s (target standoff = %.1f m)\n', round.BurstTime, STANDOFF_RANGE);
 
 % 6. Assemble Simulation & Execute
 sim = Simulation(round, target, env, [0 5], 0.001);
@@ -107,22 +99,4 @@ if ~isempty(sim.ParticleSwarm)
     fprintf('\nFragments that reached the target: %d / %d\n', hits, n);
 else
     fprintf('Munition never reached BurstTime before another termination criterion tripped.\n');
-end
-
-function t_burst = findRangeCrossingTime(telemetry, standoff)
-    % Finds the (interpolated) time at which telemetry.range last crosses
-    % down through `standoff` meters - i.e. the instant the round is
-    % `standoff` meters from the target, still closing toward intercept.
-    range_ = telemetry.range;
-    time_  = telemetry.time;
-    idx = find(range_(1:end-1) >= standoff & range_(2:end) < standoff, 1, 'last');
-    if isempty(idx)
-        error('findRangeCrossingTime:NotFound', ...
-            'Range never crossed %.1f m during the recon flight (min range reached = %.1f m).', ...
-            standoff, min(range_));
-    end
-    r0 = range_(idx);   r1 = range_(idx+1);
-    t0 = time_(idx);    t1 = time_(idx+1);
-    frac = (r0 - standoff) / (r0 - r1);
-    t_burst = t0 + frac * (t1 - t0);
 end
