@@ -39,7 +39,7 @@ v0 = shell.Charge.MuzzleVelocity;
 
 fprintf('=== Auto Charge Selection ===\n');
 fprintf('Selected Charge         : %s (%.0f m/s)\n', charge_names{chosen_idx}, v0);
-fprintf('Quadrant Elevation (QE) : %.2f deg\n', rad2deg(sol.Elevation));
+fprintf('Quadrant Elevation (QE) : %.1f mils\n', FireControlComputer.rad2mil(sol.Elevation));
 fprintf('Predicted Flight Time   : %.2f s\n', sol.TimeOfFlight);
 fprintf('Convergence Miss Error  : %.3f m\n', sol.MissDistance);
 

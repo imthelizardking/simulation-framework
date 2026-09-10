@@ -21,7 +21,7 @@ v0_rail      = 60.0; % m/s, rail-launch speed before motor ignition
 missile.Dynamics.InitialState = missile.Dynamics.buildLaunchState(...
     launcher_pos, v0_rail, launch_elev, 0, missile.MassProperties.Mass);
 
-fprintf('Launch elevation: %.1f deg\n', rad2deg(launch_elev));
+fprintf('Launch elevation: %.1f mils\n', FireControlComputer.rad2mil(launch_elev));
 
 % 5. Assemble Simulation & Execute. This is an intercept scenario, so on
 %    top of the default ground-impact check, also stop on a hit

@@ -8,8 +8,8 @@
 clear; clc; close all;
 
 charge_name   = 'Charge7'; % edit: 'Charge5' | 'Charge6' | 'Charge7'
-elevation_deg = 35.0;      % edit: quadrant elevation
-azimuth_deg   = 0.0;       % edit: aim bearing
+elevation_mil = 622.2;     % edit: quadrant elevation (NATO mils, 6400/circle)
+azimuth_mil   = 0.0;       % edit: aim bearing
 
 % 1. Setup Environment
 env = Environment(1.225, 9.81, [0; 0; 0]);
@@ -21,14 +21,14 @@ launcher_pos = [0; 0; 0];
 
 % 3. Fire Control: direct fire - no solving, just wraps the given angles
 fcc = FireControlComputer(env.Gravity, 'Z-Up');
-sol = fcc.solveDirect(deg2rad(elevation_deg), deg2rad(azimuth_deg));
+sol = fcc.solveDirect(FireControlComputer.mil2rad(elevation_mil), FireControlComputer.mil2rad(azimuth_mil));
 
 if ~sol.IsValid
     error('Elevation/azimuth outside the fire control computer''s mechanical limits.');
 end
 
-fprintf('Firing M107 on %s charge (%.0f m/s) at QE=%.1f deg, azimuth=%.1f deg...\n', ...
-    charge_name, v0, elevation_deg, azimuth_deg);
+fprintf('Firing M107 on %s charge (%.0f m/s) at QE=%.1f mils, azimuth=%.1f mils...\n', ...
+    charge_name, v0, elevation_mil, azimuth_mil);
 
 % 4. Apply Specified Initial State
 shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0, sol.Elevation, sol.Azimuth);
@@ -52,4 +52,4 @@ fprintf('Apogee              : %.1f m at t=%.2f s\n', apogee, telemetry.time(apo
 fprintf('Impact Range        : %.1f m\n', impact_range);
 fprintf('Time of Flight      : %.2f s\n', telemetry.time(end));
 
-plotTrajectoryProfile(telemetry, [], sprintf('M107 Direct Fire QE=%.0f deg (%s)', elevation_deg, charge_name));
+plotTrajectoryProfile(telemetry, [], sprintf('M107 Direct Fire QE=%.0f mils (%s)', elevation_mil, charge_name));

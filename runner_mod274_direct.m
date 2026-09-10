@@ -7,8 +7,8 @@
 clear; clc; close all;
 
 charge_name   = '6M';  % edit: '3M' | '4M' | '5M' | '6M'
-elevation_deg = 40.0;  % edit: quadrant elevation (near max-range for 6M)
-azimuth_deg   = 0.0;   % edit: aim bearing
+elevation_mil = 711.1; % edit: quadrant elevation (NATO mils, near max-range for 6M)
+azimuth_mil   = 0.0;   % edit: aim bearing
 
 % 1. Setup Environment
 env = Environment(1.225, 9.81, [0; 0; 0]);
@@ -20,14 +20,14 @@ launcher_pos = [0; 0; 0];
 
 % 3. Fire Control: direct fire - no solving, just wraps the given angles
 fcc = FireControlComputer(env.Gravity, 'Z-Up');
-sol = fcc.solveDirect(deg2rad(elevation_deg), deg2rad(azimuth_deg));
+sol = fcc.solveDirect(FireControlComputer.mil2rad(elevation_mil), FireControlComputer.mil2rad(azimuth_mil));
 
 if ~sol.IsValid
     error('Elevation/azimuth outside the fire control computer''s mechanical limits.');
 end
 
-fprintf('Firing MOD274 on DM92 %s charge (%.0f m/s) at QE=%.1f deg, azimuth=%.1f deg...\n', ...
-    charge_name, v0, elevation_deg, azimuth_deg);
+fprintf('Firing MOD274 on DM92 %s charge (%.0f m/s) at QE=%.1f mils, azimuth=%.1f mils...\n', ...
+    charge_name, v0, elevation_mil, azimuth_mil);
 
 % 4. Apply Specified Initial State
 shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0, sol.Elevation, sol.Azimuth);
@@ -51,4 +51,4 @@ fprintf('Time of Flight          : %.2f s\n', telemetry.time(end));
 fprintf('Base Bleed Active Until : %.1f s (%.0f%% CD0 reduction while burning)\n', ...
     bb.BurnDuration, bb.DragReductionFraction * 100);
 
-plotTrajectoryProfile(telemetry, [], sprintf('MOD274 Direct Fire QE=%.0f deg (%s)', elevation_deg, charge_name));
+plotTrajectoryProfile(telemetry, [], sprintf('MOD274 Direct Fire QE=%.0f mils (%s)', elevation_mil, charge_name));

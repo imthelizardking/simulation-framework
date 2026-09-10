@@ -36,13 +36,13 @@ env = Environment(1.225, 9.81, [0; 0; 0]);
 target = TargetStatic([3000; 0; 0]); % nominal only - not solved for
 launcher_pos = [0; 0; 0];
 v0 = shell.Charge.MuzzleVelocity;
-elevation = deg2rad(45);
+elevation = FireControlComputer.mil2rad(800); % 45 deg, expressed in NATO mils
 azimuth = 0;
 
 shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0, elevation, azimuth);
 
 sim = Simulation(shell, target, env, [0 60], 0.005);
-fprintf('\nFiring MOD274 with the data-file drag override at QE=45 deg, v0=%.0f m/s...\n', v0);
+fprintf('\nFiring MOD274 with the data-file drag override at QE=800 mils, v0=%.0f m/s...\n', v0);
 telemetry = sim.run();
 
 [apogee, apogee_idx] = max(telemetry.pos(:, 3));

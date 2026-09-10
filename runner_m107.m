@@ -23,8 +23,8 @@ if ~sol.IsValid
 end
 
 fprintf('=== Solution Converged in %d Iterations ===\n', sol.Iterations);
-fprintf('Quadrant Elevation (QE) : %.2f deg\n', rad2deg(sol.Elevation));
-fprintf('Azimuth (Aim Bearing)   : %.2f deg (Wind corrected)\n', rad2deg(sol.Azimuth));
+fprintf('Quadrant Elevation (QE) : %.1f mils\n', FireControlComputer.rad2mil(sol.Elevation));
+fprintf('Azimuth (Aim Bearing)   : %.1f mils (Wind corrected)\n', FireControlComputer.rad2mil(sol.Azimuth));
 fprintf('Predicted Flight Time   : %.2f s\n', sol.TimeOfFlight);
 fprintf('Convergence Miss Error  : %.3f m\n', sol.MissDistance);
 

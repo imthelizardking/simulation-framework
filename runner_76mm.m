@@ -29,8 +29,8 @@ if ~sol.IsValid
 end
 
 fprintf('=== Direct-Lead Solution ===\n');
-fprintf('Elevation                : %.2f deg\n', rad2deg(sol.Elevation));
-fprintf('Azimuth                  : %.2f deg\n', rad2deg(sol.Azimuth));
+fprintf('Elevation                : %.1f mils\n', FireControlComputer.rad2mil(sol.Elevation));
+fprintf('Azimuth                  : %.1f mils\n', FireControlComputer.rad2mil(sol.Azimuth));
 fprintf('Predicted Intercept Time : %.3f s\n', sol.TimeOfFlight);
 
 % 5. Apply Solved Initial State

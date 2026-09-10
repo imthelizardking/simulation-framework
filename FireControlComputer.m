@@ -314,4 +314,19 @@ classdef FireControlComputer < handle
             sol.AimPoint     = r_rel;
         end
     end
+
+    methods (Static)
+        function mil = rad2mil(rad)
+            % NATO/US artillery mil: 6400 mils per full circle, the unit
+            % gun sights and fire-control displays actually read launch
+            % angles in - internal solving stays in radians (trig needs
+            % it), this is only for reporting a solved/specified launch
+            % angle to a person.
+            mil = rad * (3200 / pi);
+        end
+
+        function rad = mil2rad(mil)
+            rad = mil * (pi / 3200);
+        end
+    end
 end

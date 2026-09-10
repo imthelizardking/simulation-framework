@@ -25,7 +25,7 @@ results = mission.run();
 fprintf('Mission finished in %.2f seconds.\n', toc);
 
 % 5. Per-Round Report
-fprintf('\n%4s %8s %8s %8s %8s %10s %s\n', 'Rnd', 'Fire(s)', 'Elev', 'Azim', 'V0', 'Miss(m)', 'Outcome');
+fprintf('\n%4s %8s %8s %8s %8s %10s %s\n', 'Rnd', 'Fire(s)', 'Elev(mil)', 'Azim(mil)', 'V0', 'Miss(m)', 'Outcome');
 hits = 0;
 for i = 1:numel(results)
     r = results(i);
@@ -35,8 +35,9 @@ for i = 1:numel(results)
     end
     is_hit = strcmp(r.TerminationReason, 'ImpactDistance');
     if is_hit, hits = hits + 1; end
-    fprintf('%4d %8.3f %8.2f %8.2f %8.1f %10.2f %s\n', r.RoundNum, r.FireTime, ...
-        rad2deg(r.Elevation), rad2deg(r.Azimuth), r.MuzzleVelocity, r.MissDistance, r.TerminationReason);
+    fprintf('%4d %8.3f %8.1f %8.1f %8.1f %10.2f %s\n', r.RoundNum, r.FireTime, ...
+        FireControlComputer.rad2mil(r.Elevation), FireControlComputer.rad2mil(r.Azimuth), ...
+        r.MuzzleVelocity, r.MissDistance, r.TerminationReason);
 end
 fprintf('\nHits: %d / %d rounds\n', hits, mission.NumRounds);
 
