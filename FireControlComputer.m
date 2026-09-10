@@ -119,6 +119,53 @@ classdef FireControlComputer < handle
                 end
             end
         end
+
+        %% 3. Direct Fire (no solving - wraps caller-specified angles in
+        %% the same sol shape solveNumericalShooting/solveFiringAngles
+        %% return, radians like everywhere else in this class, so a runner
+        %% can swap between indirect (FCC-computed) and direct (specified)
+        %% firing by changing only which of these three methods it calls -
+        %% buildLaunchState/Simulation/reporting downstream stay identical.
+        %% TimeOfFlight/AimPoint/MissDistance aren't computed (no target-
+        %% seeking happened) - a direct-fire runner picks its own
+        %% Simulation TimeSpan rather than deriving it from sol.TimeOfFlight.
+        function sol = solveDirect(obj, elevation, azimuth)
+            sol.IsValid = (elevation >= obj.ElevationMin) && (elevation <= obj.ElevationMax) ...
+                && (azimuth >= obj.AzimuthMin) && (azimuth <= obj.AzimuthMax);
+            sol.Elevation    = elevation;
+            sol.Azimuth      = azimuth;
+            sol.TimeOfFlight = NaN;
+            sol.AimPoint     = [NaN; NaN; NaN];
+            sol.MissDistance = NaN;
+        end
+
+        %% 4. Indirect Fire with Automatic Charge Selection
+        function [sol, chosen_idx] = solveNumericalShootingAutoCharge(obj, munition_candidates, launcher_pos, target_bus, env, branch)
+            % munition_candidates: cell array of Munition objects, each
+            % already built on a specific Charge (e.g.
+            % {MunitionFactory.createM107Artillery('Charge5'), ...
+            %  MunitionFactory.createM107Artillery('Charge6'), ...
+            %  MunitionFactory.createM107Artillery('Charge7')}),
+            % ORDERED LOWEST TO HIGHEST muzzle velocity. Tries each in
+            % order via solveNumericalShooting and returns the first that
+            % reaches the target - standard artillery doctrine of using
+            % the lowest sufficient charge (less barrel wear, tighter
+            % dispersion, steeper/more concealed trajectory) rather than
+            % always maxing out. chosen_idx is 0 (sol.IsValid false) if no
+            % candidate reaches the target.
+            if nargin < 6, branch = 'Low'; end
+            for i = 1:numel(munition_candidates)
+                m = munition_candidates{i};
+                v0 = m.Charge.MuzzleVelocity;
+                sol = obj.solveNumericalShooting(m, launcher_pos, v0, target_bus, env, branch);
+                if sol.IsValid
+                    chosen_idx = i;
+                    return;
+                end
+            end
+            chosen_idx = 0;
+            sol.IsValid = false;
+        end
     end
     
     methods (Access = private)

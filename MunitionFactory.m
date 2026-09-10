@@ -27,13 +27,15 @@ classdef MunitionFactory
             aero = AeroTabulatedSpin();
             aero.RefArea   = FactoryData.getOr(data, 'RefArea', 0.01887);
             aero.RefLength = 0.155;
-            coeffs.CD0        = FactoryData.getOr(data, 'CD0', 0.22);
-            coeffs.CDA2       = FactoryData.getOr(data, 'CDA2', 0);
-            coeffs.CDA4       = FactoryData.getOr(data, 'CDA4', 0);
-            coeffs.CLA        = FactoryData.getOr(data, 'CLA', 2.5);
-            coeffs.CLA3       = FactoryData.getOr(data, 'CLA3', 0);
-            coeffs.Cl_p       = FactoryData.getOr(data, 'CSPIN', -0.03);
-            coeffs.CMagnus_pa = FactoryData.getOr(data, 'CMAGF', 1.2);
+            coeffs.CD0   = FactoryData.getOr(data, 'CD0', 0.22);
+            coeffs.CDA2  = FactoryData.getOr(data, 'CDA2', 0);
+            coeffs.CDA4  = FactoryData.getOr(data, 'CDA4', 0);
+            coeffs.CLA   = FactoryData.getOr(data, 'CLA', 2.5);
+            coeffs.CLA3  = FactoryData.getOr(data, 'CLA3', 0);
+            coeffs.CSPIN = FactoryData.getOr(data, 'CSPIN', -0.03);
+            coeffs.CMA   = FactoryData.getOr(data, 'CMA', 2.0);
+            coeffs.CMA3  = FactoryData.getOr(data, 'CMA3', 0);
+            coeffs.CMAG  = FactoryData.getOr(data, 'CMAG', 1.2);
             aero.Tables.Clean   = coeffs;
             aero.ActiveTableKey = 'Clean';
             m.Aero = aero;
@@ -126,13 +128,15 @@ classdef MunitionFactory
             aero = AeroTabulatedSpin();
             aero.RefArea   = FactoryData.getOr(data, 'RefArea', 4.908e-4);
             aero.RefLength = FactoryData.getOr(data, 'RefLength', 0.025);
-            coeffs.CD0        = FactoryData.getOr(data, 'CD0', 0.18);
-            coeffs.CDA2       = FactoryData.getOr(data, 'CDA2', 0);
-            coeffs.CDA4       = FactoryData.getOr(data, 'CDA4', 0);
-            coeffs.CLA        = FactoryData.getOr(data, 'CLA', 1.5);
-            coeffs.CLA3       = FactoryData.getOr(data, 'CLA3', 0);
-            coeffs.Cl_p       = FactoryData.getOr(data, 'Cl_p', -0.02);
-            coeffs.CMagnus_pa = FactoryData.getOr(data, 'CMagnus_pa', 0.6);
+            coeffs.CD0   = FactoryData.getOr(data, 'CD0', 0.18);
+            coeffs.CDA2  = FactoryData.getOr(data, 'CDA2', 0);
+            coeffs.CDA4  = FactoryData.getOr(data, 'CDA4', 0);
+            coeffs.CLA   = FactoryData.getOr(data, 'CLA', 1.5);
+            coeffs.CLA3  = FactoryData.getOr(data, 'CLA3', 0);
+            coeffs.CSPIN = FactoryData.getOr(data, 'CSPIN', -0.02);
+            coeffs.CMA   = FactoryData.getOr(data, 'CMA', 1.2);
+            coeffs.CMA3  = FactoryData.getOr(data, 'CMA3', 0);
+            coeffs.CMAG  = FactoryData.getOr(data, 'CMAG', 0.6);
             aero.Tables.Clean   = coeffs;
             aero.ActiveTableKey = 'Clean';
             m.Aero = aero;
@@ -164,13 +168,15 @@ classdef MunitionFactory
             aero = AeroTabulatedSpin();
             aero.RefArea   = FactoryData.getOr(data, 'RefArea', 9.621e-4);
             aero.RefLength = FactoryData.getOr(data, 'RefLength', 0.035);
-            coeffs.CD0        = FactoryData.getOr(data, 'CD0', 0.25);
-            coeffs.CDA2       = FactoryData.getOr(data, 'CDA2', 0);
-            coeffs.CDA4       = FactoryData.getOr(data, 'CDA4', 0);
-            coeffs.CLA        = FactoryData.getOr(data, 'CLA', 2.0);
-            coeffs.CLA3       = FactoryData.getOr(data, 'CLA3', 0);
-            coeffs.Cl_p       = FactoryData.getOr(data, 'Cl_p', -0.025);
-            coeffs.CMagnus_pa = FactoryData.getOr(data, 'CMagnus_pa', 0.8);
+            coeffs.CD0   = FactoryData.getOr(data, 'CD0', 0.25);
+            coeffs.CDA2  = FactoryData.getOr(data, 'CDA2', 0);
+            coeffs.CDA4  = FactoryData.getOr(data, 'CDA4', 0);
+            coeffs.CLA   = FactoryData.getOr(data, 'CLA', 2.0);
+            coeffs.CLA3  = FactoryData.getOr(data, 'CLA3', 0);
+            coeffs.CSPIN = FactoryData.getOr(data, 'CSPIN', -0.025);
+            coeffs.CMA   = FactoryData.getOr(data, 'CMA', 1.6);
+            coeffs.CMA3  = FactoryData.getOr(data, 'CMA3', 0);
+            coeffs.CMAG  = FactoryData.getOr(data, 'CMAG', 0.8);
             aero.Tables.Clean   = coeffs;
             aero.ActiveTableKey = 'Clean';
             m.Aero = aero;
@@ -228,8 +234,10 @@ classdef MunitionFactory
 
             % Spin-stabilized extras (AeroTabulatedSpin) - illustrative
             % constants, same caveat as the CD/CL buildup above.
-            coeffs.Cl_p       = FactoryData.getOr(data, 'Cl_p', -0.03);
-            coeffs.CMagnus_pa = FactoryData.getOr(data, 'CMagnus_pa', 1.0);
+            coeffs.CSPIN = FactoryData.getOr(data, 'CSPIN', -0.03);
+            coeffs.CMA   = FactoryData.getOr(data, 'CMA', 2.0);
+            coeffs.CMA3  = FactoryData.getOr(data, 'CMA3', 0);
+            coeffs.CMAG  = FactoryData.getOr(data, 'CMAG', 1.0);
 
             aero.Tables.Clean   = coeffs;
             aero.ActiveTableKey = 'Clean';
@@ -249,8 +257,8 @@ classdef MunitionFactory
 
             % A data/createMOD274.<json|xml|fci|xlsx|mat|txt|sldd> file
             % overrides the parameters below if present (see FactoryData) -
-            % CDA maps to CD0, CDA2 maps to CDA2 (matches the field names
-            % used by this round's real source data).
+            % same standard coefficient vocabulary as every other artillery
+            % preset (CD0/CDA2/CDA4/CLA/CLA3/CSPIN/CMA/CMA3/CMAG).
             data = FactoryData.load('createMOD274');
             m = Munition(FactoryData.getOr(data, 'Name', 'MOD274_155mm_BB'));
 
@@ -265,17 +273,19 @@ classdef MunitionFactory
             % the base-bleed reduction is applied on top. Same rifled/
             % spin-stabilized treatment as M107 - AeroTabulatedSpin with
             % CDA2/CDA4/CLA3 zeroed reproduces the old CD0/CL_alpha-only
-            % buildup, plus illustrative Cl_p/CMagnus_pa.
+            % buildup, plus illustrative CSPIN/CMA/CMA3/CMAG.
             aero = AeroTabulatedSpin();
             aero.RefArea   = FactoryData.getOr(data, 'RefArea', 0.01887);
             aero.RefLength = 0.155;
-            coeffs.CD0        = FactoryData.getOr(data, 'CDA', 0.21);
-            coeffs.CDA2       = FactoryData.getOr(data, 'CDA2', 0);
-            coeffs.CDA4       = 0;
-            coeffs.CLA        = FactoryData.getOr(data, 'CLA', 2.5);
-            coeffs.CLA3       = 0;
-            coeffs.Cl_p       = FactoryData.getOr(data, 'Cl_p', -0.03);
-            coeffs.CMagnus_pa = FactoryData.getOr(data, 'CMagnus_pa', 1.2);
+            coeffs.CD0   = FactoryData.getOr(data, 'CD0', 0.21);
+            coeffs.CDA2  = FactoryData.getOr(data, 'CDA2', 0);
+            coeffs.CDA4  = FactoryData.getOr(data, 'CDA4', 0);
+            coeffs.CLA   = FactoryData.getOr(data, 'CLA', 2.5);
+            coeffs.CLA3  = FactoryData.getOr(data, 'CLA3', 0);
+            coeffs.CSPIN = FactoryData.getOr(data, 'CSPIN', -0.03);
+            coeffs.CMA   = FactoryData.getOr(data, 'CMA', 2.0);
+            coeffs.CMA3  = FactoryData.getOr(data, 'CMA3', 0);
+            coeffs.CMAG  = FactoryData.getOr(data, 'CMAG', 1.2);
             aero.Tables.Clean   = coeffs;
             aero.ActiveTableKey = 'Clean';
             % Very basic base-bleed model (see Propulsion_DYU): a fixed
