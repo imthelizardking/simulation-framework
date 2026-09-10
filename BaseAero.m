@@ -58,7 +58,18 @@ classdef (Abstract) BaseAero < handle
                 val = coeff;
                 return;
             end
-            switch coeff.Type
+
+            % Real external data doesn't always tag a Type - default to
+            % PiecewisePolynomial (the McCoy/PRODAS/FCI-style per-Mach-
+            % segment shape) when it's absent, since that's the format
+            % most likely to arrive untagged.
+            if isfield(coeff, 'Type')
+                switch_type = coeff.Type;
+            else
+                switch_type = 'PiecewisePolynomial';
+            end
+
+            switch switch_type
                 case 'Table'
                     m_clamped = min(max(mach, min(coeff.Mach)), max(coeff.Mach));
                     val = interp1(coeff.Mach, coeff.Value, m_clamped, 'linear');
@@ -80,8 +91,17 @@ classdef (Abstract) BaseAero < handle
                         segIdx = find(coeff.Mach <= m_clamped, 1, 'last');
                     end
                     val = 0;
-                    for k = 1:numel(coeff.Order)
-                        val = val + coeff.Coeffs(segIdx, k) * m_clamped^coeff.Order(k);
+
+                    % Order defaults to sequential powers 1..N (one per
+                    % Coeffs column) when not given explicitly.
+                    if isfield(coeff, 'Order')
+                        order_ = coeff.Order;
+                    else
+                        order_ = 1:size(coeff.Coeffs, 2);
+                    end
+
+                    for k = 1:numel(order_)
+                        val = val + coeff.Coeffs(segIdx, k) * m_clamped^order_(k);
                     end
                 otherwise
                     error('BaseAero:evalCoeff', 'Unknown aero coefficient Type: %s', coeff.Type);

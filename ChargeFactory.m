@@ -22,10 +22,10 @@ classdef ChargeFactory
 
         %% M119A2 modular propelling charge (155mm) - MunitionFactory.createM107Artillery
         function c = getM119A2(zone)
-            % Charge7 = 827 m/s preserves the value used throughout the
-            % existing M107 runners/scenarios.
-            v0_table = containers.Map({'Charge5', 'Charge6', 'Charge7', 'Charge8'}, {650.0, 740.0, 827.0, 890.0});
-            sd_table = containers.Map({'Charge5', 'Charge6', 'Charge7', 'Charge8'}, {4.0, 5.0, 6.0, 7.0});
+            % Charge5-7 updated to 415/497/580 m/s per newer source data.
+            % Charge8 removed - not part of this charge system.
+            v0_table = containers.Map({'Charge5', 'Charge6', 'Charge7'}, {415.0, 497.0, 580.0});
+            sd_table = containers.Map({'Charge5', 'Charge6', 'Charge7'}, {4.0, 5.0, 6.0});
             if ~isKey(v0_table, zone)
                 error('ChargeFactory:UnknownZone', 'M119A2 has no charge zone "%s".', zone);
             end

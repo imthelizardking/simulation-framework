@@ -12,7 +12,7 @@ classdef WeaponPlatformFactory
         function w = createTowedHowitzer155mm()
             w = WeaponPlatform();
             w.Name = 'Towed_155mm_Howitzer';
-            w.MaxMuzzleVelocity = 900.0; % headroom above M119A2 Charge8 (890 m/s)
+            w.MaxMuzzleVelocity = 900.0; % headroom above M119A2's top zone (Charge7, 580 m/s)
             w.ElevationMin = deg2rad(0.0);
             w.ElevationMax = deg2rad(72.0);
             w.AzimuthMin   = deg2rad(-22.5); % on-carriage traverse without repositioning the trails
