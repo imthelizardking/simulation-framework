@@ -8,7 +8,7 @@
 clear; clc; close all;
 
 charge_name   = 'Charge7'; % edit: 'Charge5' | 'Charge6' | 'Charge7'
-elevation_mil = 622.2;     % edit: quadrant elevation (NATO mils, 6400/circle)
+elevation_mil = 600;     % edit: quadrant elevation (NATO mils, 6400/circle)
 azimuth_mil   = 0.0;       % edit: aim bearing
 
 % 1. Setup Environment
