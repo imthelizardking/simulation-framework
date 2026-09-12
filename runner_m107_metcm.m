@@ -12,8 +12,7 @@ azimuth_mil   = 0.0;       % edit: aim bearing
 
 % 1. Setup Environment, METCM profile loaded in the same call (see
 %    Environment's constructor - equivalent to a separate loadMetcm call).
-%    density/gravity/wind/speed_of_sound are left [] (skip -> defaults).
-env = Environment([], [], [], [], 'metcm_std');
+env = Environment('MetcmName', 'metcm_std');
 
 % 2. Instantiate Vehicle via MunitionFactory
 shell = MunitionFactory.createM107Artillery(charge_name);

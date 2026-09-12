@@ -53,20 +53,27 @@ classdef Environment < handle
     end
 
     methods
-        function obj = Environment(density, gravity, wind, speed_of_sound, metcm_name)
-            % Every argument is optional and [] skips it (keeps the
-            % property's own default) - density/gravity default to
-            % STANDARD_SEA_LEVEL_DENSITY/STANDARD_GRAVITY above, wind
-            % defaults to calm ([0;0;0]), so Environment() alone is a full
-            % standard-atmosphere, no-wind environment.
-            if nargin > 0 && ~isempty(density),  obj.SeaLevelDensity = density; end
-            if nargin > 1 && ~isempty(gravity),  obj.Gravity = gravity; end
-            if nargin > 2 && ~isempty(wind),     obj.BaseWind_NED = wind; end
-            if nargin > 3 && ~isempty(speed_of_sound), obj.SeaLevelSpeedOfSound = speed_of_sound; end
-            % Optional one-line construction of a METCM-backed Environment
-            % - equivalent to calling loadMetcm(metcm_name) right after
-            % construction (see loadMetcm for the file format/lookup path).
-            if nargin > 4 && ~isempty(metcm_name), obj.loadMetcm(metcm_name); end
+        function obj = Environment(nv)
+            % Name-value constructor - pass only the arguments you're
+            % actually overriding (e.g. Environment('MetcmName',
+            % 'metcm_std'), or Environment() alone for a full standard-
+            % atmosphere, no-wind, no-METCM environment) instead of
+            % positionally padding out skipped ones. MetcmName loads the
+            % named METCM file in this same call - equivalent to calling
+            % loadMetcm(name) right after construction (see loadMetcm for
+            % the file format/lookup path).
+            arguments
+                nv.SeaLevelDensity      (1,1) double = Environment.STANDARD_SEA_LEVEL_DENSITY
+                nv.Gravity              (1,1) double = Environment.STANDARD_GRAVITY
+                nv.BaseWind_NED         (3,1) double = [0; 0; 0]
+                nv.SeaLevelSpeedOfSound (1,1) double = 340.29
+                nv.MetcmName            (1,:) char   = ''
+            end
+            obj.SeaLevelDensity      = nv.SeaLevelDensity;
+            obj.Gravity              = nv.Gravity;
+            obj.BaseWind_NED         = nv.BaseWind_NED;
+            obj.SeaLevelSpeedOfSound = nv.SeaLevelSpeedOfSound;
+            if ~isempty(nv.MetcmName), obj.loadMetcm(nv.MetcmName); end
         end
 
         function loadMetcm(obj, name)
