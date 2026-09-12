@@ -7,7 +7,7 @@
 % AeroTabulatedSpin for their rifled, spin-stabilized rounds.
 clear; clc; close all;
 
-throw_angle_mil = 622.2; % edit this to try other launch angles (NATO mils, 6400/circle)
+launch_angle_mil = 622.2; % edit this to try other launch angles (NATO mils, 6400/circle)
 
 % 1. Setup Environment (no wind - isolate the effect of launch angle alone)
 env = Environment(1.225, 9.81, [0; 0; 0]);
@@ -18,15 +18,15 @@ v0 = dart.Charge.MuzzleVelocity; % see MunitionFactory.createFinStabilizedDart
 
 % 3. Initial Launch State (Z-Up frame, planar X-Z throw)
 launcher_pos = [0; 0; 1.8]; % thrown from about head height
-throw_angle = FireControlComputer.mil2rad(throw_angle_mil);
-dart.Dynamics.InitialState = dart.buildLaunchState(launcher_pos, v0, throw_angle, 0);
+launch_angle = FireControlComputer.mil2rad(launch_angle_mil);
+dart.Dynamics.InitialState = dart.buildLaunchState(launcher_pos, v0, launch_angle, 0);
 
 % 4. Assemble Simulation & Execute
 % No target for this scenario - default Termination (ground impact via
 % MinAltitude) is exactly what a pure ballistic throw needs.
 sim = Simulation(dart, [], env, [0 10], 0.001);
 
-fprintf('Throwing fin-stabilized dart at %.1f mils, v0 = %.1f m/s...\n', throw_angle_mil, v0);
+fprintf('Throwing fin-stabilized dart at %.1f mils, v0 = %.1f m/s...\n', launch_angle_mil, v0);
 tic;
 telemetry = sim.run();
 fprintf('Sim finished in %.2f seconds (%.2f s simulated).\n', toc, telemetry.time(end));
@@ -40,4 +40,4 @@ fprintf('Apogee              : %.2f m at t=%.2f s\n', apogee, telemetry.time(apo
 fprintf('Throw Range         : %.2f m\n', throw_range);
 fprintf('Time of Flight      : %.2f s\n', telemetry.time(end));
 
-plotTrajectoryProfile(telemetry, [], sprintf('Fin-Stabilized Dart @ %.0f mils', throw_angle_mil));
+plotTrajectoryProfile(telemetry, [], sprintf('Fin-Stabilized Dart @ %.0f mils', launch_angle_mil));
