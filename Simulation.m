@@ -185,8 +185,19 @@ classdef Simulation < handle
             % read on the parent body, it's a hand-off to the fragment
             % swarm (see triggerFragmentation), so it must win any
             % coincidental tie with e.g. MinAltitude at the same step.
-            if isa(obj.Munition, 'Munition') && ~isempty(obj.Munition.BurstTime) && t >= obj.Munition.BurstTime
-                is_term = true; reason = 'Burst'; return;
+            % SelfDestructTime is a hard ceiling on when that burst
+            % happens: it fires even if BurstTime was never programmed,
+            % and preempts BurstTime if BurstTime would fire later -
+            % the round can't fly on past it as an unexploded dud.
+            if isa(obj.Munition, 'Munition')
+                t_burst = obj.Munition.BurstTime;
+                if ~isempty(obj.Munition.SelfDestructTime) && ...
+                        (isempty(t_burst) || t_burst > obj.Munition.SelfDestructTime)
+                    t_burst = obj.Munition.SelfDestructTime;
+                end
+                if ~isempty(t_burst) && t >= t_burst
+                    is_term = true; reason = 'Burst'; return;
+                end
             end
             [is_term, reason] = Simulation.evalTerminationCriteria(obj.Termination, t, X, target_pos, target_vel);
         end

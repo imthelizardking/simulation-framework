@@ -341,6 +341,13 @@ classdef FireControlComputer < handle
             % v0 in place of the nominal one - elevation/azimuth stay the
             % same, since those are already fixed by the time muzzle
             % velocity is known).
+            %
+            % If munition_builder's round has a SelfDestructTime set, the
+            % solved burst time is capped at it: a fuze can't be
+            % programmed later than the round's own self-destruct ceiling
+            % (Simulation.checkTermination enforces that ceiling in flight
+            % regardless, but there's no reason to solve for a burst time
+            % that would just get overridden anyway).
             if nargin < 11 || isempty(impact_distance), impact_distance = min(2.0, standoff / 2); end
             if nargin < 12 || isempty(max_downrange), max_downrange = 100.0; end
 
@@ -354,6 +361,9 @@ classdef FireControlComputer < handle
             recon_tel = recon_sim.run();
 
             t_burst = FireControlComputer.findRangeCrossingTime(recon_tel, standoff);
+            if isa(recon_round, 'Munition') && ~isempty(recon_round.SelfDestructTime)
+                t_burst = min(t_burst, recon_round.SelfDestructTime);
+            end
             if nargout > 1
                 telemetry = recon_tel;
             end

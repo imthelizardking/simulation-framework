@@ -2,6 +2,7 @@
 classdef Munition < handle
     properties
         Name           (1,:) char = 'Munition'
+        Type           (1,:) char = 'Unguided' % free-form role label, e.g. 'Guided', 'Airburst', 'TP', 'CourseCorrection', 'HE' - not a fixed enum
         Dynamics                  = []  % Holds instance of BaseDynamics subclass
         Aero                      = []  % Holds instance of BaseAero subclass
         Propulsion                = []  % Holds instance of BasePropulsion subclass
@@ -13,6 +14,7 @@ classdef Munition < handle
         TwistRate      (1,1) double = 0.0 % rifling twist, calibers/turn; 0 = not applicable (fin-stabilized/no spin)
         LastGNCBus     struct     = struct()
         BurstTime                 = []  % s since launch at which fragmentation triggers; [] = never bursts
+        SelfDestructTime          = []  % s since launch; hard ceiling on BurstTime - forces a burst at this time regardless of BurstTime (unset or programmed later), so the round can't fly on as an unexploded dud. [] = no ceiling. See Simulation.checkTermination and FireControlComputer.solveBurstTimeForStandoff.
         ParticleModel             = []  % BaseParticleModel subclass instance, consumed by spawnParticles
     end
 

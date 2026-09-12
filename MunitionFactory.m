@@ -10,6 +10,7 @@ classdef MunitionFactory
             % FactoryData); otherwise these hardcoded values are used as-is.
             data = FactoryData.load('createM107Artillery');
             m = Munition(FactoryData.getOr(data, 'Name', 'M107_155mm'));
+            m.Type = FactoryData.getOr(data, 'Type', 'HE');
 
             % Mass properties (NATO standard ~43.2 kg, d = 0.155 m)
             m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 43.2);
@@ -54,6 +55,7 @@ classdef MunitionFactory
             % otherwise these hardcoded values are used as-is.
             data = FactoryData.load('createHydra70');
             m = Munition(FactoryData.getOr(data, 'Name', 'Hydra_70_M151'));
+            m.Type = FactoryData.getOr(data, 'Type', 'Unguided');
 
             % Launch mass ~10.5 kg (burnout mass ~6.2 kg)
             m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 10.5);
@@ -90,6 +92,7 @@ classdef MunitionFactory
             % FactoryData); otherwise these hardcoded values are used as-is.
             data = FactoryData.load('createFinStabilizedDart');
             m = Munition(FactoryData.getOr(data, 'Name', 'FinStabilized_Dart'));
+            m.Type = FactoryData.getOr(data, 'Type', 'TP');
 
             m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 0.1);
             m.MassProperties.Inertia = eye(3) * 1e-5; % unused by Dynamics3Dof - no real attitude dynamics there
@@ -116,6 +119,7 @@ classdef MunitionFactory
             % otherwise these hardcoded values are used as-is.
             data = FactoryData.load('create25mmM793');
             m = Munition(FactoryData.getOr(data, 'Name', '25mm_M793'));
+            m.Type = FactoryData.getOr(data, 'Type', 'TP');
 
             % Projectile mass ~0.185 kg, d = 0.025 m
             m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 0.185);
@@ -155,6 +159,12 @@ classdef MunitionFactory
             % otherwise these hardcoded values are used as-is.
             data = FactoryData.load('create35mmHE');
             m = Munition(FactoryData.getOr(data, 'Name', '35mm_HET'));
+            m.Type = FactoryData.getOr(data, 'Type', 'Airburst');
+            % Backup fuze timer: bursts at this time regardless of any
+            % programmed proximity/standoff burst time, so the round can't
+            % fly on as unexploded ordnance if it never gets close enough
+            % to the target to trigger (see Munition.SelfDestructTime).
+            m.SelfDestructTime = FactoryData.getOr(data, 'SelfDestructTime', 8.0);
 
             % Illustrative mass properties for a 35mm AA gun round, d = 0.035 m
             m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 0.55);
@@ -197,6 +207,12 @@ classdef MunitionFactory
             % their illustrative defaults.
             data = FactoryData.load('create76mmHE');
             m = Munition(FactoryData.getOr(data, 'Name', '76mm_HE'));
+            m.Type = FactoryData.getOr(data, 'Type', 'Airburst');
+            % Backup fuze timer: bursts at this time regardless of any
+            % programmed proximity/standoff burst time, so the round can't
+            % fly on as unexploded ordnance if it never gets close enough
+            % to the target to trigger (see Munition.SelfDestructTime).
+            m.SelfDestructTime = FactoryData.getOr(data, 'SelfDestructTime', 8.0);
 
             % Illustrative mass properties for a 76mm gun round, d = 0.076 m
             m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 6.0);
@@ -261,6 +277,7 @@ classdef MunitionFactory
             % preset (CD0/CDA2/CDA4/CLA/CLA3/CSPIN/CMA/CMA3/CMAG).
             data = FactoryData.load('createMOD274');
             m = Munition(FactoryData.getOr(data, 'Name', 'MOD274_155mm_BB'));
+            m.Type = FactoryData.getOr(data, 'Type', 'HE');
 
             % Illustrative mass properties for a 155mm base-bleed HE round
             % (runs a bit heavier than M107 due to the base-bleed unit)
@@ -317,6 +334,7 @@ classdef MunitionFactory
             % underneath, since createHydra70() is called above.
             data = FactoryData.load('createAPKWS');
             m.Name = FactoryData.getOr(data, 'Name', 'APKWS_Guided_Rocket');
+            m.Type = FactoryData.getOr(data, 'Type', 'Guided');
             m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 15.0); % GNC mid-section adds weight
 
             % Attach LOAL Seeker and Guidance (LaserSeeker referenced here
@@ -353,6 +371,7 @@ classdef MunitionFactory
             % differ from the defaults below.
             data = FactoryData.load('createGuidedRocketDatcom');
             m = Munition(FactoryData.getOr(data, 'Name', 'GuidedRocket_DATCOM'));
+            m.Type = FactoryData.getOr(data, 'Type', 'Guided');
 
             % Illustrative mass properties (not from the DATCOM run, which
             % only reports aero) - adjust to your actual rocket's real
