@@ -335,5 +335,53 @@ classdef MunitionFactory
             m.Controller = LongitudinalFinController();
         end
 
+        %% Guided Rocket with Missile DATCOM Aero Tables (70mm-class)
+        function m = createGuidedRocketDatcom(datcom_name)
+            if nargin < 1, datcom_name = 'ex1_in'; end
+            % A data/createGuidedRocketDatcom.<ext> file overrides the
+            % mass/motor/seeker parameters below if present (see
+            % FactoryData); the aero table itself is a SEPARATE Missile
+            % DATCOM printed-output file (data/<datcom_name>.txt, see
+            % DatcomReader) rather than a FactoryData override, since it's
+            % a 2D Mach/Alpha grid, not the scalar/Mach-table coefficient
+            % shape FactoryData.getOr(...) is built for. Defaults to
+            % data/ex1_in.txt - a real Digital DATCOM run (the manual's
+            % "Example Problem 1"; data/EX1_inout.txt is its input deck)
+            % - rather than fabricated data, so the pipeline is exercised
+            % against genuine DATCOM output. Swap in your own rocket's
+            % DATCOM run once you have one; its reference dimensions will
+            % differ from the defaults below.
+            data = FactoryData.load('createGuidedRocketDatcom');
+            m = Munition(FactoryData.getOr(data, 'Name', 'GuidedRocket_DATCOM'));
+
+            % Illustrative mass properties (not from the DATCOM run, which
+            % only reports aero) - adjust to your actual rocket's real
+            % mass/inertia.
+            m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 15.0);
+            m.MassProperties.Inertia = diag(FactoryData.getOr(data, 'Inertia', [0.008, 0.45, 0.45]));
+
+            m.Dynamics = Dynamics3Dof();
+            % RefArea/RefLength default to Example Problem 1's own SREF/
+            % CBARR (8.85 ft^2, 2.48 ft - see data/EX1_inout.txt's $OPTINS
+            % card), converted to SI: the CD/CL table is only physically
+            % meaningful with the reference dimensions DATCOM normalized
+            % it against.
+            m.Aero = DatcomReader.load(datcom_name, ...
+                FactoryData.getOr(data, 'RefArea', 0.822192), ...   % 8.85 ft^2
+                FactoryData.getOr(data, 'RefLength', 0.755904));    % 2.48 ft
+            m.Propulsion = Propulsion_SolidMotor( ...
+                FactoryData.getOr(data, 'Thrust', 5900.0), ...
+                FactoryData.getOr(data, 'BurnTime', 1.1));
+
+            seeker_fov_deg = FactoryData.getOr(data, 'SeekerFOV_deg', 20);
+            t_seeker_on    = FactoryData.getOr(data, 'T_SeekerOn', 1.2); % Seeker uncages after motor burnout
+            m.Sensors    = { SeekerLOAL(deg2rad(seeker_fov_deg), t_seeker_on) };
+            guid = OptimalAngleFOVGuidance();
+            guid.UseFOV = true;
+            guid.T_SeekerOn = t_seeker_on;
+            m.Guidance   = guid;
+            m.Controller = LongitudinalFinController();
+        end
+
     end
 end
