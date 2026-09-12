@@ -4,7 +4,7 @@ clear; clc; close all;
 launch_angle_mil = 800.0; % edit this to try other quadrant elevations (NATO mils, 6400/circle)
 
 % 1. Setup Environment (no wind - isolate the effect of launch angle alone)
-env = Environment(1.225, 9.81, [0; 0; 0]);
+env = Environment();
 
 % 2. Instantiate Vehicle via MunitionFactory
 round = MunitionFactory.create25mmM793();

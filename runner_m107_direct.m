@@ -12,7 +12,7 @@ elevation_mil = 600;     % edit: quadrant elevation (NATO mils, 6400/circle)
 azimuth_mil   = 0.0;       % edit: aim bearing
 
 % 1. Setup Environment
-env = Environment(1.225, 9.81, [0; 0; 0]);
+env = Environment();
 
 % 2. Instantiate Vehicle via MunitionFactory
 shell = MunitionFactory.createM107Artillery(charge_name);
@@ -21,7 +21,7 @@ launcher_pos = [0; 0; 0];
 
 % 3. Fire Control: direct fire - no solving, just wraps the given angles
 fcc = FireControlComputer(env.Gravity, 'Z-Up');
-sol = fcc.solveDirect(FireControlComputer.mil2rad(elevation_mil), FireControlComputer.mil2rad(azimuth_mil));
+sol = fcc.solveDirect(elevation_mil, azimuth_mil);
 
 if ~sol.IsValid
     error('Elevation/azimuth outside the fire control computer''s mechanical limits.');
@@ -31,7 +31,8 @@ fprintf('Firing M107 on %s charge (%.0f m/s) at QE=%.1f mils, azimuth=%.1f mils.
     charge_name, v0, elevation_mil, azimuth_mil);
 
 % 4. Apply Specified Initial State
-shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0, sol.Elevation, sol.Azimuth);
+shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0, ...
+    FireControlComputer.mil2rad(sol.Elevation), FireControlComputer.mil2rad(sol.Azimuth));
 
 % 5. Assemble Simulation & Execute. No target - default Termination
 % (ground impact via MinAltitude) is exactly what direct-fire trajectory

@@ -2,7 +2,7 @@
 clear; clc; close all;
 
 % 1. Setup Environment
-env = Environment(1.225, 9.81, [0; 0; 0]); % No wind - isolate the base-bleed effect
+env = Environment(); % No wind - isolate the base-bleed effect
 
 % 2. Setup Target: 25 km downrange - well beyond M107's ~21 km max range
 %    at comparable charge energy, which is exactly the point of base bleed.
@@ -26,12 +26,13 @@ if ~sol.IsValid
 end
 
 fprintf('=== Solution Converged in %d Iterations ===\n', sol.Iterations);
-fprintf('Quadrant Elevation (QE) : %.1f mils\n', FireControlComputer.rad2mil(sol.Elevation));
+fprintf('Quadrant Elevation (QE) : %.1f mils\n', sol.Elevation);
 fprintf('Predicted Flight Time   : %.2f s\n', sol.TimeOfFlight);
 fprintf('Convergence Miss Error  : %.3f m\n', sol.MissDistance);
 
 % 5. Apply Solved Initial State
-shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0, sol.Elevation, sol.Azimuth);
+shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0, ...
+    FireControlComputer.mil2rad(sol.Elevation), FireControlComputer.mil2rad(sol.Azimuth));
 
 % 6. Assemble Simulation & Execute
 sim = Simulation(shell, target, env, [0 sol.TimeOfFlight * 1.05], 0.005);

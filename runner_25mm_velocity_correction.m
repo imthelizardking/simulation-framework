@@ -18,7 +18,7 @@
 clear; clc; close all;
 
 % 1. Setup Environment (standard atmosphere, no wind)
-env = Environment(1.225, 9.81, [0; 0; 0]);
+env = Environment();
 
 % 2. Setup Target: same DJI-class drone as runner_25mm_fragmentation.m
 target = TargetConstantVelocity([700; 150; 100], [-10; 6; 0]);
@@ -41,8 +41,8 @@ if ~sol.IsValid
 end
 
 fprintf('=== Direct-Lead Solution (nominal v0 = %.1f m/s) ===\n', v0_nominal);
-fprintf('Elevation                : %.1f mils\n', FireControlComputer.rad2mil(sol.Elevation));
-fprintf('Azimuth                  : %.1f mils\n', FireControlComputer.rad2mil(sol.Azimuth));
+fprintf('Elevation                : %.1f mils\n', sol.Elevation);
+fprintf('Azimuth                  : %.1f mils\n', sol.Azimuth);
 
 % 5. Pre-fire (programmed) burst time: the fuze setting the fire control
 %    computer transmits BEFORE knowing this round's true muzzle
@@ -84,7 +84,8 @@ fprintf('Standoff range WITH correction    : %.2f m (by construction)\n', STANDO
 
 % 9. Fire the real round with the corrected burst time and run the full
 %    engagement, including the fragmentation swarm.
-round.Dynamics.InitialState = round.buildLaunchState(launcher_pos, actual_v0, sol.Elevation, sol.Azimuth);
+round.Dynamics.InitialState = round.buildLaunchState(launcher_pos, actual_v0, ...
+    FireControlComputer.mil2rad(sol.Elevation), FireControlComputer.mil2rad(sol.Azimuth));
 round.BurstTime = corrected_burst_time;
 
 sim = Simulation(round, target, env, timespan, dt);

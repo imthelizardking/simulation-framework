@@ -11,7 +11,7 @@
 clear; clc; close all;
 
 % 1. Setup Environment
-env = Environment(1.225, 9.81, [0; 0; 0]); % No wind, standard atmosphere
+env = Environment(); % No wind, standard atmosphere
 
 % 2. Setup Inbound Target (same as runner_sam_engagement.m)
 target = TargetConstantVelocity([8000; 0; 3000], [-250; 0; 0]);

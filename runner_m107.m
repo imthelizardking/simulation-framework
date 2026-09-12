@@ -2,7 +2,7 @@
 clear; clc; close all;
 
 % 1. Setup Environment (Standard atmosphere, optional crosswind)
-env = Environment(1.225, 9.81, [0; 0; 0]); % No wind
+env = Environment(); % No wind
 
 % 2. Setup Target
 target = TargetStatic([7500; 350; 0]); % Target 7.5 km downrange, 350 m offset
@@ -23,13 +23,14 @@ if ~sol.IsValid
 end
 
 fprintf('=== Solution Converged in %d Iterations ===\n', sol.Iterations);
-fprintf('Quadrant Elevation (QE) : %.1f mils\n', FireControlComputer.rad2mil(sol.Elevation));
-fprintf('Azimuth (Aim Bearing)   : %.1f mils (Wind corrected)\n', FireControlComputer.rad2mil(sol.Azimuth));
+fprintf('Quadrant Elevation (QE) : %.1f mils\n', sol.Elevation);
+fprintf('Azimuth (Aim Bearing)   : %.1f mils (Wind corrected)\n', sol.Azimuth);
 fprintf('Predicted Flight Time   : %.2f s\n', sol.TimeOfFlight);
 fprintf('Convergence Miss Error  : %.3f m\n', sol.MissDistance);
 
 % 5. Apply Solved Initial State to Munition
-shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0_charge7, sol.Elevation, sol.Azimuth);
+shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0_charge7, ...
+    FireControlComputer.mil2rad(sol.Elevation), FireControlComputer.mil2rad(sol.Azimuth));
 
 % 6. Assemble Simulation & Execute
 % NOTE: no Visualizer attached - LiveEngagementPlotter works fine against

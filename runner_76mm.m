@@ -2,7 +2,7 @@
 clear; clc; close all;
 
 % 1. Setup Environment (standard atmosphere, no wind)
-env = Environment(1.225, 9.81, [0; 0; 0]);
+env = Environment();
 
 % 2. Setup Target: same inbound target as runner_sam_engagement.m (the
 %    "drone" used there), so the 76mm gun and the guided interceptor can
@@ -29,12 +29,13 @@ if ~sol.IsValid
 end
 
 fprintf('=== Direct-Lead Solution ===\n');
-fprintf('Elevation                : %.1f mils\n', FireControlComputer.rad2mil(sol.Elevation));
-fprintf('Azimuth                  : %.1f mils\n', FireControlComputer.rad2mil(sol.Azimuth));
+fprintf('Elevation                : %.1f mils\n', sol.Elevation);
+fprintf('Azimuth                  : %.1f mils\n', sol.Azimuth);
 fprintf('Predicted Intercept Time : %.3f s\n', sol.TimeOfFlight);
 
 % 5. Apply Solved Initial State
-shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0, sol.Elevation, sol.Azimuth);
+shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0, ...
+    FireControlComputer.mil2rad(sol.Elevation), FireControlComputer.mil2rad(sol.Azimuth));
 
 % 6. Assemble Simulation & Execute. Unguided direct-fire round with no
 %    terminal correction - ImpactDistance is a large-HE proximity-effect

@@ -2,31 +2,18 @@
 % Same direct-fire setup as runner_m107_direct.m, but the Environment's
 % atmosphere comes from data/metcm_std.txt (see Environment.loadMetcm)
 % instead of the built-in ISA formulas. metcm_std.txt represents "standard
-% conditions" (calm, near-ISA), so this is really a sanity check that the
-% METCM path produces trajectories close to the ISA-based runner, not a
-% scenario built to show a big difference - swap in a real (non-standard)
-% METCM file to actually see one.
+% conditions" (calm, near-ISA) - swap in a real (non-standard) METCM file
+% to see a bigger difference from the ISA-based runner.
 clear; clc; close all;
 
 charge_name   = 'Charge7'; % edit: 'Charge5' | 'Charge6' | 'Charge7'
 elevation_mil = 600;       % edit: quadrant elevation (NATO mils, 6400/circle)
 azimuth_mil   = 0.0;       % edit: aim bearing
 
-% 1. Setup Environment: ISA by default, then switch to the METCM profile.
-env = Environment(1.225, 9.81, [0; 0; 0]);
-env.loadMetcm('metcm_std');
-
-% Quick sanity check against plain ISA at a few altitudes this trajectory
-% will actually pass through - should be close, since the file is a calm,
-% near-standard atmosphere.
-env_isa = Environment(1.225, 9.81, [0; 0; 0]); % no loadMetcm - stays ISA
-fprintf('%8s %12s %12s %12s %12s\n', 'Alt(m)', 'ISA T(K)', 'METCM T(K)', 'ISA rho', 'METCM rho');
-for h = [0 1000 2000 3000 4000]
-    fprintf('%8d %12.2f %12.2f %12.4f %12.4f\n', h, ...
-        env_isa.getTemperature(h), env.getTemperature(h), ...
-        env_isa.getDensity(h), env.getDensity(h));
-end
-fprintf('\n');
+% 1. Setup Environment, METCM profile loaded in the same call (see
+%    Environment's constructor - equivalent to a separate loadMetcm call).
+%    density/gravity/wind/speed_of_sound are left [] (skip -> defaults).
+env = Environment([], [], [], [], 'metcm_std');
 
 % 2. Instantiate Vehicle via MunitionFactory
 shell = MunitionFactory.createM107Artillery(charge_name);
@@ -35,7 +22,7 @@ launcher_pos = [0; 0; 0];
 
 % 3. Fire Control: direct fire - no solving, just wraps the given angles
 fcc = FireControlComputer(env.Gravity, 'Z-Up');
-sol = fcc.solveDirect(FireControlComputer.mil2rad(elevation_mil), FireControlComputer.mil2rad(azimuth_mil));
+sol = fcc.solveDirect(elevation_mil, azimuth_mil);
 
 if ~sol.IsValid
     error('Elevation/azimuth outside the fire control computer''s mechanical limits.');
@@ -45,7 +32,8 @@ fprintf('Firing M107 on %s charge (%.0f m/s) at QE=%.1f mils under METCM atmosph
     charge_name, v0, elevation_mil);
 
 % 4. Apply Specified Initial State
-shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0, sol.Elevation, sol.Azimuth);
+shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0, ...
+    FireControlComputer.mil2rad(sol.Elevation), FireControlComputer.mil2rad(sol.Azimuth));
 
 % 5. Assemble Simulation & Execute
 sim = Simulation(shell, [], env, [0 90], 0.005);

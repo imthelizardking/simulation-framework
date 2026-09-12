@@ -11,9 +11,21 @@ classdef Environment < handle
     % SeaLevelSpeedOfSound rescales the ISA altitude curve by ratio rather
     % than being ignored above h=0 - see getDensity/getSpeedOfSound (only
     % applies when no METCM data is loaded).
+    properties (Constant)
+        % Standard defaults for Gravity/SeaLevelDensity below - these don't
+        % change scenario to scenario, so they're named constants (one
+        % source of truth, referenceable as Environment.STANDARD_GRAVITY /
+        % Environment.STANDARD_SEA_LEVEL_DENSITY) rather than repeated
+        % numeric literals. Still per-instance overridable properties, not
+        % hardcoded, for the rare scenario that actually needs a different
+        % value (e.g. a non-Earth gravity or a non-standard air density).
+        STANDARD_GRAVITY            = 9.81   % m/s^2
+        STANDARD_SEA_LEVEL_DENSITY  = 1.225  % kg/m^3, ISA sea-level standard
+    end
+
     properties
-        Gravity              (1,1) double = 9.81
-        SeaLevelDensity       (1,1) double = 1.225   % kg/m^3, ISA sea-level standard
+        Gravity              (1,1) double = Environment.STANDARD_GRAVITY
+        SeaLevelDensity       (1,1) double = Environment.STANDARD_SEA_LEVEL_DENSITY
         SeaLevelSpeedOfSound  (1,1) double = 340.29  % m/s, ISA sea-level standard
         BaseWind_NED          (3,1) double = [0; 0; 0]
 
@@ -41,11 +53,20 @@ classdef Environment < handle
     end
 
     methods
-        function obj = Environment(density, gravity, wind, speed_of_sound)
-            if nargin > 0, obj.SeaLevelDensity = density; end
-            if nargin > 1, obj.Gravity = gravity; end
-            if nargin > 2, obj.BaseWind_NED = wind; end
-            if nargin > 3, obj.SeaLevelSpeedOfSound = speed_of_sound; end
+        function obj = Environment(density, gravity, wind, speed_of_sound, metcm_name)
+            % Every argument is optional and [] skips it (keeps the
+            % property's own default) - density/gravity default to
+            % STANDARD_SEA_LEVEL_DENSITY/STANDARD_GRAVITY above, wind
+            % defaults to calm ([0;0;0]), so Environment() alone is a full
+            % standard-atmosphere, no-wind environment.
+            if nargin > 0 && ~isempty(density),  obj.SeaLevelDensity = density; end
+            if nargin > 1 && ~isempty(gravity),  obj.Gravity = gravity; end
+            if nargin > 2 && ~isempty(wind),     obj.BaseWind_NED = wind; end
+            if nargin > 3 && ~isempty(speed_of_sound), obj.SeaLevelSpeedOfSound = speed_of_sound; end
+            % Optional one-line construction of a METCM-backed Environment
+            % - equivalent to calling loadMetcm(metcm_name) right after
+            % construction (see loadMetcm for the file format/lookup path).
+            if nargin > 4 && ~isempty(metcm_name), obj.loadMetcm(metcm_name); end
         end
 
         function loadMetcm(obj, name)

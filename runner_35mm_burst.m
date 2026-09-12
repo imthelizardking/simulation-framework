@@ -2,7 +2,7 @@
 clear; clc; close all;
 
 % 1. Setup Environment
-env = Environment(1.225, 9.81, [0; 0; 0]);
+env = Environment();
 
 % 2. Setup Target: same DJI-class drone as runner_35mm_antidrone.m
 target = TargetConstantVelocity([1000; 200; 120], [-12; 8; 0]);
@@ -36,7 +36,7 @@ for i = 1:numel(results)
     is_hit = strcmp(r.TerminationReason, 'ImpactDistance');
     if is_hit, hits = hits + 1; end
     fprintf('%4d %8.3f %8.1f %8.1f %8.1f %10.2f %s\n', r.RoundNum, r.FireTime, ...
-        FireControlComputer.rad2mil(r.Elevation), FireControlComputer.rad2mil(r.Azimuth), ...
+        r.Elevation, r.Azimuth, ...
         r.MuzzleVelocity, r.MissDistance, r.TerminationReason);
 end
 fprintf('\nHits: %d / %d rounds\n', hits, mission.NumRounds);

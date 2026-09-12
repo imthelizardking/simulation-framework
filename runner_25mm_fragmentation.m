@@ -14,7 +14,7 @@
 clear; clc; close all;
 
 % 1. Setup Environment (standard atmosphere, no wind)
-env = Environment(1.225, 9.81, [0; 0; 0]);
+env = Environment();
 
 % 2. Setup Target: small drone at a shorter engagement range than the 35mm
 %    scenario, in keeping with 25mm's smaller HE-equivalent fragmentation
@@ -37,8 +37,8 @@ if ~sol.IsValid
 end
 
 fprintf('=== Direct-Lead Solution ===\n');
-fprintf('Elevation                : %.1f mils\n', FireControlComputer.rad2mil(sol.Elevation));
-fprintf('Azimuth                  : %.1f mils\n', FireControlComputer.rad2mil(sol.Azimuth));
+fprintf('Elevation                : %.1f mils\n', sol.Elevation);
+fprintf('Azimuth                  : %.1f mils\n', sol.Azimuth);
 fprintf('Predicted Intercept Time : %.3f s\n', sol.TimeOfFlight);
 
 % 5. Apply Solved Initial State. BurstTime is set so the round is exactly
@@ -48,7 +48,8 @@ fprintf('Predicted Intercept Time : %.3f s\n', sol.TimeOfFlight);
 %    ignores drag, so its predicted TimeOfFlight doesn't land on a fixed
 %    standoff distance reliably).
 STANDOFF_RANGE = 10.0; % m; burst this far short of the target
-round.Dynamics.InitialState = round.buildLaunchState(launcher_pos, v0, sol.Elevation, sol.Azimuth);
+round.Dynamics.InitialState = round.buildLaunchState(launcher_pos, v0, ...
+    FireControlComputer.mil2rad(sol.Elevation), FireControlComputer.mil2rad(sol.Azimuth));
 
 round.BurstTime = FireControlComputer.solveBurstTimeForStandoff(...
     @MunitionFactory.create25mmM793, launcher_pos, v0, sol.Elevation, sol.Azimuth, ...

@@ -11,7 +11,7 @@ elevation_mil = 711.1; % edit: quadrant elevation (NATO mils, near max-range for
 azimuth_mil   = 0.0;   % edit: aim bearing
 
 % 1. Setup Environment
-env = Environment(1.225, 9.81, [0; 0; 0]);
+env = Environment();
 
 % 2. Instantiate Vehicle via MunitionFactory
 shell = MunitionFactory.createMOD274(charge_name);
@@ -20,7 +20,7 @@ launcher_pos = [0; 0; 0];
 
 % 3. Fire Control: direct fire - no solving, just wraps the given angles
 fcc = FireControlComputer(env.Gravity, 'Z-Up');
-sol = fcc.solveDirect(FireControlComputer.mil2rad(elevation_mil), FireControlComputer.mil2rad(azimuth_mil));
+sol = fcc.solveDirect(elevation_mil, azimuth_mil);
 
 if ~sol.IsValid
     error('Elevation/azimuth outside the fire control computer''s mechanical limits.');
@@ -30,7 +30,8 @@ fprintf('Firing MOD274 on DM92 %s charge (%.0f m/s) at QE=%.1f mils, azimuth=%.1
     charge_name, v0, elevation_mil, azimuth_mil);
 
 % 4. Apply Specified Initial State
-shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0, sol.Elevation, sol.Azimuth);
+shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0, ...
+    FireControlComputer.mil2rad(sol.Elevation), FireControlComputer.mil2rad(sol.Azimuth));
 
 % 5. Assemble Simulation & Execute
 sim = Simulation(shell, [], env, [0 90], 0.005);

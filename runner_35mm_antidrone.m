@@ -2,7 +2,7 @@
 clear; clc; close all;
 
 % 1. Setup Environment (standard atmosphere, no wind)
-env = Environment(1.225, 9.81, [0; 0; 0]);
+env = Environment();
 
 % 2. Setup Target: small commercial quadcopter (DJI-class), level flight
 %    at a typical cruise speed (~14 m/s here), crossing/closing on the gun
@@ -28,12 +28,13 @@ if ~sol.IsValid
 end
 
 fprintf('=== Direct-Lead Solution ===\n');
-fprintf('Elevation                : %.1f mils\n', FireControlComputer.rad2mil(sol.Elevation));
-fprintf('Azimuth                  : %.1f mils\n', FireControlComputer.rad2mil(sol.Azimuth));
+fprintf('Elevation                : %.1f mils\n', sol.Elevation);
+fprintf('Azimuth                  : %.1f mils\n', sol.Azimuth);
 fprintf('Predicted Intercept Time : %.3f s\n', sol.TimeOfFlight);
 
 % 5. Apply Solved Initial State
-round.Dynamics.InitialState = round.buildLaunchState(launcher_pos, v0, sol.Elevation, sol.Azimuth);
+round.Dynamics.InitialState = round.buildLaunchState(launcher_pos, v0, ...
+    FireControlComputer.mil2rad(sol.Elevation), FireControlComputer.mil2rad(sol.Azimuth));
 
 % 6. Assemble Simulation & Execute. Unguided direct-fire round with no
 %    terminal correction - ImpactDistance is set to a proximity-fuse-like
