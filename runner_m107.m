@@ -53,5 +53,8 @@ actual_miss = norm(final_pos(1:2) - target.Position(1:2));
 fprintf('Termination Reason          : %s\n', sim.TerminationReason);
 fprintf('Apogee                      : %.1f m at t=%.2f s\n', apogee, telemetry.time(apogee_idx));
 fprintf('Actual Impact Miss Distance : %.2f meters\n', actual_miss);
+fprintf('Forward Range               : %.0f m\n', final_pos(1));
+fprintf('Deflection                  : %.0f m\n', final_pos(2));
+fprintf('Total Range                 : %.0f m\n', hypot(final_pos(1), final_pos(2)));
 
 plotTrajectoryProfile(telemetry, target.Position, 'M107 Artillery Trajectory');

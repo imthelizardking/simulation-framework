@@ -53,5 +53,8 @@ fprintf('Apogee                      : %.1f m at t=%.2f s\n', apogee, telemetry.
 fprintf('Base Bleed Active Until     : %.1f s (%.0f%% CD0 reduction while burning)\n', ...
     bb.BurnDuration, bb.DragReductionFraction * 100);
 fprintf('Actual Impact Miss Distance : %.2f meters\n', actual_miss);
+fprintf('Forward Range               : %.0f m\n', final_pos(1));
+fprintf('Deflection                  : %.0f m\n', final_pos(2));
+fprintf('Total Range                 : %.0f m\n', hypot(final_pos(1), final_pos(2)));
 
 plotTrajectoryProfile(telemetry, target.Position, 'MOD274 Base-Bleed Trajectory');

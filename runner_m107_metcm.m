@@ -43,11 +43,15 @@ fprintf('Sim finished in %.2f seconds (%.2f s simulated).\n', toc, telemetry.tim
 
 % 6. Post-Flight Analysis
 [apogee, apogee_idx] = max(telemetry.pos(:,3));
-impact_range = telemetry.pos(end, 1);
+forward_range = telemetry.pos(end, 1);
+deflection    = telemetry.pos(end, 2);
+total_range   = hypot(forward_range, deflection);
 
 fprintf('Termination Reason : %s\n', sim.TerminationReason);
 fprintf('Apogee              : %.1f m at t=%.2f s\n', apogee, telemetry.time(apogee_idx));
-fprintf('Impact Range        : %.1f m\n', impact_range);
+fprintf('Forward Range       : %.0f m\n', forward_range);
+fprintf('Deflection          : %.0f m\n', deflection);
+fprintf('Total Range         : %.0f m\n', total_range);
 fprintf('Time of Flight      : %.2f s\n', telemetry.time(end));
 
 plotTrajectoryProfile(telemetry, [], sprintf('M107 Direct Fire QE=%.0f mils (METCM atmosphere)', elevation_mil));

@@ -50,6 +50,8 @@ final_pos = telemetry.pos(end, :)';
 fprintf('Termination Reason : %s\n', sim.TerminationReason);
 fprintf('Flight Time        : %.2f s\n', telemetry.time(end));
 fprintf('Apogee             : %.1f m at t=%.2f s\n', apogee, telemetry.time(apogee_idx));
-fprintf('Ground Range        : %.1f m\n', final_pos(1));
+fprintf('Forward Range      : %.0f m\n', final_pos(1));
+fprintf('Deflection         : %.0f m\n', final_pos(2));
+fprintf('Total Range        : %.0f m\n', hypot(final_pos(1), final_pos(2)));
 
 plotTrajectoryProfile(telemetry, target.Position, 'MOD274 - FactoryData Table Override Test');
