@@ -79,6 +79,28 @@ classdef FactoryData
                 val = default;
             end
         end
+
+        function val = getOrPath(data, path, default)
+            % Like getOr, but walks an arbitrary chain of nested field
+            % names instead of just one - for a source file whose fields
+            % of interest sit inside nested groups (e.g. an XML file with
+            % <Group><Field>...</Field></Group> instead of a flat
+            % <Field>...</Field>) rather than FactoryData's usual flat
+            % top-level convention. path is a cellstr, e.g.
+            % {'ChargePerformance','ReferenceV0'} for data.ChargePerformance.ReferenceV0.
+            % Falls back to default at the first missing/non-struct hop,
+            % same "no file/field -> just use the hardcoded default"
+            % behavior as getOr - never errors on a missing path.
+            val = data;
+            for i = 1:numel(path)
+                if isstruct(val) && isfield(val, path{i})
+                    val = val.(path{i});
+                else
+                    val = default;
+                    return;
+                end
+            end
+        end
     end
 
     methods (Static, Access = private)
