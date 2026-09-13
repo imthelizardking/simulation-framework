@@ -77,6 +77,11 @@ classdef FireMission < handle
                 tgt_bus = obj.Target.getTargetBus();
 
                 munition = obj.MunitionBuilder();
+                % Must be set before buildLaunchState below - it reads
+                % Dynamics.Frame at build time, before sim.Frame (set
+                % further down) would otherwise propagate it.
+                if isprop(munition.Dynamics, 'Frame'), munition.Dynamics.Frame = obj.Frame; end
+                if isprop(munition.Aero, 'Frame'), munition.Aero.Frame = obj.Frame; end
                 charge = munition.Charge;
                 v0_round = charge.MuzzleVelocity + charge.MuzzleVelocityStdDev * randn();
 

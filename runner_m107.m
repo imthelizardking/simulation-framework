@@ -28,7 +28,12 @@ fprintf('Azimuth (Aim Bearing)   : %.1f mils (Wind corrected)\n', sol.Azimuth);
 fprintf('Predicted Flight Time   : %.2f s\n', sol.TimeOfFlight);
 fprintf('Convergence Miss Error  : %.3f m\n', sol.MissDistance);
 
-% 5. Apply Solved Initial State to Munition
+% 5. Apply Solved Initial State to Munition. Frame must be set BEFORE
+% buildLaunchState - it reads Dynamics.Frame at build time to know which
+% way to rotate the launch state (sim.Frame below only propagates once
+% sim.run() actually executes, which is too late for this).
+shell.Dynamics.Frame = 'NED';
+shell.Aero.Frame     = 'NED';
 shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0_charge7, ...
     FireControlComputer.mil2rad(sol.Elevation), FireControlComputer.mil2rad(sol.Azimuth));
 

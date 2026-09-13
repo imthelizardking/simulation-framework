@@ -11,6 +11,8 @@ target = TargetStatic([25000; 0; 0]);
 % 3. Instantiate Vehicle via MunitionFactory (DM92 6M = 943 m/s, the
 %    munition's rated maximum; see MunitionFactory.createMOD274)
 shell = MunitionFactory.createMOD274('6M');
+shell.Dynamics.Frame = 'NED'; % must be set before buildLaunchState below - it reads this at build time
+shell.Aero.Frame     = 'NED';
 
 % 4. Fire Control Computer (Solves Quadrant Elevation)
 fcc = FireControlComputer(env.Gravity, 'Z-Up');

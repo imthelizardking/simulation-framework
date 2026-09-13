@@ -15,6 +15,8 @@ target = TargetConstantVelocity([1000; 200; 120], [-12; 8; 0]);
 
 % 3. Instantiate Munition via MunitionFactory, attach the fragmentation model
 round = MunitionFactory.create35mmHE();
+round.Dynamics.Frame = 'NED'; % must be set before buildLaunchState below - it reads this at build time
+round.Aero.Frame     = 'NED';
 round.ParticleModel = ParticleModelFactory.createForward35mm();
 builder = @MunitionFactory.create35mmHE;
 

@@ -23,6 +23,8 @@ target = TargetConstantVelocity([700; 150; 100], [-10; 6; 0]);
 
 % 3. Instantiate Munition via MunitionFactory, attach the fragmentation model
 round = MunitionFactory.create25mmM793();
+round.Dynamics.Frame = 'NED'; % must be set before buildLaunchState below - it reads this at build time
+round.Aero.Frame     = 'NED';
 round.ParticleModel = ParticleModelFactory.createForward25mm();
 
 % 4. Fire Control: analytical direct-lead solve (same approach as

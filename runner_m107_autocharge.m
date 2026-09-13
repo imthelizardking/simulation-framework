@@ -35,6 +35,8 @@ if chosen_idx == 0
 end
 
 shell = candidates{chosen_idx};
+shell.Dynamics.Frame = 'NED'; % must be set before buildLaunchState below - see runner_m107.m's comment
+shell.Aero.Frame     = 'NED';
 v0 = shell.Charge.MuzzleVelocity;
 
 fprintf('=== Auto Charge Selection ===\n');

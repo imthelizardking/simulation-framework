@@ -13,6 +13,8 @@ target = TargetConstantVelocity([8000; 0; 3000], [-250; 0; 0]);
 %    MunitionFactory.create76mmHE for the full CD0/CDA2/CDA4/CLA/CLA3
 %    coefficient set)
 shell = MunitionFactory.create76mmHE();
+shell.Dynamics.Frame = 'NED'; % must be set before buildLaunchState below - it reads this at build time
+shell.Aero.Frame     = 'NED';
 
 % 4. Fire Control: analytical direct-lead solve. solveNumericalShooting
 %    has no notion of target velocity (it aims at wherever the target is

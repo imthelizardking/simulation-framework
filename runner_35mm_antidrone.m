@@ -11,6 +11,8 @@ target = TargetConstantVelocity([1000; 200; 120], [-12; 8; 0]);
 
 % 3. Instantiate Munition via MunitionFactory
 round = MunitionFactory.create35mmHE();
+round.Dynamics.Frame = 'NED'; % must be set before buildLaunchState below - it reads this at build time
+round.Aero.Frame     = 'NED';
 
 % 4. Fire Control: analytical direct-lead solve. Unlike
 %    solveNumericalShooting (built for a static target), solveDirectLead

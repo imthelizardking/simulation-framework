@@ -16,6 +16,8 @@ env = Environment();
 
 % 2. Instantiate Vehicle via MunitionFactory
 shell = MunitionFactory.createM107Artillery(charge_name);
+shell.Dynamics.Frame = 'NED'; % must be set before buildLaunchState below - it reads this at build time
+shell.Aero.Frame     = 'NED';
 v0 = shell.Charge.MuzzleVelocity;
 launcher_pos = [0; 0; 0];
 

@@ -8,6 +8,8 @@ env = Environment();
 
 % 2. Instantiate Vehicle via MunitionFactory
 round = MunitionFactory.create25mmM793();
+round.Dynamics.Frame = 'NED'; % must be set before buildLaunchState below - it reads this at build time
+round.Aero.Frame     = 'NED';
 v0 = round.Charge.MuzzleVelocity; % see MunitionFactory.create25mmM793
 
 % 3. Initial Launch State (Z-Up frame, planar X-Z launch)

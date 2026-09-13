@@ -25,6 +25,8 @@ end
 
 %% 2. Confirm MunitionFactory.createMOD274 actually picks the override up
 shell = MunitionFactory.createMOD274('6M');
+shell.Dynamics.Frame = 'NED'; % must be set before buildLaunchState below - it reads this at build time
+shell.Aero.Frame     = 'NED';
 c = shell.Aero.Tables.Clean;
 assert(isequal(c.CD0, data.CDA),   'CD0 was not overridden from data.CDA');
 assert(isequal(c.CDA2, data.CDA2), 'CDA2 was not overridden from data.CDA2');
