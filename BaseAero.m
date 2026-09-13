@@ -6,6 +6,7 @@ classdef (Abstract) BaseAero < handle
         Tables          struct = struct()      % Named coefficient sets, e.g. Tables.Clean.CD0/.CDA2/.CDA4/.CLA/.CLA3
         ActiveTableKey  (1,:) char = 'Clean'
         DeploymentRatio (1,1) double = 0.0
+        Frame           (1,:) char = 'Z-Up'    % 'Z-Up' or 'NED' - see CoordinateFrame; must match the attached Dynamics
     end
     methods (Abstract)
         [F_aero, M_aero] = getForcesAndMoments(obj, t, X, env, fin_deflections)
@@ -108,17 +109,22 @@ classdef (Abstract) BaseAero < handle
             end
         end
 
-        function flow = computeFlowState(X, env)
+        function flow = computeFlowState(X, env, frame)
             % Shared velocity/Mach/dynamic-pressure calculation every
             % concrete Aero (and DynamicsMPMM's yaw-of-repose) class needs -
-            % reads density/speed-of-sound at the current altitude (X(3),
-            % Z-up) from env rather than duplicating this per class.
+            % reads density/speed-of-sound at the current altitude from env
+            % rather than duplicating this per class. frame ('Z-Up'
+            % default, or 'NED' - see CoordinateFrame) only affects how
+            % altitude is read back out of X; vel/gamma need no special
+            % handling because X is already expressed consistently in
+            % that same frame (see CoordinateFrame's class comment).
             % vel_dir/gamma are zeroed when v_mag is ~0 rather than
             % producing NaN; callers still decide their own "too slow to
             % matter" early-return threshold.
+            if nargin < 3, frame = 'Z-Up'; end
             vel   = X(4:6);
             v_mag = norm(vel);
-            altitude = X(3);
+            altitude = CoordinateFrame.altitude(X, frame);
 
             flow.vel   = vel;
             flow.v_mag = v_mag;

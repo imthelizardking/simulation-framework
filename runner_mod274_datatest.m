@@ -42,10 +42,11 @@ azimuth = 0;
 shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0, elevation, azimuth);
 
 sim = Simulation(shell, target, env, [0 60], 0.005);
+sim.Frame = 'NED';
 fprintf('\nFiring MOD274 with the data-file drag override at QE=800 mils, v0=%.0f m/s...\n', v0);
 telemetry = sim.run();
 
-[apogee, apogee_idx] = max(telemetry.pos(:, 3));
+[apogee, apogee_idx] = max(CoordinateFrame.altitudeColumn(telemetry.pos(:,3), telemetry.Frame));
 final_pos = telemetry.pos(end, :)';
 fprintf('Termination Reason : %s\n', sim.TerminationReason);
 fprintf('Flight Time        : %.2f s\n', telemetry.time(end));

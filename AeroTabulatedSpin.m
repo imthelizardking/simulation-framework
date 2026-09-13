@@ -23,7 +23,7 @@ classdef AeroTabulatedSpin < AeroTabulated
         function [F_aero, M_aero] = getForcesAndMoments(obj, t, X, env, fin_deflection)
             [F_aero, M_aero] = getForcesAndMoments@AeroTabulated(obj, t, X, env, fin_deflection);
 
-            flow = BaseAero.computeFlowState(X, env);
+            flow = BaseAero.computeFlowState(X, env, obj.Frame);
             if flow.v_mag < 1e-3
                 return;
             end
@@ -45,7 +45,7 @@ classdef AeroTabulatedSpin < AeroTabulated
             % Magnus force: acts out of the pitch plane, along
             % spin_axis x lift_dir, proportional to spin rate, alpha, and
             % dynamic pressure (McCoy, "Modern Exterior Ballistics", ch. 9)
-            lift_dir = [-vel_dir(3); 0; vel_dir(1)];
+            lift_dir = cross(vel_dir, CoordinateFrame.lateralAxis(obj.Frame));
             if norm(lift_dir) > 0, lift_dir = lift_dir / norm(lift_dir); end
             magnus_dir = cross(vel_dir, lift_dir);
             if norm(magnus_dir) > 0, magnus_dir = magnus_dir / norm(magnus_dir); end

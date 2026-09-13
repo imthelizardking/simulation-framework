@@ -4,6 +4,7 @@ classdef Simulation < handle
         Munition                  = []  % Munition container OR raw BaseDynamics object
         Target                    = []  % TargetBase subclass OR struct
         Environment               = []  % Environment object
+        Frame     (1,:) char      = 'Z-Up'  % 'Z-Up' or 'NED' - see CoordinateFrame; propagated to Munition.Dynamics/Aero/Visualizer/the burst swarm at run()
         Designator                = []  % BaseDesignator subclass (optional)
         GroundStation             = []  % GroundStation object (optional)
         Visualizer                = []  % BaseVisualizer subclass (optional)
@@ -52,10 +53,23 @@ classdef Simulation < handle
         end
         
         function tel = run(obj)
+            % Propagate the chosen Frame to every sub-object that needs to
+            % agree on it, so a runner sets obj.Frame in exactly one place
+            % rather than on each of Dynamics/Aero/Visualizer separately.
+            if isprop(obj.Munition, 'Dynamics') && isprop(obj.Munition.Dynamics, 'Frame')
+                obj.Munition.Dynamics.Frame = obj.Frame;
+            end
+            if isprop(obj.Munition, 'Aero') && isprop(obj.Munition.Aero, 'Frame')
+                obj.Munition.Aero.Frame = obj.Frame;
+            end
+            if ~isempty(obj.Visualizer) && isprop(obj.Visualizer, 'Frame')
+                obj.Visualizer.Frame = obj.Frame;
+            end
+
             dt = obj.Dt;
             time_array = obj.TimeSpan(1):dt:obj.TimeSpan(2);
             N_steps = length(time_array);
-            
+
             % 1. Extract initial state X
             if isprop(obj.Munition, 'Dynamics') && ~isempty(obj.Munition.Dynamics)
                 X = obj.Munition.Dynamics.InitialState;
@@ -75,13 +89,15 @@ classdef Simulation < handle
             tel.target_pos = zeros(N_steps, 3);
             tel.accel_cmd  = zeros(N_steps, 1);
             tel.range      = zeros(N_steps, 1);
-            
+
             % 3. Resolve Target Bus
             tgt_bus = obj.resolveTargetBus();
-            
+
             % 4. Initialize Visualizer if attached
             if ~isempty(obj.Visualizer)
-                bounds = [-100, max(X(1), tgt_bus.pos(1)) + 100, 0, max(X(3), tgt_bus.pos(3)) + 300];
+                alt_x    = CoordinateFrame.altitude(X, obj.Frame);
+                alt_tgt  = CoordinateFrame.altitude(tgt_bus.pos, obj.Frame);
+                bounds = [-100, max(X(1), tgt_bus.pos(1)) + 100, 0, max(alt_x, alt_tgt) + 300];
                 obj.Visualizer.init(X, tgt_bus, bounds);
             end
             
@@ -173,6 +189,7 @@ classdef Simulation < handle
             for i = 1:numel(fields)
                 tel.(fields{i}) = tel.(fields{i})(1:step_count, :);
             end
+            tel.Frame = obj.Frame; % lets plotters read altitude back out correctly regardless of Frame
             obj.Telemetry = tel;
 
             if strcmp(obj.TerminationReason, 'Burst')
@@ -199,7 +216,7 @@ classdef Simulation < handle
                     is_term = true; reason = 'Burst'; return;
                 end
             end
-            [is_term, reason] = Simulation.evalTerminationCriteria(obj.Termination, t, X, target_pos, target_vel);
+            [is_term, reason] = Simulation.evalTerminationCriteria(obj.Termination, t, X, target_pos, target_vel, obj.Frame);
         end
 
         function triggerFragmentation(obj)
@@ -213,6 +230,7 @@ classdef Simulation < handle
             if ~isempty(obj.ParticleDt), dt = obj.ParticleDt; end
 
             swarm = ParticleSwarmSimulation(particles, obj.Target, obj.Environment, obj.ParticleTimeSpan, dt);
+            swarm.Frame = obj.Frame;
             if ~isempty(fieldnames(obj.ParticleTermination))
                 swarm.Termination = obj.ParticleTermination;
             end
@@ -243,6 +261,13 @@ classdef Simulation < handle
         end
         
         function tgt_bus = resolveTargetBus(obj)
+            % Target objects are always built/stepped in plain "Z-Up"
+            % numbers (see TargetBase/TargetStatic/TargetConstantVelocity -
+            % none of them know about Frame), so the bus handed to the
+            % munition's physics - which DOES run in obj.Frame - is
+            % rotated here, at the single point of consumption, rather
+            % than requiring every runner to pre-rotate a target's
+            % construction numbers by hand.
             if isobject(obj.Target) && ismethod(obj.Target, 'getTargetBus')
                 tgt_bus = obj.Target.getTargetBus();
             elseif isstruct(obj.Target)
@@ -251,20 +276,29 @@ classdef Simulation < handle
                 tgt_bus = struct('pos', [0;0;0], 'vel', [0;0;0], 'accel', [0;0;0], ...
                                  'LaserReflectivity', 0.3, 'ThermalSignature', 300, 'RCS', 1.0);
             end
+            tgt_bus.pos = CoordinateFrame.rotateVector(tgt_bus.pos, obj.Frame);
+            tgt_bus.vel = CoordinateFrame.rotateVector(tgt_bus.vel, obj.Frame);
+            if isfield(tgt_bus, 'accel')
+                tgt_bus.accel = CoordinateFrame.rotateVector(tgt_bus.accel, obj.Frame);
+            end
         end
     end
 
     methods (Static)
-        function [is_term, reason] = evalTerminationCriteria(T, t, X, target_pos, target_vel)
+        function [is_term, reason] = evalTerminationCriteria(T, t, X, target_pos, target_vel, frame)
             % Shared by Simulation.checkTermination and
             % ParticleSwarmSimulation (each fragment is checked against the
             % same criteria shape - ImpactDistance = "meets the target",
             % MinAltitude/MaxDownrange/PassedTarget = "loses its chance").
             % Evaluates each enabled criterion in T (any field left []/false
             % is skipped) and stops on the first one that trips.
-            % MinAltitude/MaxAltitude read X(3) directly, so they assume
-            % whichever vertical-axis convention the active Dynamics model
-            % uses (Z-up here).
+            % ImpactDistance/PassedTarget/MaxDownrange are norms/dot
+            % products/the downrange component - unaffected by frame as
+            % long as target_pos/target_vel are already expressed in the
+            % same frame as X (see Simulation.resolveTargetBus).
+            % MinAltitude/MaxAltitude go through CoordinateFrame.altitude
+            % since "altitude" isn't simply X(3) under every frame.
+            if nargin < 6, frame = 'Z-Up'; end
             is_term = false;
             reason  = '';
 
@@ -274,10 +308,11 @@ classdef Simulation < handle
             if ~isempty(T.ImpactDistance) && norm(target_pos - X(1:3)) < T.ImpactDistance
                 is_term = true; reason = 'ImpactDistance'; return;
             end
-            if ~isempty(T.MinAltitude) && X(3) < T.MinAltitude && norm(X(4:6)) > 0
+            altitude = CoordinateFrame.altitude(X, frame);
+            if ~isempty(T.MinAltitude) && altitude < T.MinAltitude && norm(X(4:6)) > 0
                 is_term = true; reason = 'MinAltitude'; return;
             end
-            if ~isempty(T.MaxAltitude) && X(3) > T.MaxAltitude
+            if ~isempty(T.MaxAltitude) && altitude > T.MaxAltitude
                 is_term = true; reason = 'MaxAltitude'; return;
             end
             if isfield(T, 'PassedTarget') && T.PassedTarget

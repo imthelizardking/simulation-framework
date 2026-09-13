@@ -18,6 +18,25 @@ classdef AeroDatcom < BaseAero
         Alpha (1,:) double = []  % Alpha breakpoints, RADIANS (DatcomReader converts from DATCOM's native degrees)
         CD    double = []        % numel(Alpha)-by-numel(Mach), drag coefficient (wind axis, as tabulated by DATCOM)
         CL    double = []        % numel(Alpha)-by-numel(Mach), lift coefficient (wind axis, as tabulated by DATCOM)
+        % The following are captured from DATCOM's table (see DatcomReader)
+        % but not yet consumed by getForcesAndMoments below, which only
+        % produces a force (M_aero is always zero) - read them out
+        % directly for now if you need pitching moment / static margin /
+        % roll-due-to-sideslip for a model or analysis that isn't wired
+        % into this class yet.
+        CM    double = []        % numel(Alpha)-by-numel(Mach), pitching moment coefficient
+        CN    double = []        % numel(Alpha)-by-numel(Mach), normal-force coefficient (body axis; same physical info as CD/CL in a different axis system)
+        CA    double = []        % numel(Alpha)-by-numel(Mach), axial-force coefficient (body axis)
+        XCP   double = []        % numel(Alpha)-by-numel(Mach), center of pressure location; NaN where DATCOM printed "******" (CN crossing zero, typically alpha=0)
+        % CLA/CMA/CYB/CNB/CLB are DATCOM's own stability derivatives,
+        % tabulated PER DEGREE (see DatcomReader) - convert to per-radian
+        % before mixing with this framework's own alpha/beta-in-radians
+        % coefficients (e.g. DynamicsMPMM.CLalpha).
+        CLA   double = []        % numel(Alpha)-by-numel(Mach), dCL/dalpha, per degree
+        CMA   double = []        % numel(Alpha)-by-numel(Mach), dCM/dalpha, per degree
+        CYB   double = []        % numel(Alpha)-by-numel(Mach), dCY/dbeta (side force due to sideslip), per degree
+        CNB   double = []        % numel(Alpha)-by-numel(Mach), dCn/dbeta (yawing moment due to sideslip, directional stability), per degree
+        CLB   double = []        % numel(Alpha)-by-numel(Mach), dCl/dbeta (rolling moment due to sideslip), per degree
         % Approximate linear lift-curve slope (per rad) - used only by
         % controllers (e.g. LongitudinalFinController) that need a single
         % representative gain for their control law. The force computation
@@ -33,7 +52,7 @@ classdef AeroDatcom < BaseAero
         function [F_aero, M_aero] = getForcesAndMoments(obj, t, X, env, fin_deflection)
             pitch = X(7);
 
-            flow = BaseAero.computeFlowState(X, env);
+            flow = BaseAero.computeFlowState(X, env, obj.Frame);
             if flow.v_mag < 1e-3
                 F_aero = [0; 0; 0];
                 M_aero = [0; 0; 0];
@@ -62,7 +81,7 @@ classdef AeroDatcom < BaseAero
 
             F_drag = -(q_bar * CD * obj.RefArea) * vel_dir;
 
-            lift_dir = [-vel_dir(3); 0; vel_dir(1)];
+            lift_dir = cross(vel_dir, CoordinateFrame.lateralAxis(obj.Frame));
             if norm(lift_dir) > 0, lift_dir = lift_dir / norm(lift_dir); end
             F_lift = (q_bar * CL * obj.RefArea) * lift_dir;
 

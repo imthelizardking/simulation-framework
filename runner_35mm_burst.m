@@ -15,6 +15,7 @@ platform = WeaponPlatformFactory.create35mmAAMount();
 %    each round's lead solve uses the drone's actual position at that
 %    round's fire time, not a single lead frozen at t=0.
 mission = FireMission(platform, @MunitionFactory.create35mmHE, target, env);
+mission.Frame = 'NED';
 mission.LauncherPos = [0; 0; 0];
 mission.NumRounds   = 10;
 
@@ -54,11 +55,13 @@ end
 figure('Name', 'Burst Impact Dispersion', 'Color', 'w');
 hold on; grid on; box on;
 if ~isempty(impact_pts)
-    plot(impact_pts(:,1), impact_pts(:,3), 'bx', 'MarkerSize', 10, 'LineWidth', 1.5, 'DisplayName', 'Impact');
+    plot(impact_pts(:,1), CoordinateFrame.altitudeColumn(impact_pts(:,3), mission.Frame), ...
+        'bx', 'MarkerSize', 10, 'LineWidth', 1.5, 'DisplayName', 'Impact');
 end
 if ~isempty(target_pts)
-    plot(target_pts(:,1), target_pts(:,3), 'r.', 'MarkerSize', 14, 'DisplayName', 'Target at impact');
+    plot(target_pts(:,1), CoordinateFrame.altitudeColumn(target_pts(:,3), mission.Frame), ...
+        'r.', 'MarkerSize', 14, 'DisplayName', 'Target at impact');
 end
 legend('show', 'Location', 'best');
-xlabel('Downrange X (m)'); ylabel('Altitude Z (m)');
+xlabel('Downrange X (m)'); ylabel('Altitude (m)');
 title(sprintf('%s vs %s - %d Rounds', platform.Name, target.Name, mission.NumRounds), 'Interpreter', 'none');

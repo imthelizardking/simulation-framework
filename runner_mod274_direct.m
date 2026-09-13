@@ -35,13 +35,14 @@ shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0, ...
 
 % 5. Assemble Simulation & Execute
 sim = Simulation(shell, [], env, [0 90], 0.005);
+sim.Frame = 'NED';
 
 tic;
 telemetry = sim.run();
 fprintf('Sim finished in %.2f seconds (%.2f s simulated).\n', toc, telemetry.time(end));
 
 % 6. Post-Flight Analysis
-[apogee, apogee_idx] = max(telemetry.pos(:,3));
+[apogee, apogee_idx] = max(CoordinateFrame.altitudeColumn(telemetry.pos(:,3), telemetry.Frame));
 forward_range = telemetry.pos(end, 1);
 deflection    = telemetry.pos(end, 2);
 total_range   = hypot(forward_range, deflection);

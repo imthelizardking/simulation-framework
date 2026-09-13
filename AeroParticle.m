@@ -23,7 +23,7 @@ classdef AeroParticle < BaseAero
         end
 
         function [F_aero, M_aero] = getForcesAndMoments(obj, ~, X, env, ~)
-            flow = BaseAero.computeFlowState(X, env);
+            flow = BaseAero.computeFlowState(X, env, obj.Frame);
             if flow.v_mag < 1e-3
                 F_aero = [0; 0; 0];
                 M_aero = [0; 0; 0];

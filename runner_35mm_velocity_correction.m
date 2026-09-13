@@ -79,6 +79,7 @@ round.Dynamics.InitialState = round.buildLaunchState(launcher_pos, actual_v0, ..
 round.BurstTime = corrected_burst_time;
 
 sim = Simulation(round, target, env, timespan, dt);
+sim.Frame = 'NED';
 sim.Termination.ImpactDistance = impact_dist;
 sim.Termination.MaxDownrange   = max_downrange;
 sim.Visualizer = LiveEngagementPlotter(5);

@@ -46,6 +46,7 @@ shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0, ...
 %    error here. TimeSpan is padded well past the predicted intercept
 %    time to give the (slower-than-predicted) real shell room to arrive.
 sim = Simulation(shell, target, env, [0 sol.TimeOfFlight * 2], 0.005);
+sim.Frame = 'NED';
 sim.Termination.ImpactDistance = 5.0;
 sim.Termination.MaxDownrange   = 200.0;
 
@@ -58,8 +59,9 @@ fprintf('Sim finished in %.2f seconds (%.2f s simulated).\n', toc, telemetry.tim
 final_pos = telemetry.pos(end, :)';
 final_tgt = telemetry.target_pos(end, :)';
 miss_dist = norm(final_pos - final_tgt);
-[apogee, apogee_idx] = max(telemetry.pos(:,3));
-speed_of_sound_series = arrayfun(@(h) env.getSpeedOfSound(h), telemetry.pos(:,3));
+altitude_series = CoordinateFrame.altitudeColumn(telemetry.pos(:,3), telemetry.Frame);
+[apogee, apogee_idx] = max(altitude_series);
+speed_of_sound_series = arrayfun(@(h) env.getSpeedOfSound(h), altitude_series);
 max_mach = max(vecnorm(telemetry.vel, 2, 2) ./ speed_of_sound_series);
 
 fprintf('Termination Reason  : %s\n', sim.TerminationReason);

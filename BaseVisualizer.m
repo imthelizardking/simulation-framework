@@ -3,6 +3,7 @@ classdef (Abstract) BaseVisualizer < handle
         UpdateDecimation (1,1) double = 10
         StepCounter      (1,1) double = 0
         FigureHandle
+        Frame            (1,:) char = 'Z-Up' % 'Z-Up' or 'NED' - see CoordinateFrame; set by Simulation/ParticleSwarmSimulation at run() to match the flight
     end
     methods
         function step(obj, t, X, target_state, gnc_bus)

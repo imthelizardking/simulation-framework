@@ -15,7 +15,7 @@ classdef AeroTabulated < BaseAero
         function [F_aero, M_aero] = getForcesAndMoments(obj, t, X, env, fin_deflection)
             pitch = X(7);
 
-            flow = BaseAero.computeFlowState(X, env);
+            flow = BaseAero.computeFlowState(X, env, obj.Frame);
             if flow.v_mag < 1e-3
                 F_aero = [0; 0; 0];
                 M_aero = [0; 0; 0];
@@ -41,7 +41,7 @@ classdef AeroTabulated < BaseAero
 
             F_drag = -(q_bar * CD * obj.RefArea) * vel_dir;
 
-            lift_dir = [-vel_dir(3); 0; vel_dir(1)];
+            lift_dir = cross(vel_dir, CoordinateFrame.lateralAxis(obj.Frame));
             if norm(lift_dir) > 0, lift_dir = lift_dir / norm(lift_dir); end
             F_lift = (q_bar * CL * obj.RefArea) * lift_dir;
 

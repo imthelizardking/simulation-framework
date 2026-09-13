@@ -44,6 +44,7 @@ round.Dynamics.InitialState = round.buildLaunchState(launcher_pos, v0, ...
 %    ~Mach 3.4 is not negligible), so it arrives slightly later than
 %    predicted and the lead point is imperfect by construction.
 sim = Simulation(round, target, env, [0 5], 0.001);
+sim.Frame = 'NED';
 sim.Termination.ImpactDistance = 3.0;
 sim.Termination.MaxDownrange   = 100.0;
 sim.Visualizer = LiveEngagementPlotter(5); % finer decimation - engagement lasts ~1s

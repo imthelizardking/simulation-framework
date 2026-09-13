@@ -53,6 +53,7 @@ fprintf('Burst standoff time      : %.3f s (target standoff = %.1f m)\n', round.
 
 % 6. Assemble Simulation & Execute
 sim = Simulation(round, target, env, [0 5], 0.001);
+sim.Frame = 'NED';
 sim.Termination.ImpactDistance = 3.0;
 sim.Termination.MaxDownrange   = 100.0;
 sim.Visualizer = LiveEngagementPlotter(5);

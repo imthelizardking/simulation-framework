@@ -38,7 +38,7 @@ classdef ParticleSwarmPlotter < BaseVisualizer
                                       'Name', 'Particle Swarm Burst', 'Color', 'w');
             obj.h_ax = axes(obj.FigureHandle);
             hold(obj.h_ax, 'on'); grid(obj.h_ax, 'on'); box(obj.h_ax, 'on');
-            xlabel(obj.h_ax, 'Downrange X (m)'); ylabel(obj.h_ax, 'Altitude Z (m)');
+            xlabel(obj.h_ax, 'Downrange X (m)'); ylabel(obj.h_ax, 'Altitude (m)');
             title(obj.h_ax, 'Fragment Swarm (post-burst)');
 
             n = numel(states0);
@@ -49,15 +49,17 @@ classdef ParticleSwarmPlotter < BaseVisualizer
             colors = lines(max(n, 1));
             for i = 1:n
                 pos = states0{i}(1:3);
-                obj.history{i} = [pos(1); pos(3)];
-                obj.h_trail{i} = plot(obj.h_ax, pos(1), pos(3), '-', 'Color', colors(i,:), 'LineWidth', 1.0);
-                obj.h_head{i}  = plot(obj.h_ax, pos(1), pos(3), 'o', 'MarkerSize', 4, ...
+                alt = CoordinateFrame.altitude(pos, obj.Frame);
+                obj.history{i} = [pos(1); alt];
+                obj.h_trail{i} = plot(obj.h_ax, pos(1), alt, '-', 'Color', colors(i,:), 'LineWidth', 1.0);
+                obj.h_head{i}  = plot(obj.h_ax, pos(1), alt, 'o', 'MarkerSize', 4, ...
                                       'MarkerFaceColor', colors(i,:), 'MarkerEdgeColor', colors(i,:));
             end
 
+            target_alt = CoordinateFrame.altitude(target0.pos, obj.Frame);
             obj.target_history = target0.pos;
-            obj.h_target_line = plot(obj.h_ax, target0.pos(1), target0.pos(3), 'r--', 'LineWidth', 1.5);
-            obj.h_target_head = plot(obj.h_ax, target0.pos(1), target0.pos(3), 'rs', 'MarkerFaceColor', 'r', 'MarkerSize', 8);
+            obj.h_target_line = plot(obj.h_ax, target0.pos(1), target_alt, 'r--', 'LineWidth', 1.5);
+            obj.h_target_head = plot(obj.h_ax, target0.pos(1), target_alt, 'rs', 'MarkerFaceColor', 'r', 'MarkerSize', 8);
 
             obj.h_info_text = text(obj.h_ax, 0.02, 0.95, '', 'Units', 'normalized', ...
                 'FontSize', 10, 'FontWeight', 'bold', 'BackgroundColor', 'white', 'EdgeColor', 'black');
@@ -69,9 +71,10 @@ classdef ParticleSwarmPlotter < BaseVisualizer
             n_alive = 0;
             for i = 1:obj.NumParticles
                 pos = states{i}(1:3);
-                obj.history{i} = [obj.history{i}, [pos(1); pos(3)]];
+                alt = CoordinateFrame.altitude(pos, obj.Frame);
+                obj.history{i} = [obj.history{i}, [pos(1); alt]];
                 set(obj.h_trail{i}, 'XData', obj.history{i}(1,:), 'YData', obj.history{i}(2,:));
-                set(obj.h_head{i}, 'XData', pos(1), 'YData', pos(3));
+                set(obj.h_head{i}, 'XData', pos(1), 'YData', alt);
                 if alive(i)
                     n_alive = n_alive + 1;
                 else
@@ -80,8 +83,11 @@ classdef ParticleSwarmPlotter < BaseVisualizer
             end
 
             obj.target_history = [obj.target_history, target_state.pos];
-            set(obj.h_target_line, 'XData', obj.target_history(1,:), 'YData', obj.target_history(3,:));
-            set(obj.h_target_head, 'XData', target_state.pos(1), 'YData', target_state.pos(3));
+            is_ned = strcmpi(obj.Frame, 'NED');
+            target_alt_hist = obj.target_history(3,:); if is_ned, target_alt_hist = -target_alt_hist; end
+            target_alt_now  = CoordinateFrame.altitude(target_state.pos, obj.Frame);
+            set(obj.h_target_line, 'XData', obj.target_history(1,:), 'YData', target_alt_hist);
+            set(obj.h_target_head, 'XData', target_state.pos(1), 'YData', target_alt_now);
 
             set(obj.h_info_text, 'String', sprintf('t = %.3f s\nAlive: %d / %d', t, n_alive, obj.NumParticles));
 
@@ -104,10 +110,10 @@ classdef ParticleSwarmPlotter < BaseVisualizer
             zs = zeros(numel(states), 1);
             for i = 1:numel(states)
                 xs(i) = states{i}(1);
-                zs(i) = states{i}(3);
+                zs(i) = CoordinateFrame.altitude(states{i}, obj.Frame);
             end
             xs(end+1) = target_pos(1); %#ok<AGROW>
-            zs(end+1) = target_pos(3); %#ok<AGROW>
+            zs(end+1) = CoordinateFrame.altitude(target_pos, obj.Frame); %#ok<AGROW>
 
             x_lo = min(xs); x_hi = max(xs);
             z_lo = min(zs); z_hi = max(zs);

@@ -35,7 +35,7 @@ classdef LiveEngagementPlotter < BaseVisualizer
             
             obj.h_main_ax = axes(obj.FigureHandle);
             hold(obj.h_main_ax, 'on'); grid(obj.h_main_ax, 'on'); box(obj.h_main_ax, 'on');
-            xlabel(obj.h_main_ax, 'Range X (m)'); ylabel(obj.h_main_ax, 'Altitude Z (m)');
+            xlabel(obj.h_main_ax, 'Range X (m)'); ylabel(obj.h_main_ax, 'Altitude (m)');
             title(obj.h_main_ax, 'Engagement Trajectory');
             axis(obj.h_main_ax, bounds);
             
@@ -45,8 +45,8 @@ classdef LiveEngagementPlotter < BaseVisualizer
             obj.h_traj_line   = plot(obj.h_main_ax, NaN, NaN, 'b-', 'LineWidth', 2, 'DisplayName', 'Optimal Missile');
             obj.h_target_line = plot(obj.h_main_ax, NaN, NaN, 'r--', 'LineWidth', 2, 'DisplayName', 'Target');
             
-            obj.h_missile_head = plot(obj.h_main_ax, x0(1), x0(3), 'bo', 'MarkerFaceColor', 'b');
-            obj.h_target_head  = plot(obj.h_main_ax, target0.pos(1), target0.pos(3), 'ro', 'MarkerFaceColor', 'r');
+            obj.h_missile_head = plot(obj.h_main_ax, x0(1), CoordinateFrame.altitude(x0, obj.Frame), 'bo', 'MarkerFaceColor', 'b');
+            obj.h_target_head  = plot(obj.h_main_ax, target0.pos(1), CoordinateFrame.altitude(target0.pos, obj.Frame), 'ro', 'MarkerFaceColor', 'r');
             
             obj.h_phase_text = text(obj.h_main_ax, 0.45, 0.95, 'PHASE: LOAL (INS)', 'Units', 'normalized', ...
                 'FontSize', 11, 'FontWeight', 'bold', 'Color', 'white', ...
@@ -80,16 +80,25 @@ classdef LiveEngagementPlotter < BaseVisualizer
             
             obj.traj_history   = [obj.traj_history, pos];
             obj.target_history = [obj.target_history, target_state.pos];
-            
-            set(obj.h_traj_line, 'XData', obj.traj_history(1,:), 'YData', obj.traj_history(3,:));
-            set(obj.h_target_line, 'XData', obj.target_history(1,:), 'YData', obj.target_history(3,:));
-            set(obj.h_missile_head, 'XData', pos(1), 'YData', pos(3));
-            set(obj.h_target_head, 'XData', target_state.pos(1), 'YData', target_state.pos(3));
-            
+
+            is_ned = strcmpi(obj.Frame, 'NED');
+            traj_alt   = obj.traj_history(3,:);   if is_ned, traj_alt   = -traj_alt;   end
+            target_alt = obj.target_history(3,:); if is_ned, target_alt = -target_alt; end
+            alt = CoordinateFrame.altitude(pos, obj.Frame);
+            target_alt_now = CoordinateFrame.altitude(target_state.pos, obj.Frame);
+
+            set(obj.h_traj_line, 'XData', obj.traj_history(1,:), 'YData', traj_alt);
+            set(obj.h_target_line, 'XData', obj.target_history(1,:), 'YData', target_alt);
+            set(obj.h_missile_head, 'XData', pos(1), 'YData', alt);
+            set(obj.h_target_head, 'XData', target_state.pos(1), 'YData', target_alt_now);
+
             % Seeker/FOV cone and PN-Angle-FOV command breakdown only apply
             % to a seeker-guided munition; an unguided direct-fire round
             % has neither, so both sections degrade gracefully instead of
-            % erroring on a missing field.
+            % erroring on a missing field. NOTE: this cone's trig is only
+            % verified for 'Z-Up' - no guided/seeker scenario in this
+            % framework currently opts into 'NED', so it hasn't been
+            % exercised or adapted for it.
             has_seeker = isfield(gnc_bus, 'Sensors') && isfield(gnc_bus.Sensors, 'SeekerLOAL');
             if has_seeker
                 seeker = gnc_bus.Sensors.SeekerLOAL;

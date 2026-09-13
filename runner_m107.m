@@ -39,6 +39,7 @@ shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0_charge7, .
 % is still the better fit for a pure trajectory-generation scenario like
 % this one - there's no live engagement decision-making to watch unfold.
 sim = Simulation(shell, target, env, [0 sol.TimeOfFlight * 1.05], 0.005);
+sim.Frame = 'NED';
 
 fprintf('Starting trajectory integration...\n');
 tic;
@@ -48,7 +49,7 @@ fprintf('Sim finished in %.2f seconds (%.2f s simulated).\n', toc, telemetry.tim
 % 7. Post-Flight Analysis
 final_pos = telemetry.pos(end, :)';
 actual_miss = norm(final_pos(1:2) - target.Position(1:2));
-[apogee, apogee_idx] = max(telemetry.pos(:,3));
+[apogee, apogee_idx] = max(CoordinateFrame.altitudeColumn(telemetry.pos(:,3), telemetry.Frame));
 
 fprintf('Termination Reason          : %s\n', sim.TerminationReason);
 fprintf('Apogee                      : %.1f m at t=%.2f s\n', apogee, telemetry.time(apogee_idx));

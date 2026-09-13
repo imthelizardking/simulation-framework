@@ -36,6 +36,7 @@ shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0, ...
 
 % 6. Assemble Simulation & Execute
 sim = Simulation(shell, target, env, [0 sol.TimeOfFlight * 1.05], 0.005);
+sim.Frame = 'NED';
 
 fprintf('Starting trajectory integration...\n');
 tic;
@@ -45,7 +46,7 @@ fprintf('Sim finished in %.2f seconds (%.2f s simulated).\n', toc, telemetry.tim
 % 7. Post-Flight Analysis
 final_pos = telemetry.pos(end, :)';
 actual_miss = norm(final_pos(1:2) - target.Position(1:2));
-[apogee, apogee_idx] = max(telemetry.pos(:,3));
+[apogee, apogee_idx] = max(CoordinateFrame.altitudeColumn(telemetry.pos(:,3), telemetry.Frame));
 bb = shell.Aero.BaseBleed;
 
 fprintf('Termination Reason          : %s\n', sim.TerminationReason);

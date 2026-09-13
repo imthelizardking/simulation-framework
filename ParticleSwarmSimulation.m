@@ -14,6 +14,7 @@ classdef ParticleSwarmSimulation < handle
         Particles   cell         = {}
         Target                   = []
         Environment              = []
+        Frame       (1,:) char   = 'Z-Up'  % 'Z-Up' or 'NED' - see CoordinateFrame; set by Simulation.triggerFragmentation to match the parent flight
         Integrator               = RK4FixedStep()
         TimeSpan    (1,2) double = [0 15]
         Dt          (1,1) double = 0.001
@@ -74,6 +75,7 @@ classdef ParticleSwarmSimulation < handle
             tgt_bus = obj.resolveTargetBus();
 
             if ~isempty(obj.Visualizer)
+                if isprop(obj.Visualizer, 'Frame'), obj.Visualizer.Frame = obj.Frame; end
                 obj.Visualizer.init(obj.States, tgt_bus, obj.Alive);
             end
 
@@ -110,7 +112,7 @@ classdef ParticleSwarmSimulation < handle
                     tel{i}.pos(s, :) = X(1:3)';
                     tel{i}.vel(s, :) = X(4:6)';
 
-                    [is_term, reason] = Simulation.evalTerminationCriteria(obj.Termination, t, X, tgt_bus.pos, tgt_bus.vel);
+                    [is_term, reason] = Simulation.evalTerminationCriteria(obj.Termination, t, X, tgt_bus.pos, tgt_bus.vel, obj.Frame);
                     if is_term
                         obj.Alive(i) = false;
                         tel{i}.TerminationReason = reason;
@@ -153,6 +155,9 @@ classdef ParticleSwarmSimulation < handle
         end
 
         function tgt_bus = resolveTargetBus(obj)
+            % Same reasoning as Simulation.resolveTargetBus: the Target
+            % object's own numbers are always plain "Z-Up", rotated here
+            % to match whatever frame the swarm's own particles fly in.
             if isobject(obj.Target) && ismethod(obj.Target, 'getTargetBus')
                 tgt_bus = obj.Target.getTargetBus();
             elseif isstruct(obj.Target)
@@ -160,6 +165,11 @@ classdef ParticleSwarmSimulation < handle
             else
                 tgt_bus = struct('pos', [0;0;0], 'vel', [0;0;0], 'accel', [0;0;0], ...
                                  'LaserReflectivity', 0.3, 'ThermalSignature', 300, 'RCS', 1.0);
+            end
+            tgt_bus.pos = CoordinateFrame.rotateVector(tgt_bus.pos, obj.Frame);
+            tgt_bus.vel = CoordinateFrame.rotateVector(tgt_bus.vel, obj.Frame);
+            if isfield(tgt_bus, 'accel')
+                tgt_bus.accel = CoordinateFrame.rotateVector(tgt_bus.accel, obj.Frame);
             end
         end
 

@@ -18,6 +18,7 @@ classdef FireMission < handle
         MunitionBuilder                 % function handle, e.g. @() MunitionFactory.create35mmHE()
         Target                          % TargetBase subclass, advanced across the whole mission
         Environment                    % Environment
+        Frame           (1,:) char   = 'Z-Up' % 'Z-Up' or 'NED' - see CoordinateFrame; passed to each round's Simulation
         LauncherPos     (3,1) double = [0;0;0]
         FireMode        (1,:) char   = 'DirectLead' % passed to FireControlComputer.solveFiringAngles
         NumRounds       (1,1) double = 1
@@ -92,16 +93,22 @@ classdef FireMission < handle
 
                 % Per-round aiming jitter, clamped to the platform's
                 % mechanical stops (a real mount can't point past them).
+                % elev/azim, like sol.Elevation/sol.Azimuth and the
+                % Platform limits/jitter stddevs, are mils throughout -
+                % buildLaunchState is the one place that still wants
+                % radians, so convert only at that call.
                 elev = sol.Elevation + obj.Platform.ElevationJitterStdDev * randn();
                 azim = sol.Azimuth   + obj.Platform.AzimuthJitterStdDev * randn();
                 elev = max(min(elev, obj.Platform.ElevationMax), obj.Platform.ElevationMin);
                 azim = max(min(azim, obj.Platform.AzimuthMax), obj.Platform.AzimuthMin);
 
                 munition.Dynamics.InitialState = munition.buildLaunchState(...
-                    obj.LauncherPos, v0_round, elev, azim);
+                    obj.LauncherPos, v0_round, ...
+                    FireControlComputer.mil2rad(elev), FireControlComputer.mil2rad(azim));
 
                 sim = Simulation(munition, obj.Target, obj.Environment, ...
                     [0, sol.TimeOfFlight * obj.TimeOfFlightPad], obj.Dt);
+                sim.Frame = obj.Frame;
                 sim.Termination.ImpactDistance = obj.ImpactDistance;
                 sim.Termination.MaxDownrange   = obj.MaxDownrange;
 

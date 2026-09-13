@@ -125,7 +125,10 @@ classdef Munition < handle
                 spin_rate = 0.0;
             end
 
-            up_ref = [0; 0; 1];
+            frame = 'Z-Up';
+            if isprop(obj.Dynamics, 'Frame'), frame = obj.Dynamics.Frame; end
+
+            up_ref = CoordinateFrame.upVector(frame);
             if abs(dot(fwd, up_ref)) > 0.99
                 up_ref = [1; 0; 0];
             end
@@ -148,6 +151,8 @@ classdef Munition < handle
 
                 p = Particle(sprintf('%s_Frag%03d', obj.Name, i), ...
                     model.Shape, model.Dimensions, model.CD, model.ReferenceAreaMode, model.ParticleMass);
+                if isprop(p.Dynamics, 'Frame'), p.Dynamics.Frame = frame; end
+                if isprop(p.Aero, 'Frame'), p.Aero.Frame = frame; end
 
                 pitch0 = 0.0;
                 if norm(p_vel) > 1e-3
