@@ -2,10 +2,16 @@
 classdef FireControlComputer < handle
     properties
         Gravity      (1,1) double = 9.80665
-        ElevationMin (1,1) double = deg2rad(5.0)   % Launcher physical lower limit
-        ElevationMax (1,1) double = deg2rad(85.0)  % Launcher physical upper limit
-        AzimuthMin   (1,1) double = -pi             % Traverse limit; -pi/pi = unrestricted (turret/AA mount)
-        AzimuthMax   (1,1) double = pi               % Narrower for a fixed-arc mount (e.g. towed carriage)
+        % ElevationMin/Max/AzimuthMin/Max, and every solve*/solveDirect
+        % Elevation/Azimuth input or sol.Elevation/sol.Azimuth output, are
+        % in NATO mils (6400/circle - see rad2mil/mil2rad below). This is
+        % the "launch angle and its peripherals" boundary only - internal
+        % trig (theta/psi inside the solvers, simulateFastBallistic,
+        % buildLaunchState) still works entirely in radians.
+        ElevationMin (1,1) double = FireControlComputer.rad2mil(deg2rad(5.0))   % Launcher physical lower limit
+        ElevationMax (1,1) double = FireControlComputer.rad2mil(deg2rad(85.0))  % Launcher physical upper limit
+        AzimuthMin   (1,1) double = -3200            % Traverse limit; -3200/3200 = unrestricted (turret/AA mount)
+        AzimuthMax   (1,1) double = 3200              % Narrower for a fixed-arc mount (e.g. towed carriage)
         CoordFrame   (1,:) char   = 'Z-Up'         % 'Z-Up' or 'NED'
         
         % Numerical Shooting Parameters
@@ -24,7 +30,16 @@ classdef FireControlComputer < handle
             % Iteratively integrates the vehicle's true Aero/Motor/Gravity physics
             % to find the exact QE (Elevation) and Azimuth to hit target_bus.
             if nargin < 7, branch = 'Low'; end
-            
+
+            % ElevationMin/Max/AzimuthMin/Max are mils (see class header);
+            % the iterative solve below works in radians throughout (feeds
+            % simulateFastBallistic/buildLaunchState directly), so convert
+            % the limits once here rather than repeatedly inside the loop.
+            elev_min_rad = FireControlComputer.mil2rad(obj.ElevationMin);
+            elev_max_rad = FireControlComputer.mil2rad(obj.ElevationMax);
+            azim_min_rad = FireControlComputer.mil2rad(obj.AzimuthMin);
+            azim_max_rad = FireControlComputer.mil2rad(obj.AzimuthMax);
+
             r_tgt = target_bus.pos;
             dx = r_tgt(1) - launcher_pos(1);
             dy = r_tgt(2) - launcher_pos(2);
@@ -76,17 +91,17 @@ classdef FireControlComputer < handle
                 psi   = psi   - delta_ps;
 
                 % Clamp to mechanical limits
-                theta = max(min(theta, obj.ElevationMax), obj.ElevationMin);
-                psi   = max(min(psi, obj.AzimuthMax), obj.AzimuthMin);
+                theta = max(min(theta, elev_max_rad), elev_min_rad);
+                psi   = max(min(psi, azim_max_rad), azim_min_rad);
             end
 
-            if (theta < obj.ElevationMin) || (theta > obj.ElevationMax) ...
-                    || (psi < obj.AzimuthMin) || (psi > obj.AzimuthMax)
+            if (theta < elev_min_rad) || (theta > elev_max_rad) ...
+                    || (psi < azim_min_rad) || (psi > azim_max_rad)
                 sol.IsValid = false; % converged onto a mechanical stop, not a real solution
             end
 
-            sol.Elevation    = theta;
-            sol.Azimuth      = psi;
+            sol.Elevation    = FireControlComputer.rad2mil(theta);
+            sol.Azimuth      = FireControlComputer.rad2mil(psi);
             sol.TimeOfFlight = tof;
             sol.AimPoint     = r_tgt;
             sol.MissDistance = miss_dist;
@@ -109,8 +124,15 @@ classdef FireControlComputer < handle
                 otherwise
                     error('Unsupported mode: %s.', mode);
             end
-            
+
+            % solveBallisticIndirect/solveDirectLead are pure-radian
+            % analytic solvers (see their own comments); this is the
+            % boundary where a solved launch angle becomes mils, the unit
+            % ElevationMin/Max/AzimuthMin/Max (and everything downstream:
+            % FireMission, buildLaunchState callers) expects.
             if sol.IsValid
+                sol.Elevation = FireControlComputer.rad2mil(sol.Elevation);
+                sol.Azimuth   = FireControlComputer.rad2mil(sol.Azimuth);
                 if (sol.Elevation < obj.ElevationMin) || (sol.Elevation > obj.ElevationMax)
                     sol.IsValid = false;
                 end
@@ -122,10 +144,13 @@ classdef FireControlComputer < handle
 
         %% 3. Direct Fire (no solving - wraps caller-specified angles in
         %% the same sol shape solveNumericalShooting/solveFiringAngles
-        %% return, radians like everywhere else in this class, so a runner
-        %% can swap between indirect (FCC-computed) and direct (specified)
-        %% firing by changing only which of these three methods it calls -
-        %% buildLaunchState/Simulation/reporting downstream stay identical.
+        %% return, mils like every other Elevation/Azimuth in this class,
+        %% so a runner can swap between indirect (FCC-computed) and direct
+        %% (specified) firing by changing only which of these three
+        %% methods it calls - buildLaunchState/Simulation/reporting
+        %% downstream stay identical (buildLaunchState still wants
+        %% radians, so convert with FireControlComputer.mil2rad at that
+        %% call site, same as every other solve* caller).
         %% TimeOfFlight/AimPoint/MissDistance aren't computed (no target-
         %% seeking happened) - a direct-fire runner picks its own
         %% Simulation TimeSpan rather than deriving it from sol.TimeOfFlight.
@@ -319,9 +344,11 @@ classdef FireControlComputer < handle
         function mil = rad2mil(rad)
             % NATO/US artillery mil: 6400 mils per full circle, the unit
             % gun sights and fire-control displays actually read launch
-            % angles in - internal solving stays in radians (trig needs
-            % it), this is only for reporting a solved/specified launch
-            % angle to a person.
+            % angles in - it's the unit for ElevationMin/Max/AzimuthMin/
+            % Max and every solve*/solveDirect Elevation/Azimuth in this
+            % class. Internal trig-heavy solving (theta/psi inside the
+            % solvers, simulateFastBallistic, buildLaunchState) stays in
+            % radians throughout; this pair converts at that boundary.
             mil = rad * (3200 / pi);
         end
 
@@ -342,6 +369,12 @@ classdef FireControlComputer < handle
             % same, since those are already fixed by the time muzzle
             % velocity is known).
             %
+            % elevation/azimuth are mils, same as the solveFiringAngles/
+            % solveNumericalShooting/solveDirect sol.Elevation/sol.Azimuth
+            % callers typically pass straight through here - converted to
+            % radians internally, right before buildLaunchState (which
+            % stays radians-only, like every Dynamics-facing call).
+            %
             % If munition_builder's round has a SelfDestructTime set, the
             % solved burst time is capped at it: a fuze can't be
             % programmed later than the round's own self-destruct ceiling
@@ -352,7 +385,8 @@ classdef FireControlComputer < handle
             if nargin < 12 || isempty(max_downrange), max_downrange = 100.0; end
 
             recon_round = munition_builder();
-            recon_round.Dynamics.InitialState = recon_round.buildLaunchState(launcher_pos, v0, elevation, azimuth);
+            recon_round.Dynamics.InitialState = recon_round.buildLaunchState(launcher_pos, v0, ...
+                FireControlComputer.mil2rad(elevation), FireControlComputer.mil2rad(azimuth));
             recon_target = TargetConstantVelocity(target.Position, target.Velocity);
 
             recon_sim = Simulation(recon_round, recon_target, env, timespan, dt);

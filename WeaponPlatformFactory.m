@@ -13,12 +13,12 @@ classdef WeaponPlatformFactory
             w = WeaponPlatform();
             w.Name = 'Towed_155mm_Howitzer';
             w.MaxMuzzleVelocity = 900.0; % headroom above M119A2's top zone (Charge7, 580 m/s)
-            w.ElevationMin = deg2rad(0.0);
-            w.ElevationMax = deg2rad(72.0);
-            w.AzimuthMin   = deg2rad(-22.5); % on-carriage traverse without repositioning the trails
-            w.AzimuthMax   = deg2rad(22.5);
-            w.ElevationJitterStdDev = deg2rad(0.08); % less consistent settling than an SPG
-            w.AzimuthJitterStdDev   = deg2rad(0.08);
+            w.ElevationMin = FireControlComputer.rad2mil(deg2rad(0.0));
+            w.ElevationMax = FireControlComputer.rad2mil(deg2rad(72.0));
+            w.AzimuthMin   = FireControlComputer.rad2mil(deg2rad(-22.5)); % on-carriage traverse without repositioning the trails
+            w.AzimuthMax   = FireControlComputer.rad2mil(deg2rad(22.5));
+            w.ElevationJitterStdDev = FireControlComputer.rad2mil(deg2rad(0.08)); % less consistent settling than an SPG
+            w.AzimuthJitterStdDev   = FireControlComputer.rad2mil(deg2rad(0.08));
             w.RateOfFire = 3.0; % rounds/min, sustained
         end
 
@@ -27,12 +27,12 @@ classdef WeaponPlatformFactory
             w = WeaponPlatform();
             w.Name = 'Firtina_155mm_SPG';
             w.MaxMuzzleVelocity = 960.0; % headroom above DM92 6M (943 m/s)
-            w.ElevationMin = deg2rad(-3.0);
-            w.ElevationMax = deg2rad(65.0);
-            w.AzimuthMin = -pi; % full 360 deg turret traverse
-            w.AzimuthMax = pi;
-            w.ElevationJitterStdDev = deg2rad(0.04); % tighter than towed - autoloader + digital fire control
-            w.AzimuthJitterStdDev   = deg2rad(0.04);
+            w.ElevationMin = FireControlComputer.rad2mil(deg2rad(-3.0));
+            w.ElevationMax = FireControlComputer.rad2mil(deg2rad(65.0));
+            w.AzimuthMin = -3200; % full 360 deg turret traverse
+            w.AzimuthMax = 3200;
+            w.ElevationJitterStdDev = FireControlComputer.rad2mil(deg2rad(0.04)); % tighter than towed - autoloader + digital fire control
+            w.AzimuthJitterStdDev   = FireControlComputer.rad2mil(deg2rad(0.04));
             w.RateOfFire = 6.0; % rounds/min, sustained
         end
 
@@ -41,12 +41,12 @@ classdef WeaponPlatformFactory
             w = WeaponPlatform();
             w.Name = 'AA_35mm_Twin_Mount';
             w.MaxMuzzleVelocity = 1200.0; % headroom above the 35mm fixed charge (1175 m/s)
-            w.ElevationMin = deg2rad(-5.0);
-            w.ElevationMax = deg2rad(92.0); % near-vertical/overhead engagement
-            w.AzimuthMin = -pi; % full traverse, radar-directed
-            w.AzimuthMax = pi;
-            w.ElevationJitterStdDev = deg2rad(0.05);
-            w.AzimuthJitterStdDev   = deg2rad(0.05);
+            w.ElevationMin = FireControlComputer.rad2mil(deg2rad(-5.0));
+            w.ElevationMax = FireControlComputer.rad2mil(deg2rad(92.0)); % near-vertical/overhead engagement
+            w.AzimuthMin = -3200; % full traverse, radar-directed
+            w.AzimuthMax = 3200;
+            w.ElevationJitterStdDev = FireControlComputer.rad2mil(deg2rad(0.05));
+            w.AzimuthJitterStdDev   = FireControlComputer.rad2mil(deg2rad(0.05));
             w.RateOfFire = 550.0; % rounds/min, cyclic
         end
 
@@ -55,12 +55,12 @@ classdef WeaponPlatformFactory
             w = WeaponPlatform();
             w.Name = 'Naval_76mm_Mount';
             w.MaxMuzzleVelocity = 850.0; % headroom above the 76mm fixed charge (800 m/s)
-            w.ElevationMin = deg2rad(-15.0);
-            w.ElevationMax = deg2rad(85.0);
-            w.AzimuthMin = -pi; % full traverse
-            w.AzimuthMax = pi;
-            w.ElevationJitterStdDev = deg2rad(0.03);
-            w.AzimuthJitterStdDev   = deg2rad(0.03);
+            w.ElevationMin = FireControlComputer.rad2mil(deg2rad(-15.0));
+            w.ElevationMax = FireControlComputer.rad2mil(deg2rad(85.0));
+            w.AzimuthMin = -3200; % full traverse
+            w.AzimuthMax = 3200;
+            w.ElevationJitterStdDev = FireControlComputer.rad2mil(deg2rad(0.03));
+            w.AzimuthJitterStdDev   = FireControlComputer.rad2mil(deg2rad(0.03));
             w.RateOfFire = 85.0; % rounds/min, fully automatic
         end
 
