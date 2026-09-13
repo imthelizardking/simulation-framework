@@ -14,7 +14,20 @@ classdef DatcomReader
     % rows (CD/CL already wind-axis, computed by DATCOM itself - no
     % body->wind transform needed on this side, unlike the CN/CA-only
     % assumption an earlier version of this reader made before a real
-    % sample file was available to check against).
+    % sample file was available to check against). All 11 non-ALPHA
+    % columns are captured onto the resulting AeroDatcom; CLA/CMA/CYB/CNB/
+    % CLB are DATCOM's own derivatives, tabulated PER DEGREE (see the
+    % table's "-------DERIVATIVE (PER DEGREE)-------" banner in the raw
+    % listing) - convert to per-radian before mixing with this framework's
+    % own per-radian coefficients (e.g. DynamicsMPMM.CLalpha).
+    %
+    % This table alone does not cover everything Missile DATCOM can print
+    % (dynamic/rate derivatives like CNQ/CMQ/CLP from a $DAMP request, or
+    % control-surface effectiveness from $CONTROL, live in separate table
+    % formats). Those aren't parsed here because no real sample DATCOM run
+    % requesting them exists yet in data/ to verify a parser against - see
+    % the note above about not fabricating a layout without a genuine
+    % sample. Add a parser for them once such a run is available.
     %
     % A case with no method available for a condition prints "NDM" (No
     % DATCOM Methods) in place of numbers for that whole Mach block; such
@@ -64,16 +77,43 @@ classdef DatcomReader
             mach_unique = unique(mach_sorted, 'stable');
             n_mach  = numel(mach_unique);
             n_alpha = numel(alpha_deg);
-            CD = zeros(n_alpha, n_mach);
-            CL = zeros(n_alpha, n_mach);
+            CD  = zeros(n_alpha, n_mach);
+            CL  = zeros(n_alpha, n_mach);
+            CM  = zeros(n_alpha, n_mach);
+            CN  = zeros(n_alpha, n_mach);
+            CA  = zeros(n_alpha, n_mach);
+            XCP = zeros(n_alpha, n_mach);
+            CLA = zeros(n_alpha, n_mach);
+            CMA = zeros(n_alpha, n_mach);
+            CYB = zeros(n_alpha, n_mach);
+            CNB = zeros(n_alpha, n_mach);
+            CLB = zeros(n_alpha, n_mach);
             for i = 1:numel(blocks)
                 col = find(mach_unique == blocks(i).mach, 1);
-                CD(:, col) = blocks(i).CD(:); % later (higher i) blocks overwrite earlier duplicates
-                CL(:, col) = blocks(i).CL(:);
+                CD(:, col)  = blocks(i).CD(:); % later (higher i) blocks overwrite earlier duplicates
+                CL(:, col)  = blocks(i).CL(:);
+                CM(:, col)  = blocks(i).CM(:);
+                CN(:, col)  = blocks(i).CN(:);
+                CA(:, col)  = blocks(i).CA(:);
+                XCP(:, col) = blocks(i).XCP(:);
+                CLA(:, col) = blocks(i).CLA(:);
+                CMA(:, col) = blocks(i).CMA(:);
+                CYB(:, col) = blocks(i).CYB(:);
+                CNB(:, col) = blocks(i).CNB(:);
+                CLB(:, col) = blocks(i).CLB(:);
             end
             [mach_unique, order2] = sort(mach_unique);
-            CD = CD(:, order2);
-            CL = CL(:, order2);
+            CD  = CD(:, order2);
+            CL  = CL(:, order2);
+            CM  = CM(:, order2);
+            CN  = CN(:, order2);
+            CA  = CA(:, order2);
+            XCP = XCP(:, order2);
+            CLA = CLA(:, order2);
+            CMA = CMA(:, order2);
+            CYB = CYB(:, order2);
+            CNB = CNB(:, order2);
+            CLB = CLB(:, order2);
 
             aero = AeroDatcom();
             if nargin > 1 && ~isempty(ref_area),   aero.RefArea   = ref_area;   end
@@ -83,6 +123,15 @@ classdef DatcomReader
             aero.Alpha = deg2rad(alpha_deg(:)');
             aero.CD    = CD;
             aero.CL    = CL;
+            aero.CM    = CM;
+            aero.CN    = CN;
+            aero.CA    = CA;
+            aero.XCP   = XCP;
+            aero.CLA   = CLA;
+            aero.CMA   = CMA;
+            aero.CYB   = CYB;
+            aero.CNB   = CNB;
+            aero.CLB   = CLB;
             aero.CL_alpha = DatcomReader.estimateCLAlpha(aero);
         end
     end
@@ -91,7 +140,9 @@ classdef DatcomReader
         function blocks = parseBlocks(path)
             raw = fileread(path);
             lines = strsplit(raw, {'\r\n', '\n'});
-            blocks = struct('mach', {}, 'alpha_deg', {}, 'CD', {}, 'CL', {});
+            blocks = struct('mach', {}, 'alpha_deg', {}, 'CD', {}, 'CL', {}, ...
+                'CM', {}, 'CN', {}, 'CA', {}, 'XCP', {}, 'CLA', {}, 'CMA', {}, ...
+                'CYB', {}, 'CNB', {}, 'CLB', {});
 
             title_idx = find(contains(lines, 'CHARACTERISTICS AT ANGLE OF ATTACK'));
             for k = 1:numel(title_idx)
@@ -106,8 +157,17 @@ classdef DatcomReader
                 if isempty(hdr), continue; end
 
                 alpha_deg = [];
-                cd_vals = [];
-                cl_vals = [];
+                cd_vals  = [];
+                cl_vals  = [];
+                cm_vals  = [];
+                cn_vals  = [];
+                ca_vals  = [];
+                xcp_vals = [];
+                cla_vals = [];
+                cma_vals = [];
+                cyb_vals = [];
+                cnb_vals = [];
+                clb_vals = [];
                 valid = true;
                 for j = (hdr + 1):numel(window)
                     line = window{j};
@@ -124,24 +184,53 @@ classdef DatcomReader
                         valid = false;
                         break;
                     end
-                    if numel(rest) < 2
+                    % Fixed DATCOM column layout after ALPHA: CD CL CM CN
+                    % CA XCP CLA CMA CYB CNB CLB (see class header comment)
+                    % - all 11 should be present on a non-NDM row.
+                    if numel(rest) < 11
                         valid = false;
                         break;
                     end
                     cd_v = str2double(rest{1});
                     cl_v = str2double(rest{2});
+                    cm_v = str2double(rest{3});
+                    cn_v = str2double(rest{4});
+                    ca_v = str2double(rest{5});
+                    % XCP = CM/CN is undefined wherever CN crosses zero
+                    % (typically alpha=0); DATCOM prints "******" there
+                    % instead of a number, which str2double turns into NaN
+                    % - a per-point gap, not a reason to drop the whole
+                    % block the way a NDM row or a bad CD/CL would.
+                    xcp_v = str2double(rest{6});
+                    cla_v = str2double(rest{7});
+                    cma_v = str2double(rest{8});
+                    cyb_v = str2double(rest{9});
+                    cnb_v = str2double(rest{10});
+                    clb_v = str2double(rest{11});
                     if isnan(cd_v) || isnan(cl_v)
                         valid = false;
                         break;
                     end
                     alpha_deg(end + 1) = a; %#ok<AGROW>
-                    cd_vals(end + 1) = cd_v; %#ok<AGROW>
-                    cl_vals(end + 1) = cl_v; %#ok<AGROW>
+                    cd_vals(end + 1)  = cd_v; %#ok<AGROW>
+                    cl_vals(end + 1)  = cl_v; %#ok<AGROW>
+                    cm_vals(end + 1)  = cm_v; %#ok<AGROW>
+                    cn_vals(end + 1)  = cn_v; %#ok<AGROW>
+                    ca_vals(end + 1)  = ca_v; %#ok<AGROW>
+                    xcp_vals(end + 1) = xcp_v; %#ok<AGROW>
+                    cla_vals(end + 1) = cla_v; %#ok<AGROW>
+                    cma_vals(end + 1) = cma_v; %#ok<AGROW>
+                    cyb_vals(end + 1) = cyb_v; %#ok<AGROW>
+                    cnb_vals(end + 1) = cnb_v; %#ok<AGROW>
+                    clb_vals(end + 1) = clb_v; %#ok<AGROW>
                 end
 
                 if valid && ~isempty(alpha_deg)
                     blocks(end + 1) = struct('mach', mach, 'alpha_deg', alpha_deg, ...
-                        'CD', cd_vals, 'CL', cl_vals); %#ok<AGROW>
+                        'CD', cd_vals, 'CL', cl_vals, 'CM', cm_vals, ...
+                        'CN', cn_vals, 'CA', ca_vals, 'XCP', xcp_vals, ...
+                        'CLA', cla_vals, 'CMA', cma_vals, 'CYB', cyb_vals, ...
+                        'CNB', cnb_vals, 'CLB', clb_vals); %#ok<AGROW>
                 end
             end
         end
