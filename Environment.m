@@ -86,26 +86,34 @@ classdef Environment < handle
             % Optional: an Environment that never calls this keeps using
             % ISA. Revert to ISA by clearing MetcmAltitudes ([]).
             %
-            % Layer altitudes are NOT encoded in the file; they're this
-            % fixed 32-breakpoint table (standard for this message
-            % format), matched positionally to the file's data lines in
-            % order, after a 2-line message header.
+            % Layer altitudes are NOT encoded directly as values in the
+            % file; they're this fixed 32-breakpoint table (standard for
+            % this message format), and each data line's own leading
+            % 2-digit level index (0-based) says which ALTITUDES entry
+            % that line reports. A real message doesn't always report all
+            % 32 levels - it can be truncated (e.g. only 10 lines, for
+            % just the lower levels) - so the number of data lines actually
+            % present in the file, not a fixed 32, determines how many
+            % breakpoints this Environment ends up with.
             %
             % Each data line is 16 fixed-width digits, no delimiters:
             %   [2 line index][4 wind dir, mils][2 wind speed, m/s]
             %   [4 temperature, tenths of Kelvin][4 pressure, whole hPa]
             % Temperature/pressure fields are verified against the
             % data/metcm_std.txt example: they match the ISA standard
-            % atmosphere to within rounding at every altitude checked. The
-            % wind sub-field split (4 digits direction + 2 digits speed)
-            % is a reasoned best guess - 4 digits is the minimum that can
-            % hold the full 0-6400 mil range - but NOT empirically
-            % confirmed, since that example's wind is calm (all-zero)
-            % throughout. Check it against a real non-calm METCM file if
-            % you have one, and correct here if it's wrong.
+            % atmosphere to within rounding at every altitude checked (that
+            % example happens to report all 32 levels, in order, so it
+            % doesn't exercise the truncated/partial case). The wind
+            % sub-field split (4 digits direction + 2 digits speed) is a
+            % reasoned best guess - 4 digits is the minimum that can hold
+            % the full 0-6400 mil range - but NOT empirically confirmed,
+            % since that example's wind is calm (all-zero) throughout.
+            % Check it against a real non-calm METCM file if you have one,
+            % and correct here if it's wrong.
             ALTITUDES = [0 100 350 750 1250 1750 2250 2750 3250 3750 4250 4750 ...
                 5500 6500 7500 8500 9500 10500 11500 12500 13500 14500 ...
                 15500 16500 17500 18500 19500 21000 23000 25000 27000 29000];
+            n_levels = numel(ALTITUDES);
 
             here = fileparts(mfilename('fullpath'));
             path = fullfile(here, 'data', [name '.txt']);
@@ -116,24 +124,33 @@ classdef Environment < handle
             raw_lines = regexp(fileread(path), '\r\n|\r|\n', 'split');
             raw_lines = raw_lines(~cellfun(@(s) isempty(strtrim(s)), raw_lines));
 
-            n = numel(ALTITUDES);
-            if numel(raw_lines) < n + 2
+            data_lines = raw_lines(3:end); % skip the 2-line message header
+            n = numel(data_lines);
+            if n == 0
                 error('Environment:loadMetcm', ...
-                    'data/%s.txt has %d data lines after its 2-line header, expected %d.', ...
-                    name, numel(raw_lines) - 2, n);
+                    'data/%s.txt has no data lines after its 2-line header.', name);
             end
 
-            T_K   = zeros(n, 1);
-            P_Pa  = zeros(n, 1);
-            W_NED = zeros(n, 3);
+            level_idx = zeros(n, 1);
+            T_K       = zeros(n, 1);
+            P_Pa      = zeros(n, 1);
+            W_NED     = zeros(n, 3);
 
             for i = 1:n
-                line = strtrim(raw_lines{i + 2}); % skip the 2-line message header
+                line = strtrim(data_lines{i});
+                idx0           = str2double(line(1:2)); % 0-based index into ALTITUDES
                 wind_dir_mil   = str2double(line(3:6));
                 wind_speed_mps = str2double(line(7:8));
                 temp_dK        = str2double(line(9:12));
                 press_hPa      = str2double(line(13:16));
 
+                if isnan(idx0) || idx0 < 0 || idx0 >= n_levels
+                    error('Environment:loadMetcm', ...
+                        'data/%s.txt data line %d has an out-of-range level index ("%s").', ...
+                        name, i, line(1:2));
+                end
+
+                level_idx(i) = idx0 + 1; % MATLAB is 1-indexed
                 T_K(i)  = temp_dK / 10;
                 P_Pa(i) = press_hPa * 100; % hPa -> Pa
 
@@ -143,10 +160,15 @@ classdef Environment < handle
                 W_NED(i, :) = -wind_speed_mps * [cos(wind_rad), sin(wind_rad), 0];
             end
 
-            obj.MetcmAltitudes   = ALTITUDES(:);
-            obj.MetcmTemperature = T_K;
-            obj.MetcmPressure    = P_Pa;
-            obj.MetcmWind_NED    = W_NED;
+            % Order by actual altitude, not file order - interp1 needs
+            % monotonically increasing breakpoints, and a message isn't
+            % guaranteed to list levels in ascending order just because
+            % the reference sample does.
+            [sorted_alt, order] = sort(ALTITUDES(level_idx));
+            obj.MetcmAltitudes   = sorted_alt(:);
+            obj.MetcmTemperature = T_K(order);
+            obj.MetcmPressure    = P_Pa(order);
+            obj.MetcmWind_NED    = W_NED(order, :);
         end
 
         function T = getTemperature(obj, altitude)
