@@ -213,10 +213,28 @@ classdef FireControlComputer < handle
 
             deriv_fn = @(tt, XX) obj.evalMunitionDerivatives(munition, tt, XX, env);
 
+            % Altitude-vs-raw-Z: reads munition.Dynamics.Frame so this
+            % works correctly whether Frame is set to 'NED' before or
+            % after this solve runs (previously hardcoded Z-Up - X(3)
+            % directly, vel(3)<0 for "descending" - which only happened
+            % to work because every caller set Frame AFTER solving;
+            % callers no longer need to order it that way). A Dynamics
+            % class with no Frame property at all (e.g. DynamicsMPMM) is
+            % always-NED by its own design (see BaseDynamics.IDX_POS'
+            % comment on the 17-state blueprint layout), not Z-Up - so
+            % the fallback here has to match that, not just default to
+            % Z-Up as if "no Frame property" meant "the legacy convention".
+            if isprop(munition.Dynamics, 'Frame')
+                frame = munition.Dynamics.Frame;
+            elseif munition.Dynamics.StateDimension == BaseDynamics.FULL_STATE_DIM
+                frame = 'NED';
+            else
+                frame = 'Z-Up';
+            end
+            target_alt = CoordinateFrame.altitude([0; 0; z_target], frame);
+
             t = 0;
             while t < t_max
-                vel = X(4:6);
-
                 % Terminal condition: altitude crosses target altitude while
                 % descending. Linearly interpolates between the last two
                 % samples to the exact crossing point rather than returning
@@ -227,10 +245,11 @@ classdef FireControlComputer < handle
                 % Newton-Raphson could get within a couple of meters of the
                 % true answer and then orbit it forever, never satisfying
                 % its own convergence check.
-                if t > 0.5 && X(3) <= z_target && vel(3) < 0
-                    z_prev = X_prev(3);
-                    if z_prev ~= X(3)
-                        frac = (z_prev - z_target) / (z_prev - X(3));
+                alt      = CoordinateFrame.altitude(X, frame);
+                alt_prev = CoordinateFrame.altitude(X_prev, frame);
+                if t > 0.5 && alt <= target_alt && alt < alt_prev
+                    if alt_prev ~= alt
+                        frac = (alt_prev - target_alt) / (alt_prev - alt);
                     else
                         frac = 0.0;
                     end

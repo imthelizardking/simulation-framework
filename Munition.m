@@ -26,10 +26,10 @@ classdef Munition < handle
         function X0 = buildLaunchState(obj, launcher_pos, v0, elevation, azimuth)
             % Assembles the Dynamics-specific launch state, adding the
             % muzzle spin rate (from TwistRate + the round's bore
-            % diameter) on top for a Dynamics3DofSpin munition - so
-            % callers get one call site regardless of whether the munition
-            % spins or not.
-            if isa(obj.Dynamics, 'Dynamics3DofSpin') && obj.TwistRate > 0
+            % diameter) on top for a Dynamics3DofSpin or DynamicsMPMM
+            % munition - so callers get one call site regardless of
+            % whether the munition spins or not.
+            if (isa(obj.Dynamics, 'Dynamics3DofSpin') || isa(obj.Dynamics, 'DynamicsMPMM')) && obj.TwistRate > 0
                 spin0 = Dynamics3DofSpin.spinRateFromTwist(v0, obj.TwistRate, obj.Aero.RefLength);
                 X0 = obj.Dynamics.buildLaunchState(launcher_pos, v0, elevation, azimuth, obj.MassProperties.Mass, spin0);
             else
