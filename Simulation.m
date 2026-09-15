@@ -18,10 +18,18 @@ classdef Simulation < handle
         % (ImpactDistance, MaxDownrange) are opt-in: enable them per-
         % scenario for intercept/engagement runs where a "miss" needs its
         % own stopping condition.
+        %
+        % MinAltitude defaults to NaN, not a fixed 0: run() resolves NaN
+        % to the launch altitude (CoordinateFrame.altitude of the initial
+        % state) once, before the main loop - so a munition launched from
+        % altitude 600 terminates on returning to 600, one launched from 0
+        % terminates at 0, with no per-scenario setup needed either way.
+        % Set MinAltitude explicitly (to any real number, or [] to disable
+        % ground-impact termination entirely) to override this.
         Termination struct = struct(...
             'MaxTime',        [], ...   % s;  stop once t >= MaxTime
             'ImpactDistance', [], ...   % m;  stop once within this of target
-            'MinAltitude',    0, ...    % m;  stop on descending through this
+            'MinAltitude',    NaN, ...  % m;  stop on descending through this - NaN = launch altitude, resolved in run()
             'MaxAltitude',    [], ...   % m;  stop on climbing through this
             'MaxDownrange',   [], ...   % m;  stop this far past target in X
             'PassedTarget',   false)    % stop once range-to-target starts increasing (closest approach is behind it) - see evalTerminationCriteria
@@ -80,7 +88,14 @@ classdef Simulation < handle
             else
                 error('Simulation:Munition', 'Munition has no valid InitialState.');
             end
-            
+
+            % Resolve MinAltitude's NaN default (see Termination's own
+            % comment) to this run's actual launch altitude, once, before
+            % any termination check can run.
+            if isnan(obj.Termination.MinAltitude)
+                obj.Termination.MinAltitude = CoordinateFrame.altitude(X, obj.Frame);
+            end
+
             % 2. Preallocate Telemetry
             tel.time       = zeros(N_steps, 1);
             tel.pos        = zeros(N_steps, 3);
@@ -298,6 +313,13 @@ classdef Simulation < handle
             % same frame as X (see Simulation.resolveTargetBus).
             % MinAltitude/MaxAltitude go through CoordinateFrame.altitude
             % since "altitude" isn't simply X(3) under every frame.
+            % T.MinAltitude is assumed already resolved to a real number
+            % (or []) by this point - Simulation.run()/ParticleSwarmSimulation.
+            % run() each do that once, before their loop starts, from
+            % their own default NaN ("use launch altitude") - a NaN
+            % reaching the comparison below would silently never trigger
+            % (NaN comparisons are always false), so don't call this with
+            % an unresolved Termination struct.
             if nargin < 6, frame = 'Z-Up'; end
             is_term = false;
             reason  = '';

@@ -13,8 +13,8 @@ classdef MunitionFactory
             m.Type = FactoryData.getOr(data, 'Type', 'HE');
 
             % Mass properties (NATO standard ~43.2 kg, d = 0.155 m)
-            m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 43.2);
-            m.MassProperties.Inertia = diag(FactoryData.getOr(data, 'Inertia', [0.14, 1.62, 1.62])); % [Ix, Iy, Iz]
+            m.MassProperties.Mass = FactoryData.getOr(data, 'Reference_Mass', 43.091);
+            m.MassProperties.Inertia = diag(FactoryData.getOr(data, 'Axial_Moment_Of_Inertia_Initial', [0.13, 1.62, 1.62])); % [Ix, Iy, Iz]
 
             % Subsystems
             m.Dynamics   = Dynamics3DofSpin();

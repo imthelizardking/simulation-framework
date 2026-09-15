@@ -24,10 +24,15 @@ classdef ParticleSwarmSimulation < handle
         % generous backstops in case a fragment somehow never trips it
         % (e.g. ends up on a near-parallel course), not the everyday
         % stopping condition.
+        % MinAltitude defaults to NaN, not a fixed 0 - see run(), which
+        % resolves it to the swarm's own burst altitude (same "launch
+        % altitude" convention as Simulation.Termination) before its loop
+        % starts, so a burst well above ground doesn't need this set by
+        % hand per scenario.
         Termination struct = struct(...
             'MaxTime',        12.0, ...
             'ImpactDistance', 0.05, ...
-            'MinAltitude',    0, ...
+            'MinAltitude',    NaN, ...
             'MaxAltitude',    [], ...
             'MaxDownrange',   500.0, ...
             'PassedTarget',   true)
@@ -57,6 +62,19 @@ classdef ParticleSwarmSimulation < handle
                 obj.Particles{i}.Dynamics.CurrentState = obj.States{i};
             end
             obj.Alive = true(n, 1);
+
+            % Resolve MinAltitude's NaN default to the swarm's own burst
+            % altitude (mean across particles - they all spawn from
+            % essentially the same point, so this is just a robustness
+            % margin over picking one particle arbitrarily), once, before
+            % any termination check can run.
+            if isnan(obj.Termination.MinAltitude) && n > 0
+                burst_alts = zeros(n, 1);
+                for i = 1:n
+                    burst_alts(i) = CoordinateFrame.altitude(obj.States{i}, obj.Frame);
+                end
+                obj.Termination.MinAltitude = mean(burst_alts);
+            end
 
             % Step count isn't known up front once dt varies with range-to-
             % target (obj.Integrator.computeStepSize), so telemetry starts

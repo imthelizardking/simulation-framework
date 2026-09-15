@@ -1,7 +1,8 @@
 %% Scenario: 155mm M107 Direct Fire under METCM Atmospheric Data
 % Same direct-fire setup as runner_m107_direct.m, but the Environment's
 % atmosphere comes from data/metcm_std.txt (see Environment.loadMetcm)
-% instead of the built-in ISA formulas. metcm_std.txt represents "standard
+% instead of the built-in ISA formulas. metcm_std.txt represent
+% s "standard
 % conditions" (calm, near-ISA) - swap in a real (non-standard) METCM file
 % to see a bigger difference from the ISA-based runner.
 clear; clc; close all;
