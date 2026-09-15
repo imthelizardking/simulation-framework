@@ -80,6 +80,30 @@ classdef FactoryData
             end
         end
 
+        function val = getOrAny(data, candidates, default)
+            % Like getOr, but tries several candidate field-name
+            % spellings and matches case- and underscore-insensitively -
+            % for a field whose name varies across source files/tools
+            % (e.g. 'IForm', 'IFORM', 'I_Form', 'i_form' should all match
+            % the same value). candidates is a cellstr, tried in order;
+            % the first one present in data (after normalizing both sides)
+            % wins. Falls back to default if data isn't a struct or none
+            % of the candidates match, same as getOr.
+            val = default;
+            if ~isstruct(data)
+                return;
+            end
+            fn = fieldnames(data);
+            normFn = cellfun(@FactoryData.normalizeFieldName, fn, 'UniformOutput', false);
+            for i = 1:numel(candidates)
+                idx = find(strcmp(normFn, FactoryData.normalizeFieldName(candidates{i})), 1);
+                if ~isempty(idx)
+                    val = data.(fn{idx});
+                    return;
+                end
+            end
+        end
+
         function val = getOrPath(data, path, default)
             % Like getOr, but walks an arbitrary chain of nested field
             % names instead of just one - for a source file whose fields
@@ -104,6 +128,13 @@ classdef FactoryData
     end
 
     methods (Static, Access = private)
+        function n = normalizeFieldName(name)
+            % Case- and underscore-insensitive comparison key for
+            % getOrAny - 'IForm', 'IFORM', 'I_Form', 'i_form' all reduce
+            % to the same string.
+            n = lower(strrep(char(name), '_', ''));
+        end
+
         function data = loadFile(path, ext)
             switch ext
                 case '.json'

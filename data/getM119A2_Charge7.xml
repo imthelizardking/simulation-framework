@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SYNTHETIC EXAMPLE - NOT REAL FIRING-TABLE DATA. Demonstrates
+     ChargeFactory.applyFormFactors' per-charge STANAG 4355 MPMM
+     form-factor override (see that method and ChargeZone.IForm/FL/QD/QM)
+     - illustrative values only, not measured for M119A2 Charge7. -->
+<Data>
+    <IForm>1.05</IForm>
+    <FL>0.98</FL>
+    <QD>1.10</QD>
+    <QM>0.95</QM>
+</Data>

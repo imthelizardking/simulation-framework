@@ -73,6 +73,13 @@ aero.CLA   = 2.5;
 aero.CSPIN = -0.03;
 aero.CMA   = 2.0;
 aero.CMAG  = 1.2;
+% Form factors come from the charge itself (see ChargeZone.IForm/FL/QD/
+% QM and ChargeFactory.applyFormFactors) - mpmm.Charge was already
+% copied from legacy.Charge above.
+aero.IForm = mpmm.Charge.IForm;
+aero.FL    = mpmm.Charge.FL;
+aero.QD    = mpmm.Charge.QD;
+aero.QM    = mpmm.Charge.QM;
 mpmm.Aero = aero;
 
 mpmm.Dynamics.InitialState = mpmm.buildLaunchState(launcher_pos, v0, elevation, azimuth);

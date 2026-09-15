@@ -39,6 +39,13 @@ aero.CLA   = 2.5;
 aero.CSPIN = -0.03;
 aero.CMA   = 2.0;
 aero.CMAG  = 1.2;
+% Form factors come from the charge itself (see ChargeZone.IForm/FL/QD/
+% QM, populated from data/getM119A2_Charge7.<ext> if present - see
+% ChargeFactory.applyFormFactors), not hardcoded here.
+aero.IForm = shell.Charge.IForm;
+aero.FL    = shell.Charge.FL;
+aero.QD    = shell.Charge.QD;
+aero.QM    = shell.Charge.QM;
 shell.Aero = aero;
 
 % 4. Fire Control Computer (Solves Quadrant Elevation & Wind Crab Angle)
