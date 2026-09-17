@@ -125,9 +125,58 @@ classdef FactoryData
                 end
             end
         end
+
+        function matches = findAll(data, field)
+            % Recursively searches data - including nested structs and
+            % repeated-sibling-tag cell arrays (see xmlElementToStruct) -
+            % for EVERY field named `field`, wherever it sits in the
+            % tree. Unlike getOr/getOrAny (top-level only) or getOrPath
+            % (needs the exact path already known), this finds a field
+            % that might be nested under an arbitrary/unknown subfield -
+            % e.g. data.CD0 AND data.Aero.CD0 AND
+            % data.Projectiles{2}.Coefficients.CD0 would all be found by
+            % findAll(data, 'CD0'). Matched case- and underscore-
+            % insensitively, same rule as getOrAny.
+            %
+            % Returns every match (there may legitimately be zero, one,
+            % or several - a field name is not assumed unique across the
+            % file) as a struct array with one entry per match: .Path (a
+            % cell array locating it - char field names, or a numeric
+            % index where the path passed through a repeated-tag cell
+            % array) and .Value. Check isempty(matches) rather than
+            % passing a fallback default like getOr does, since "found
+            % nowhere" and "found with this value" aren't the only two
+            % outcomes here - "found in several places" also needs
+            % handling by the caller.
+            matches = struct('Path', {}, 'Value', {});
+            matches = FactoryData.findAllRecurse(data, field, {}, matches);
+        end
     end
 
     methods (Static, Access = private)
+        function matches = findAllRecurse(node, field, path, matches)
+            if isstruct(node)
+                if ~isscalar(node)
+                    for k = 1:numel(node)
+                        matches = FactoryData.findAllRecurse(node(k), field, [path, {k}], matches);
+                    end
+                    return;
+                end
+                fn = fieldnames(node);
+                for i = 1:numel(fn)
+                    childPath = [path, {fn{i}}];
+                    if strcmp(FactoryData.normalizeFieldName(fn{i}), FactoryData.normalizeFieldName(field))
+                        matches(end + 1) = struct('Path', {childPath}, 'Value', {node.(fn{i})}); %#ok<AGROW>
+                    end
+                    matches = FactoryData.findAllRecurse(node.(fn{i}), field, childPath, matches);
+                end
+            elseif iscell(node)
+                for k = 1:numel(node)
+                    matches = FactoryData.findAllRecurse(node{k}, field, [path, {k}], matches);
+                end
+            end
+        end
+
         function n = normalizeFieldName(name)
             % Case- and underscore-insensitive comparison key for
             % getOrAny - 'IForm', 'IFORM', 'I_Form', 'i_form' all reduce
