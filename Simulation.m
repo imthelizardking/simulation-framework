@@ -74,6 +74,19 @@ classdef Simulation < handle
                 obj.Visualizer.Frame = obj.Frame;
             end
 
+            % An ExternalModel (Simulink, a third-party .exe, ...) runs
+            % its own internal time-stepping and hands back a finished
+            % trajectory in one call - fundamentally different from
+            % Dynamics3Dof/DynamicsMPMM/etc, which this Simulation steps
+            % itself, one RK4 sub-step at a time, in the loop below. So
+            % it bypasses that loop entirely rather than plugging into
+            % it - see runExternalModel and Munition.ExternalModel.
+            if isprop(obj.Munition, 'ExternalModel') && ~isempty(obj.Munition.ExternalModel)
+                tel = obj.runExternalModel();
+                obj.Telemetry = tel;
+                return;
+            end
+
             dt = obj.Dt;
             time_array = obj.TimeSpan(1):dt:obj.TimeSpan(2);
             N_steps = length(time_array);
@@ -210,6 +223,50 @@ classdef Simulation < handle
             if strcmp(obj.TerminationReason, 'Burst')
                 obj.triggerFragmentation();
             end
+        end
+
+        function tel = runExternalModel(obj)
+            % Whole-flight delegation to obj.Munition.ExternalModel (a
+            % BaseExternalModel subclass) - called once, not per sub-
+            % step, since the external tool does its own internal time-
+            % stepping (see Munition.ExternalModel's comment). inputs is
+            % a generic scenario description; the CONCRETE adapter's own
+            % prepareInputs/execute/parseOutputs are responsible for
+            % translating to/from whatever that specific tool actually
+            % needs - this method only fixes the CONTRACT both sides
+            % agree on: outputs.time/.pos/.vel, matching the shape the
+            % native step-loop's own telemetry already uses, so plotting/
+            % reporting code downstream doesn't care which path built it.
+            %
+            % Deliberately minimal for now (no target_pos/accel_cmd/
+            % range/pitch telemetry, no termination-criteria checking,
+            % no GNC/visualizer stepping) - those would need a real
+            % target tool's actual I/O shape to build correctly rather
+            % than guessed at ahead of one.
+            if isprop(obj.Munition, 'Dynamics') && ~isempty(obj.Munition.Dynamics)
+                X0 = obj.Munition.Dynamics.InitialState;
+            elseif isprop(obj.Munition, 'InitialState')
+                X0 = obj.Munition.InitialState;
+            else
+                error('Simulation:Munition', 'Munition has no valid InitialState.');
+            end
+
+            inputs = struct( ...
+                'InitialState', X0, ...
+                'TimeSpan',     obj.TimeSpan, ...
+                'Dt',           obj.Dt, ...
+                'Environment',  obj.Environment, ...
+                'Target',       obj.resolveTargetBus());
+
+            outputs = obj.Munition.ExternalModel.run(inputs);
+
+            tel.time  = outputs.time;
+            tel.pos   = outputs.pos;
+            tel.vel   = outputs.vel;
+            tel.Frame = obj.Frame;
+
+            obj.TerminationReason = 'ExternalModel';
+            obj.LastState = [tel.pos(end, :)'; tel.vel(end, :)'];
         end
 
         function [is_term, reason] = checkTermination(obj, t, X, target_pos, target_vel)

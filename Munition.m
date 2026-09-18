@@ -4,6 +4,18 @@ classdef Munition < handle
         Name           (1,:) char = 'Munition'
         Type           (1,:) char = 'Unguided' % free-form role label, e.g. 'Guided', 'Airburst', 'TP', 'CourseCorrection', 'HE' - not a fixed enum
         Dynamics                  = []  % Holds instance of BaseDynamics subclass
+        % A BaseExternalModel subclass (e.g. ExternalModelSimulink, or a
+        % future .exe adapter) - an ALTERNATIVE to Dynamics, not a
+        % complement to it: Dynamics.computeDerivatives is a per-RK4-
+        % sub-step "what's the derivative right now" call Simulation
+        % steps itself, whereas an external tool (Simulink's sim(), a
+        % standalone .exe) runs its OWN internal time-stepping and hands
+        % back a finished trajectory in one call. When this is set,
+        % Simulation.run() bypasses its own step loop entirely and
+        % delegates the whole flight to this instead - see
+        % Simulation.runExternalModel. [] (default) = use Dynamics as
+        % normal, exactly as before this property existed.
+        ExternalModel             = []
         Aero                      = []  % Holds instance of BaseAero subclass
         Propulsion                = []  % Holds instance of BasePropulsion subclass
         Sensors        cell       = {}  % Cell array of BaseSensor subclasses
