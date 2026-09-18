@@ -68,11 +68,16 @@ aero.RefArea   = 0.01887;
 aero.RefLength = 0.155;
 aero.Ix        = legacy.MassProperties.Inertia(1,1);
 aero.LatitudeDeg = latitude_deg;
-aero.CD0   = 0.22;
-aero.CLA   = 2.5;
-aero.CSPIN = -0.03;
-aero.CMA   = 2.0;
-aero.CMAG  = 1.2;
+% Pulled from legacy.Aero rather than hardcoded again here, so both
+% models see the exact same coefficients - legacy already resolved
+% these from data/M107_155mm.mat if present (see MunitionData), via
+% MunitionFactory.createM107Artillery.
+legacy_coeffs = legacy.Aero.Tables.Clean;
+aero.CD0   = legacy_coeffs.CD0;
+aero.CLA   = legacy_coeffs.CLA;
+aero.CSPIN = legacy_coeffs.CSPIN;
+aero.CMA   = legacy_coeffs.CMA;
+aero.CMAG  = legacy_coeffs.CMAG;
 % Form factors come from the charge itself (see ChargeZone.IForm/FL/QD/
 % QM and ChargeFactory.applyFormFactors) - mpmm.Charge was already
 % copied from legacy.Charge above.

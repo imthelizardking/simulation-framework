@@ -1,38 +1,55 @@
-%% Test: FactoryData table-parsing override for MunitionFactory.createMOD274
-% Exercises data/createMOD274.json, which overrides CD0/CDA2 with
-% a "Mach a0 a1" per-breakpoint polynomial table (BaseAero.evalCoeff's
-% PiecewisePolynomial case) instead of the hardcoded scalar defaults in
-% MunitionFactory.createMOD274. The table's numbers are illustrative test
-% values, not real aero data - CD0 comes out much higher than a real
-% shell's, so the resulting trajectory is short and steep on purpose; this
-% runner is about confirming the data-file override wires through
-% correctly end-to-end, not about a realistic MOD274 flight.
+%% Test: MunitionData .mat override for MunitionFactory.createMOD274
+% Exercises the new standardized per-munition data file (see
+% MunitionData): data/<Munition.Name>.mat overrides CD0/CDA2 (and Mass/
+% Inertia) instead of MunitionFactory.createMOD274's hardcoded scalar
+% defaults. Since these files are produced independently (not by this
+% framework), this script builds and saves a small illustrative one
+% itself first, then confirms the factory preset actually picks it up -
+% same "Mach a0 a1" per-breakpoint polynomial shape the old (now removed)
+% data/createMOD274.json test used, just as a plain numeric matrix
+% instead of parsed table text (see MunitionData's class comment). The
+% numbers are illustrative test values, not real aero data - CD0 comes
+% out much higher than a real shell's, so the resulting trajectory is
+% short and steep on purpose; this runner is about confirming the
+% override wires through correctly end-to-end, not a realistic MOD274
+% flight.
 clear; clc; close all;
 
-%% 1. Confirm the data file parses as expected
-data = FactoryData.load('createMOD274');
-fprintf('=== Parsed data/createMOD274.json ===\n');
-disp(data);
-fprintf('CDA  (-> CD0)  : Type=%s, Mach breakpoints=[%s]\n', data.CDA.Type,  num2str(data.CDA.Mach));
-fprintf('CDA2 (-> CDA2) : Type=%s, Mach breakpoints=[%s]\n', data.CDA2.Type, num2str(data.CDA2.Mach));
+%% 1. Build and save a small illustrative data/MOD274_155mm_BB.mat
+% Columns: [Mach, a0, a1] - row R's local polynomial coeff = a0 + a1*mach,
+% valid from that row's Mach breakpoint onward (see MunitionData).
+S.aero.phase.CD0  = [0.4 1.7 0.1; 0.5 1.8 0.2; 0.6 1.9 0.115; 0.7 2.2 0.117];
+S.aero.phase.CDA2 = [0.4 3.7 1.0; 0.5 3.8 1.1; 0.6 3.9 1.15;  0.7 4.2 1.17];
+S.inertial.Mass    = 45.0;
+S.inertial.Inertia = diag([0.15, 1.7, 1.7]);
 
+here = fileparts(mfilename('fullpath'));
+matPath = fullfile(here, 'data', 'MOD274_155mm_BB.mat');
+save(matPath, 'S');
+fprintf('Wrote test fixture: %s\n', matPath);
+
+%% 2. Confirm the file round-trips through MunitionData as expected
+mdata = MunitionData.load('MOD274_155mm_BB');
+aero_over = MunitionData.aeroCoeffs(mdata);
 fprintf('\n=== Mach sweep through the piecewise-polynomial tables ===\n');
 fprintf('%8s %10s %10s\n', 'Mach', 'CD0', 'CDA2');
 for mach = [0.0 0.4 0.45 0.5 0.55 0.6 0.65 0.7 0.9]
     fprintf('%8.2f %10.4f %10.4f\n', mach, ...
-        BaseAero.evalCoeff(data.CDA, mach), BaseAero.evalCoeff(data.CDA2, mach));
+        BaseAero.evalCoeff(aero_over.CD0, mach), BaseAero.evalCoeff(aero_over.CDA2, mach));
 end
 
-%% 2. Confirm MunitionFactory.createMOD274 actually picks the override up
+%% 3. Confirm MunitionFactory.createMOD274 actually picks the override up
 shell = MunitionFactory.createMOD274('6M');
 shell.Dynamics.Frame = 'NED'; % must be set before buildLaunchState below - it reads this at build time
 shell.Aero.Frame     = 'NED';
 c = shell.Aero.Tables.Clean;
-assert(isequal(c.CD0, data.CDA),   'CD0 was not overridden from data.CDA');
-assert(isequal(c.CDA2, data.CDA2), 'CDA2 was not overridden from data.CDA2');
-fprintf('\nMunitionFactory.createMOD274 coefficients confirmed overridden by FactoryData.\n');
+assert(isequal(c.CD0, aero_over.CD0),   'CD0 was not overridden from data/MOD274_155mm_BB.mat');
+assert(isequal(c.CDA2, aero_over.CDA2), 'CDA2 was not overridden from data/MOD274_155mm_BB.mat');
+assert(isequal(shell.MassProperties.Mass, S.inertial.Mass), 'Mass was not overridden from data/MOD274_155mm_BB.mat');
+assert(isequal(shell.MassProperties.Inertia, S.inertial.Inertia), 'Inertia was not overridden from data/MOD274_155mm_BB.mat');
+fprintf('\nMunitionFactory.createMOD274 coefficients confirmed overridden by MunitionData.\n');
 
-%% 3. Fire it (fixed QE - the test drag values are too high for the
+%% 4. Fire it (fixed QE - the test drag values are too high for the
 %    FireControlComputer's normal 25 km shooting solution to converge)
 env = Environment();
 target = TargetStatic([3000; 0; 0]); % nominal only - not solved for
@@ -57,4 +74,4 @@ fprintf('Forward Range      : %.0f m\n', final_pos(1));
 fprintf('Deflection         : %.0f m\n', final_pos(2));
 fprintf('Total Range        : %.0f m\n', hypot(final_pos(1), final_pos(2)));
 
-plotTrajectoryProfile(telemetry, target.Position, 'MOD274 - FactoryData Table Override Test');
+plotTrajectoryProfile(telemetry, target.Position, 'MOD274 - MunitionData .mat Override Test');

@@ -16,12 +16,15 @@ latitude_deg = 39.0; % edit: launch latitude - feeds real gravity/Coriolis
 target = TargetStatic([7500; 350; 0]); % Target 7.5 km downrange, 350 m offset
 
 % 3. Instantiate Vehicle: same mass/inertia/reference dims/CD0/CLA/CSPIN/
-%    CMAG/CMA/twist as MunitionFactory.createM107Artillery - see that
-%    preset for where these illustrative values come from.
+%    CMAG/CMA/twist as MunitionFactory.createM107Artillery, read the same
+%    way - data/M107_155mm.mat overrides Mass/Inertia/aero coefficients
+%    if present (see MunitionData), else these illustrative defaults.
 shell = Munition('M107_155mm');
 shell.Type = 'HE';
-shell.MassProperties.Mass = 43.091;
-shell.MassProperties.Inertia = diag([0.13, 1.62, 1.62]);
+mdata = MunitionData.load(shell.Name);
+aero_over = MunitionData.aeroCoeffs(mdata);
+shell.MassProperties.Mass = MunitionData.mass(mdata, 43.2);
+shell.MassProperties.Inertia = MunitionData.inertia(mdata, diag([0.14, 1.62, 1.62]));
 shell.TwistRate = 20;
 shell.Charge = ChargeFactory.getM119A2('Charge7');
 
@@ -34,11 +37,11 @@ aero.RefArea     = 0.01887;
 aero.RefLength   = 0.155;
 aero.Ix          = shell.MassProperties.Inertia(1,1);
 aero.LatitudeDeg = latitude_deg;
-aero.CD0   = 0.22;
-aero.CLA   = 2.5;
-aero.CSPIN = -0.03;
-aero.CMA   = 2.0;
-aero.CMAG  = 1.2;
+aero.CD0   = FactoryData.getOr(aero_over, 'CD0',   0.22);
+aero.CLA   = FactoryData.getOr(aero_over, 'CLA',   2.5);
+aero.CSPIN = FactoryData.getOr(aero_over, 'CSPIN', -0.03);
+aero.CMA   = FactoryData.getOr(aero_over, 'CMA',   2.0);
+aero.CMAG  = FactoryData.getOr(aero_over, 'CMAG',  1.2);
 % Form factors come from the charge itself (see ChargeZone.IForm/FL/QD/
 % QM, populated from data/getM119A2_Charge7.<ext> if present - see
 % ChargeFactory.applyFormFactors), not hardcoded here.

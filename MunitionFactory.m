@@ -6,15 +6,21 @@ classdef MunitionFactory
         function m = createM107Artillery(charge_name)
             if nargin < 1, charge_name = 'Charge7'; end
             % A data/createM107Artillery.<json|xml|fci|xlsx|mat|txt|sldd>
-            % file overrides the parameters below if present (see
-            % FactoryData); otherwise these hardcoded values are used as-is.
+            % file overrides Name/Type/RefArea/TwistRate/etc below if
+            % present (see FactoryData). Mass/Inertia/aero coefficients
+            % instead come from data/<Name>.mat if present (see
+            % MunitionData) - the new standardized per-munition data
+            % file, which takes priority over this file's own hardcoded
+            % defaults below.
             data = FactoryData.load('createM107Artillery');
             m = Munition(FactoryData.getOr(data, 'Name', 'M107_155mm'));
             m.Type = FactoryData.getOr(data, 'Type', 'HE');
+            mdata = MunitionData.load(m.Name);
+            aero_over = MunitionData.aeroCoeffs(mdata);
 
             % Mass properties (NATO standard ~43.2 kg, d = 0.155 m)
-            m.MassProperties.Mass = FactoryData.getOr(data, 'Reference_Mass', 43.091);
-            m.MassProperties.Inertia = diag(FactoryData.getOr(data, 'Axial_Moment_Of_Inertia_Initial', [0.13, 1.62, 1.62])); % [Ix, Iy, Iz]
+            m.MassProperties.Mass = MunitionData.mass(mdata, 43.2);
+            m.MassProperties.Inertia = MunitionData.inertia(mdata, diag([0.14, 1.62, 1.62])); % [Ix, Iy, Iz]
 
             % Subsystems
             m.Dynamics   = Dynamics3DofSpin();
@@ -28,15 +34,15 @@ classdef MunitionFactory
             aero = AeroTabulatedSpin();
             aero.RefArea   = FactoryData.getOr(data, 'RefArea', 0.01887);
             aero.RefLength = 0.155;
-            coeffs.CD0   = FactoryData.getOr(data, 'CD0', 0.22);
-            coeffs.CDA2  = FactoryData.getOr(data, 'CDA2', 0);
-            coeffs.CDA4  = FactoryData.getOr(data, 'CDA4', 0);
-            coeffs.CLA   = FactoryData.getOr(data, 'CLA', 2.5);
-            coeffs.CLA3  = FactoryData.getOr(data, 'CLA3', 0);
-            coeffs.CSPIN = FactoryData.getOr(data, 'CSPIN', -0.03);
-            coeffs.CMA   = FactoryData.getOr(data, 'CMA', 2.0);
-            coeffs.CMA3  = FactoryData.getOr(data, 'CMA3', 0);
-            coeffs.CMAG  = FactoryData.getOr(data, 'CMAG', 1.2);
+            coeffs.CD0   = FactoryData.getOr(aero_over, 'CD0',   0.22);
+            coeffs.CDA2  = FactoryData.getOr(aero_over, 'CDA2',  0);
+            coeffs.CDA4  = FactoryData.getOr(aero_over, 'CDA4',  0);
+            coeffs.CLA   = FactoryData.getOr(aero_over, 'CLA',   2.5);
+            coeffs.CLA3  = FactoryData.getOr(aero_over, 'CLA3',  0);
+            coeffs.CSPIN = FactoryData.getOr(aero_over, 'CSPIN', -0.03);
+            coeffs.CMA   = FactoryData.getOr(aero_over, 'CMA',   2.0);
+            coeffs.CMA3  = FactoryData.getOr(aero_over, 'CMA3',  0);
+            coeffs.CMAG  = FactoryData.getOr(aero_over, 'CMAG',  1.2);
             aero.Tables.Clean   = coeffs;
             aero.ActiveTableKey = 'Clean';
             m.Aero = aero;
@@ -51,21 +57,24 @@ classdef MunitionFactory
         %% 2.75-inch (70mm) Hydra-70 Unguided Rocket (Mk 66 Motor)
         function m = createHydra70()
             % A data/createHydra70.<json|xml|fci|xlsx|mat|txt|sldd> file
-            % overrides the parameters below if present (see FactoryData);
-            % otherwise these hardcoded values are used as-is.
+            % overrides Name/Type/RefArea/etc below if present (see
+            % FactoryData); Mass/Inertia/CD0/CL_alpha instead come from
+            % data/<Name>.mat if present (see MunitionData).
             data = FactoryData.load('createHydra70');
             m = Munition(FactoryData.getOr(data, 'Name', 'Hydra_70_M151'));
             m.Type = FactoryData.getOr(data, 'Type', 'Unguided');
+            mdata = MunitionData.load(m.Name);
+            aero_over = MunitionData.aeroCoeffs(mdata);
 
             % Launch mass ~10.5 kg (burnout mass ~6.2 kg)
-            m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 10.5);
-            m.MassProperties.Inertia = diag(FactoryData.getOr(data, 'Inertia', [0.008, 0.45, 0.45]));
+            m.MassProperties.Mass = MunitionData.mass(mdata, 10.5);
+            m.MassProperties.Inertia = MunitionData.inertia(mdata, diag([0.008, 0.45, 0.45]));
 
             m.Dynamics   = Dynamics3Dof();
             % d = 0.070 m -> S_ref = 0.00385 m^2, CD0 ~ 0.38
             m.Aero       = Aero3DoF_Longitudinal( ...
-                FactoryData.getOr(data, 'CD0', 0.38), ...
-                FactoryData.getOr(data, 'CL_alpha', 3.2), ...
+                FactoryData.getOr(aero_over, 'CD0', 0.38), ...
+                FactoryData.getOr(aero_over, 'CL_alpha', 3.2), ...
                 FactoryData.getOr(data, 'RefArea', 0.00385));
             % Mk 66 Mod 4: ~5900 N average thrust for ~1.1 seconds
             m.Propulsion = Propulsion_SolidMotor( ...
@@ -88,22 +97,25 @@ classdef MunitionFactory
             % presets now use. Illustrative hand-thrown fin-stabilized
             % dart, d = 0.02 m.
             % A data/createFinStabilizedDart.<json|xml|fci|xlsx|mat|txt|sldd>
-            % file overrides the parameters below if present (see
-            % FactoryData); otherwise these hardcoded values are used as-is.
+            % file overrides Name/Type/RefArea/etc below if present (see
+            % FactoryData); Mass/Inertia/CD0/CL_alpha instead come from
+            % data/<Name>.mat if present (see MunitionData).
             data = FactoryData.load('createFinStabilizedDart');
             m = Munition(FactoryData.getOr(data, 'Name', 'FinStabilized_Dart'));
             m.Type = FactoryData.getOr(data, 'Type', 'TP');
+            mdata = MunitionData.load(m.Name);
+            aero_over = MunitionData.aeroCoeffs(mdata);
 
-            m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 0.1);
-            m.MassProperties.Inertia = eye(3) * 1e-5; % unused by Dynamics3Dof - no real attitude dynamics there
+            m.MassProperties.Mass = MunitionData.mass(mdata, 0.1);
+            m.MassProperties.Inertia = MunitionData.inertia(mdata, eye(3) * 1e-5); % unused by Dynamics3Dof - no real attitude dynamics there
 
             m.Dynamics = Dynamics3Dof();
             % S_ref = pi*(0.02/2)^2 = 3.14e-4 m^2. CL_alpha is high relative
             % to the gun-fired shells above - tail fins give a strong,
             % genuinely-stabilizing lift-curve slope with no spin needed.
             m.Aero = Aero3DoF_Longitudinal( ...
-                FactoryData.getOr(data, 'CD0', 0.3), ...
-                FactoryData.getOr(data, 'CL_alpha', 5.0), ...
+                FactoryData.getOr(aero_over, 'CD0', 0.3), ...
+                FactoryData.getOr(aero_over, 'CL_alpha', 5.0), ...
                 FactoryData.getOr(data, 'RefArea', 3.14e-4));
             m.Charge = ChargeFactory.getFixed('Hand-Thrown', 30.0, 1.0);
             m.Propulsion = []; % Thrown, not fired or motor-propelled
@@ -115,15 +127,18 @@ classdef MunitionFactory
         %% 25mm Bushmaster Target Practice Tracer (M793)
         function m = create25mmM793()
             % A data/create25mmM793.<json|xml|fci|xlsx|mat|txt|sldd> file
-            % overrides the parameters below if present (see FactoryData);
-            % otherwise these hardcoded values are used as-is.
+            % overrides Name/Type/RefArea/etc below if present (see
+            % FactoryData); Mass/Inertia/aero coefficients instead come
+            % from data/<Name>.mat if present (see MunitionData).
             data = FactoryData.load('create25mmM793');
             m = Munition(FactoryData.getOr(data, 'Name', '25mm_M793'));
             m.Type = FactoryData.getOr(data, 'Type', 'TP');
+            mdata = MunitionData.load(m.Name);
+            aero_over = MunitionData.aeroCoeffs(mdata);
 
             % Projectile mass ~0.185 kg, d = 0.025 m
-            m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 0.185);
-            m.MassProperties.Inertia = diag(FactoryData.getOr(data, 'Inertia', [1e-4, 1e-4, 1e-4]));
+            m.MassProperties.Mass = MunitionData.mass(mdata, 0.185);
+            m.MassProperties.Inertia = MunitionData.inertia(mdata, diag([1e-4, 1e-4, 1e-4]));
 
             m.Dynamics   = Dynamics3DofSpin();
             % S_ref = pi*(0.025/2)^2 = 4.908e-4 m^2. Rifled/spin-stabilized -
@@ -132,15 +147,15 @@ classdef MunitionFactory
             aero = AeroTabulatedSpin();
             aero.RefArea   = FactoryData.getOr(data, 'RefArea', 4.908e-4);
             aero.RefLength = FactoryData.getOr(data, 'RefLength', 0.025);
-            coeffs.CD0   = FactoryData.getOr(data, 'CD0', 0.18);
-            coeffs.CDA2  = FactoryData.getOr(data, 'CDA2', 0);
-            coeffs.CDA4  = FactoryData.getOr(data, 'CDA4', 0);
-            coeffs.CLA   = FactoryData.getOr(data, 'CLA', 1.5);
-            coeffs.CLA3  = FactoryData.getOr(data, 'CLA3', 0);
-            coeffs.CSPIN = FactoryData.getOr(data, 'CSPIN', -0.02);
-            coeffs.CMA   = FactoryData.getOr(data, 'CMA', 1.2);
-            coeffs.CMA3  = FactoryData.getOr(data, 'CMA3', 0);
-            coeffs.CMAG  = FactoryData.getOr(data, 'CMAG', 0.6);
+            coeffs.CD0   = FactoryData.getOr(aero_over, 'CD0',   0.18);
+            coeffs.CDA2  = FactoryData.getOr(aero_over, 'CDA2',  0);
+            coeffs.CDA4  = FactoryData.getOr(aero_over, 'CDA4',  0);
+            coeffs.CLA   = FactoryData.getOr(aero_over, 'CLA',   1.5);
+            coeffs.CLA3  = FactoryData.getOr(aero_over, 'CLA3',  0);
+            coeffs.CSPIN = FactoryData.getOr(aero_over, 'CSPIN', -0.02);
+            coeffs.CMA   = FactoryData.getOr(aero_over, 'CMA',   1.2);
+            coeffs.CMA3  = FactoryData.getOr(aero_over, 'CMA3',  0);
+            coeffs.CMAG  = FactoryData.getOr(aero_over, 'CMAG',  0.6);
             aero.Tables.Clean   = coeffs;
             aero.ActiveTableKey = 'Clean';
             m.Aero = aero;
@@ -155,8 +170,9 @@ classdef MunitionFactory
         %% 35mm HE-T Anti-Aircraft/Anti-Drone Round (Unguided Direct-Fire)
         function m = create35mmHE()
             % A data/create35mmHE.<json|xml|fci|xlsx|mat|txt|sldd> file
-            % overrides the parameters below if present (see FactoryData);
-            % otherwise these hardcoded values are used as-is.
+            % overrides Name/Type/RefArea/etc below if present (see
+            % FactoryData); Mass/Inertia/aero coefficients instead come
+            % from data/<Name>.mat if present (see MunitionData).
             data = FactoryData.load('create35mmHE');
             m = Munition(FactoryData.getOr(data, 'Name', '35mm_HET'));
             m.Type = FactoryData.getOr(data, 'Type', 'Airburst');
@@ -165,10 +181,12 @@ classdef MunitionFactory
             % fly on as unexploded ordnance if it never gets close enough
             % to the target to trigger (see Munition.SelfDestructTime).
             m.SelfDestructTime = FactoryData.getOr(data, 'SelfDestructTime', 8.0);
+            mdata = MunitionData.load(m.Name);
+            aero_over = MunitionData.aeroCoeffs(mdata);
 
             % Illustrative mass properties for a 35mm AA gun round, d = 0.035 m
-            m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 0.55);
-            m.MassProperties.Inertia = diag(FactoryData.getOr(data, 'Inertia', [0.0004, 0.006, 0.006]));
+            m.MassProperties.Mass = MunitionData.mass(mdata, 0.55);
+            m.MassProperties.Inertia = MunitionData.inertia(mdata, diag([0.0004, 0.006, 0.006]));
 
             m.Dynamics = Dynamics3DofSpin();
             % S_ref = pi*(0.035/2)^2 = 9.62e-4 m^2, typical HE-T CD0 ~ 0.25.
@@ -178,15 +196,15 @@ classdef MunitionFactory
             aero = AeroTabulatedSpin();
             aero.RefArea   = FactoryData.getOr(data, 'RefArea', 9.621e-4);
             aero.RefLength = FactoryData.getOr(data, 'RefLength', 0.035);
-            coeffs.CD0   = FactoryData.getOr(data, 'CD0', 0.25);
-            coeffs.CDA2  = FactoryData.getOr(data, 'CDA2', 0);
-            coeffs.CDA4  = FactoryData.getOr(data, 'CDA4', 0);
-            coeffs.CLA   = FactoryData.getOr(data, 'CLA', 2.0);
-            coeffs.CLA3  = FactoryData.getOr(data, 'CLA3', 0);
-            coeffs.CSPIN = FactoryData.getOr(data, 'CSPIN', -0.025);
-            coeffs.CMA   = FactoryData.getOr(data, 'CMA', 1.6);
-            coeffs.CMA3  = FactoryData.getOr(data, 'CMA3', 0);
-            coeffs.CMAG  = FactoryData.getOr(data, 'CMAG', 0.8);
+            coeffs.CD0   = FactoryData.getOr(aero_over, 'CD0',   0.25);
+            coeffs.CDA2  = FactoryData.getOr(aero_over, 'CDA2',  0);
+            coeffs.CDA4  = FactoryData.getOr(aero_over, 'CDA4',  0);
+            coeffs.CLA   = FactoryData.getOr(aero_over, 'CLA',   2.0);
+            coeffs.CLA3  = FactoryData.getOr(aero_over, 'CLA3',  0);
+            coeffs.CSPIN = FactoryData.getOr(aero_over, 'CSPIN', -0.025);
+            coeffs.CMA   = FactoryData.getOr(aero_over, 'CMA',   1.6);
+            coeffs.CMA3  = FactoryData.getOr(aero_over, 'CMA3',  0);
+            coeffs.CMAG  = FactoryData.getOr(aero_over, 'CMAG',  0.8);
             aero.Tables.Clean   = coeffs;
             aero.ActiveTableKey = 'Clean';
             m.Aero = aero;
@@ -201,10 +219,11 @@ classdef MunitionFactory
         %% 76mm HE Projectile (Detailed Mach-Dependent Aero Table)
         function m = create76mmHE()
             % A data/create76mmHE.<json|xml|fci|xlsx|mat|txt|sldd> file
-            % overrides any of the parameters below if present (see
-            % FactoryData) - including individual coefficients, so a file
-            % can replace just CD0 with real data while CDA2/CLA/etc. keep
-            % their illustrative defaults.
+            % overrides Name/Type/RefArea/etc below if present (see
+            % FactoryData); Mass/Inertia/aero coefficients instead come
+            % from data/<Name>.mat if present (see MunitionData) -
+            % including individual coefficients, so it can replace just
+            % CD0 while CDA2/CLA/etc. keep their illustrative defaults.
             data = FactoryData.load('create76mmHE');
             m = Munition(FactoryData.getOr(data, 'Name', '76mm_HE'));
             m.Type = FactoryData.getOr(data, 'Type', 'Airburst');
@@ -213,10 +232,12 @@ classdef MunitionFactory
             % fly on as unexploded ordnance if it never gets close enough
             % to the target to trigger (see Munition.SelfDestructTime).
             m.SelfDestructTime = FactoryData.getOr(data, 'SelfDestructTime', 8.0);
+            mdata = MunitionData.load(m.Name);
+            aero_over = MunitionData.aeroCoeffs(mdata);
 
             % Illustrative mass properties for a 76mm gun round, d = 0.076 m
-            m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 6.0);
-            m.MassProperties.Inertia = diag(FactoryData.getOr(data, 'Inertia', [0.006, 0.085, 0.085]));
+            m.MassProperties.Mass = MunitionData.mass(mdata, 6.0);
+            m.MassProperties.Inertia = MunitionData.inertia(mdata, diag([0.006, 0.085, 0.085]));
 
             m.Dynamics = Dynamics3DofSpin();
 
@@ -242,18 +263,18 @@ classdef MunitionFactory
 
             defaultCLA3 = struct('Type', 'Polynomial', 'a0', -8.0, 'a1', 1.5);
 
-            coeffs.CD0  = FactoryData.getOr(data, 'CD0', defaultCD0);
-            coeffs.CDA2 = FactoryData.getOr(data, 'CDA2', defaultCDA2);
-            coeffs.CDA4 = FactoryData.getOr(data, 'CDA4', 8.5); % plain scalar - constant across Mach
-            coeffs.CLA  = FactoryData.getOr(data, 'CLA', defaultCLA);
-            coeffs.CLA3 = FactoryData.getOr(data, 'CLA3', defaultCLA3);
+            coeffs.CD0  = FactoryData.getOr(aero_over, 'CD0', defaultCD0);
+            coeffs.CDA2 = FactoryData.getOr(aero_over, 'CDA2', defaultCDA2);
+            coeffs.CDA4 = FactoryData.getOr(aero_over, 'CDA4', 8.5); % plain scalar - constant across Mach
+            coeffs.CLA  = FactoryData.getOr(aero_over, 'CLA', defaultCLA);
+            coeffs.CLA3 = FactoryData.getOr(aero_over, 'CLA3', defaultCLA3);
 
             % Spin-stabilized extras (AeroTabulatedSpin) - illustrative
             % constants, same caveat as the CD/CL buildup above.
-            coeffs.CSPIN = FactoryData.getOr(data, 'CSPIN', -0.03);
-            coeffs.CMA   = FactoryData.getOr(data, 'CMA', 2.0);
-            coeffs.CMA3  = FactoryData.getOr(data, 'CMA3', 0);
-            coeffs.CMAG  = FactoryData.getOr(data, 'CMAG', 1.0);
+            coeffs.CSPIN = FactoryData.getOr(aero_over, 'CSPIN', -0.03);
+            coeffs.CMA   = FactoryData.getOr(aero_over, 'CMA', 2.0);
+            coeffs.CMA3  = FactoryData.getOr(aero_over, 'CMA3', 0);
+            coeffs.CMAG  = FactoryData.getOr(aero_over, 'CMAG', 1.0);
 
             aero.Tables.Clean   = coeffs;
             aero.ActiveTableKey = 'Clean';
@@ -272,17 +293,21 @@ classdef MunitionFactory
             if nargin < 1, charge_name = '6M'; end
 
             % A data/createMOD274.<json|xml|fci|xlsx|mat|txt|sldd> file
-            % overrides the parameters below if present (see FactoryData) -
-            % same standard coefficient vocabulary as every other artillery
+            % overrides Name/Type/RefArea/etc below if present (see
+            % FactoryData); Mass/Inertia/aero coefficients instead come
+            % from data/<Name>.mat if present (see MunitionData) - same
+            % standard coefficient vocabulary as every other artillery
             % preset (CD0/CDA2/CDA4/CLA/CLA3/CSPIN/CMA/CMA3/CMAG).
             data = FactoryData.load('createMOD274');
             m = Munition(FactoryData.getOr(data, 'Name', 'MOD274_155mm_BB'));
             m.Type = FactoryData.getOr(data, 'Type', 'HE');
+            mdata = MunitionData.load(m.Name);
+            aero_over = MunitionData.aeroCoeffs(mdata);
 
             % Illustrative mass properties for a 155mm base-bleed HE round
             % (runs a bit heavier than M107 due to the base-bleed unit)
-            m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 45.0);
-            m.MassProperties.Inertia = diag(FactoryData.getOr(data, 'Inertia', [0.15, 1.7, 1.7]));
+            m.MassProperties.Mass = MunitionData.mass(mdata, 45.0);
+            m.MassProperties.Inertia = MunitionData.inertia(mdata, diag([0.15, 1.7, 1.7]));
 
             m.Dynamics = Dynamics3DofSpin();
             % Same bore/S_ref as M107; slightly lower baseline CD0 is
@@ -294,15 +319,15 @@ classdef MunitionFactory
             aero = AeroTabulatedSpin();
             aero.RefArea   = FactoryData.getOr(data, 'RefArea', 0.01887);
             aero.RefLength = 0.155;
-            coeffs.CD0   = FactoryData.getOr(data, 'CD0', 0.21);
-            coeffs.CDA2  = FactoryData.getOr(data, 'CDA2', 0);
-            coeffs.CDA4  = FactoryData.getOr(data, 'CDA4', 0);
-            coeffs.CLA   = FactoryData.getOr(data, 'CLA', 2.5);
-            coeffs.CLA3  = FactoryData.getOr(data, 'CLA3', 0);
-            coeffs.CSPIN = FactoryData.getOr(data, 'CSPIN', -0.03);
-            coeffs.CMA   = FactoryData.getOr(data, 'CMA', 2.0);
-            coeffs.CMA3  = FactoryData.getOr(data, 'CMA3', 0);
-            coeffs.CMAG  = FactoryData.getOr(data, 'CMAG', 1.2);
+            coeffs.CD0   = FactoryData.getOr(aero_over, 'CD0',   0.21);
+            coeffs.CDA2  = FactoryData.getOr(aero_over, 'CDA2',  0);
+            coeffs.CDA4  = FactoryData.getOr(aero_over, 'CDA4',  0);
+            coeffs.CLA   = FactoryData.getOr(aero_over, 'CLA',   2.5);
+            coeffs.CLA3  = FactoryData.getOr(aero_over, 'CLA3',  0);
+            coeffs.CSPIN = FactoryData.getOr(aero_over, 'CSPIN', -0.03);
+            coeffs.CMA   = FactoryData.getOr(aero_over, 'CMA',   2.0);
+            coeffs.CMA3  = FactoryData.getOr(aero_over, 'CMA3',  0);
+            coeffs.CMAG  = FactoryData.getOr(aero_over, 'CMAG',  1.2);
             aero.Tables.Clean   = coeffs;
             aero.ActiveTableKey = 'Clean';
             % Very basic base-bleed model (see Propulsion_DYU): a fixed
@@ -328,14 +353,17 @@ classdef MunitionFactory
             m = MunitionFactory.createHydra70();
 
             % A data/createAPKWS.<json|xml|fci|xlsx|mat|txt|sldd> file
-            % overrides the parameters below if present (see FactoryData);
-            % otherwise these hardcoded values are used as-is. Hydra70's
-            % own data/createHydra70.<ext> file (if any) still applies
-            % underneath, since createHydra70() is called above.
+            % overrides Name/Type/etc below if present (see FactoryData);
+            % Mass instead comes from data/<Name>.mat if present (see
+            % MunitionData) - note this is APKWS's OWN Name, a different
+            % file from Hydra70's data/Hydra_70_M151.mat (if any), which
+            % still applies underneath for the inherited Aero, since
+            % createHydra70() is called above.
             data = FactoryData.load('createAPKWS');
             m.Name = FactoryData.getOr(data, 'Name', 'APKWS_Guided_Rocket');
             m.Type = FactoryData.getOr(data, 'Type', 'Guided');
-            m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 15.0); % GNC mid-section adds weight
+            mdata = MunitionData.load(m.Name);
+            m.MassProperties.Mass = MunitionData.mass(mdata, 15.0); % GNC mid-section adds weight
 
             % Attach LOAL Seeker and Guidance (LaserSeeker referenced here
             % previously does not exist anywhere in the codebase; SeekerLOAL
@@ -372,12 +400,13 @@ classdef MunitionFactory
             data = FactoryData.load('createGuidedRocketDatcom');
             m = Munition(FactoryData.getOr(data, 'Name', 'GuidedRocket_DATCOM'));
             m.Type = FactoryData.getOr(data, 'Type', 'Guided');
+            mdata = MunitionData.load(m.Name);
 
             % Illustrative mass properties (not from the DATCOM run, which
             % only reports aero) - adjust to your actual rocket's real
-            % mass/inertia.
-            m.MassProperties.Mass = FactoryData.getOr(data, 'Mass', 15.0);
-            m.MassProperties.Inertia = diag(FactoryData.getOr(data, 'Inertia', [0.008, 0.45, 0.45]));
+            % mass/inertia, or supply data/<Name>.mat (see MunitionData).
+            m.MassProperties.Mass = MunitionData.mass(mdata, 15.0);
+            m.MassProperties.Inertia = MunitionData.inertia(mdata, diag([0.008, 0.45, 0.45]));
 
             m.Dynamics = Dynamics3Dof();
             % RefArea/RefLength default to Example Problem 1's own SREF/
