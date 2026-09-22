@@ -19,12 +19,14 @@ env = Environment();
 % 2. Setup Target: small drone at a shorter engagement range than the 35mm
 %    scenario, in keeping with 25mm's smaller HE-equivalent fragmentation
 %    effect
-target = TargetConstantVelocity([700; 150; 100], [-10; 6; 0]);
+% forward=700, down=-100 (100m above launch), right=-150 (150m left);
+% vel forward=-10 (closing), down=0 (level), right=-6. Same physical
+% scenario as before (forward=700,crossrange=150,altitude=100), just
+% re-authored directly in FDR (see TargetBase's constructor comment).
+target = TargetConstantVelocity([700; -100; -150], [-10; 0; -6], 'FDR');
 
 % 3. Instantiate Munition via MunitionFactory, attach the fragmentation model
 round = MunitionFactory.create25mmM793();
-round.Dynamics.Frame = 'NED'; % must be set before buildLaunchState below - it reads this at build time
-round.Aero.Frame     = 'NED';
 round.ParticleModel = ParticleModelFactory.createForward25mm();
 
 % 4. Fire Control: analytical direct-lead solve (same approach as
@@ -60,7 +62,7 @@ fprintf('Burst standoff time      : %.3f s (target standoff = %.1f m)\n', round.
 
 % 6. Assemble Simulation & Execute
 sim = Simulation(round, target, env, [0 5], 0.001);
-sim.Frame = 'NED';
+sim.Frame = 'FDR';
 sim.Termination.ImpactDistance = 2.0;
 sim.Termination.MaxDownrange   = 100.0;
 sim.Visualizer = LiveEngagementPlotter(5);
@@ -92,12 +94,12 @@ if ~isempty(sim.ParticleSwarm)
     swarm = sim.ParticleSwarm;
     n = numel(swarm.Telemetry);
     hits = 0;
-    fprintf('\n%6s %20s %10s\n', 'Frag#', 'Reason', 'FinalX/Z');
+    fprintf('\n%6s %20s %10s\n', 'Frag#', 'Reason', 'FinalX/Y');
     for i = 1:n
         frag_tel = swarm.Telemetry{i};
         if strcmp(frag_tel.TerminationReason, 'ImpactDistance'), hits = hits + 1; end
         if ~isempty(frag_tel.pos)
-            fprintf('%6d %20s %6.1f/%.1f\n', i, frag_tel.TerminationReason, frag_tel.pos(end,1), frag_tel.pos(end,3));
+            fprintf('%6d %20s %6.1f/%.1f\n', i, frag_tel.TerminationReason, frag_tel.pos(end,1), frag_tel.pos(end,2));
         end
     end
     fprintf('\nFragments that reached the target: %d / %d\n', hits, n);

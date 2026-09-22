@@ -83,8 +83,12 @@ classdef ParticleSwarmPlotter < BaseVisualizer
             end
 
             obj.target_history = [obj.target_history, target_state.pos];
-            is_ned = strcmpi(obj.Frame, 'NED');
-            target_alt_hist = obj.target_history(3,:); if is_ned, target_alt_hist = -target_alt_hist; end
+            % 'FDR' keeps altitude at row 2 (down) instead of 'NED''s row
+            % 3 - see CoordinateFrame.m's class comment.
+            is_fdr = strcmpi(obj.Frame, 'FDR');
+            alt_row = 3; if is_fdr, alt_row = 2; end
+            is_ned_or_fdr = strcmpi(obj.Frame, 'NED') || is_fdr;
+            target_alt_hist = obj.target_history(alt_row,:); if is_ned_or_fdr, target_alt_hist = -target_alt_hist; end
             target_alt_now  = CoordinateFrame.altitude(target_state.pos, obj.Frame);
             set(obj.h_target_line, 'XData', obj.target_history(1,:), 'YData', target_alt_hist);
             set(obj.h_target_head, 'XData', target_state.pos(1), 'YData', target_alt_now);

@@ -14,12 +14,14 @@ clear; clc; close all;
 env = Environment();
 
 % 2. Setup Target: same inbound target as runner_76mm.m/runner_sam_engagement.m
-target = TargetConstantVelocity([8000; 0; 3000], [-250; 0; 0]);
+% forward=8000, down=-3000 (3000m above launch), right=0; vel forward=-250
+% (closing), down=0, right=0. Same physical scenario as before
+% (forward=8000,crossrange=0,altitude=3000), just re-authored directly
+% in FDR (see TargetBase's constructor comment).
+target = TargetConstantVelocity([8000; -3000; 0], [-250; 0; 0], 'FDR');
 
 % 3. Instantiate Munition via MunitionFactory, attach the fragmentation model
 round = MunitionFactory.create76mmHE();
-round.Dynamics.Frame = 'NED'; % must be set before buildLaunchState below - it reads this at build time
-round.Aero.Frame     = 'NED';
 round.ParticleModel = ParticleModelFactory.createForward76mm();
 builder = @MunitionFactory.create76mmHE;
 
@@ -87,7 +89,7 @@ round.Dynamics.InitialState = round.buildLaunchState(launcher_pos, actual_v0, ..
 round.BurstTime = corrected_burst_time;
 
 sim = Simulation(round, target, env, timespan, dt);
-sim.Frame = 'NED';
+sim.Frame = 'FDR';
 sim.Termination.ImpactDistance = impact_dist;
 sim.Termination.MaxDownrange   = max_downrange;
 sim.Visualizer = LiveEngagementPlotter(20);
@@ -116,12 +118,12 @@ if ~isempty(sim.ParticleSwarm)
     swarm = sim.ParticleSwarm;
     n = numel(swarm.Telemetry);
     hits = 0;
-    fprintf('\n%6s %20s %10s\n', 'Frag#', 'Reason', 'FinalX/Z');
+    fprintf('\n%6s %20s %10s\n', 'Frag#', 'Reason', 'FinalX/Y');
     for i = 1:n
         frag_tel = swarm.Telemetry{i};
         if strcmp(frag_tel.TerminationReason, 'ImpactDistance'), hits = hits + 1; end
         if ~isempty(frag_tel.pos)
-            fprintf('%6d %20s %6.1f/%.1f\n', i, frag_tel.TerminationReason, frag_tel.pos(end,1), frag_tel.pos(end,3));
+            fprintf('%6d %20s %6.1f/%.1f\n', i, frag_tel.TerminationReason, frag_tel.pos(end,1), frag_tel.pos(end,2));
         end
     end
     fprintf('\nFragments that reached the target: %d / %d\n', hits, n);

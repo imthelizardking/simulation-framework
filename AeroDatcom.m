@@ -2,7 +2,7 @@ classdef AeroDatcom < BaseAero
     % Aero model driven directly by Missile DATCOM's printed "CHARACTERISTICS
     % AT ANGLE OF ATTACK" tables: CD and CL, each a 2D Alpha-by-Mach grid,
     % taken straight from DATCOM's own output rather than the CD0/CDA2/
-    % CDA4/CLA/CLA3 polynomial-in-alpha buildup AeroTabulated uses.
+    % CDA4/CLA/CLA3 polynomial-in-alpha buildup AeroMPMM uses.
     %
     % Earlier versions of this class stored DATCOM's body-axis CN/CA and
     % converted to wind-axis CD/CL here via the standard body->wind
@@ -58,16 +58,23 @@ classdef AeroDatcom < BaseAero
                 M_aero = [0; 0; 0];
                 return;
             end
-            vel_dir = flow.vel_dir;
-            mach    = flow.mach;
-            q_bar   = flow.q_bar;
-            alpha   = (pitch - flow.gamma) + fin_deflection;
+            alpha = (pitch - flow.gamma) + fin_deflection;
 
             if isempty(obj.Mach) || isempty(obj.Alpha)
                 error('AeroDatcom:NoData', ...
                     '%s has no DATCOM table loaded - see DatcomReader.load.', class(obj));
             end
 
+            coeffs = obj.evaluateCoefficients(flow.mach, alpha);
+
+            F_drag = obj.dragEquation(coeffs, flow);
+            F_lift = obj.liftEquation(coeffs, flow);
+
+            F_aero = F_drag + F_lift;
+            M_aero = [0; 0; 0];
+        end
+
+        function coeffs = evaluateCoefficients(obj, mach, alpha)
             % Clamped, not extrapolated, same philosophy as
             % BaseAero.evalCoeff's Table case and Environment's METCM
             % interpolation - this is measured/tabulated data, not a
@@ -75,18 +82,18 @@ classdef AeroDatcom < BaseAero
             % extrapolating past the table's actual coverage.
             mach_c  = min(max(mach, min(obj.Mach)), max(obj.Mach));
             alpha_c = min(max(alpha, min(obj.Alpha)), max(obj.Alpha));
+            coeffs.CD = interp2(obj.Mach, obj.Alpha, obj.CD, mach_c, alpha_c, 'linear');
+            coeffs.CL = interp2(obj.Mach, obj.Alpha, obj.CL, mach_c, alpha_c, 'linear');
+        end
 
-            CD = interp2(obj.Mach, obj.Alpha, obj.CD, mach_c, alpha_c, 'linear');
-            CL = interp2(obj.Mach, obj.Alpha, obj.CL, mach_c, alpha_c, 'linear');
+        function F_drag = dragEquation(obj, coeffs, flow)
+            F_drag = -(flow.q_bar * coeffs.CD * obj.RefArea) * flow.vel_dir;
+        end
 
-            F_drag = -(q_bar * CD * obj.RefArea) * vel_dir;
-
-            lift_dir = cross(vel_dir, CoordinateFrame.lateralAxis(obj.Frame));
+        function F_lift = liftEquation(obj, coeffs, flow)
+            lift_dir = cross(flow.vel_dir, CoordinateFrame.lateralAxis(obj.Frame));
             if norm(lift_dir) > 0, lift_dir = lift_dir / norm(lift_dir); end
-            F_lift = (q_bar * CL * obj.RefArea) * lift_dir;
-
-            F_aero = F_drag + F_lift;
-            M_aero = [0; 0; 0];
+            F_lift = (flow.q_bar * coeffs.CL * obj.RefArea) * lift_dir;
         end
     end
 end

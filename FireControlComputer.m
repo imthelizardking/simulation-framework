@@ -168,9 +168,9 @@ classdef FireControlComputer < handle
         function [sol, chosen_idx] = solveNumericalShootingAutoCharge(obj, munition_candidates, launcher_pos, target_bus, env, branch)
             % munition_candidates: cell array of Munition objects, each
             % already built on a specific Charge (e.g.
-            % {MunitionFactory.createM107Artillery('Charge5'), ...
-            %  MunitionFactory.createM107Artillery('Charge6'), ...
-            %  MunitionFactory.createM107Artillery('Charge7')}),
+            % {MunitionFactory.createM107Artillery('CH5W'), ...
+            %  MunitionFactory.createM107Artillery('CH6W'), ...
+            %  MunitionFactory.createM107Artillery('CH7W')}),
             % ORDERED LOWEST TO HIGHEST muzzle velocity. Tries each in
             % order via solveNumericalShooting and returns the first that
             % reaches the target - standard artillery doctrine of using
@@ -214,24 +214,32 @@ classdef FireControlComputer < handle
             deriv_fn = @(tt, XX) obj.evalMunitionDerivatives(munition, tt, XX, env);
 
             % Altitude-vs-raw-Z: reads munition.Dynamics.Frame so this
-            % works correctly whether Frame is set to 'NED' before or
+            % works correctly whether Frame is set to 'NED'/'FDR' before or
             % after this solve runs (previously hardcoded Z-Up - X(3)
             % directly, vel(3)<0 for "descending" - which only happened
             % to work because every caller set Frame AFTER solving;
             % callers no longer need to order it that way). A Dynamics
             % class with no Frame property at all (e.g. DynamicsMPMM) is
-            % always-NED by its own design (see BaseDynamics.IDX_POS'
-            % comment on the 17-state blueprint layout), not Z-Up - so
-            % the fallback here has to match that, not just default to
-            % Z-Up as if "no Frame property" meant "the legacy convention".
+            % always-FDR by its own design (see that class' own comment),
+            % not Z-Up - so the fallback here has to match that, not just
+            % default to Z-Up as if "no Frame property" meant "the legacy
+            % convention".
             if isprop(munition.Dynamics, 'Frame')
                 frame = munition.Dynamics.Frame;
             elseif munition.Dynamics.StateDimension == BaseDynamics.FULL_STATE_DIM
-                frame = 'NED';
+                frame = 'FDR';
             else
                 frame = 'Z-Up';
             end
-            target_alt = CoordinateFrame.altitude([0; 0; z_target], frame);
+            % z_target (from r_tgt(3), itself never rotated out of the
+            % Z-Up-sense target_bus - see solveNumericalShooting) is
+            % already a true height-above-ground value, exactly what
+            % altitude() normalizes an X/pos vector TO - not a raw
+            % component to run back through altitude() at some frame-
+            % specific index (index 3 only means "up/down" for 'Z-Up';
+            % building a synthetic [0;0;z_target] and reading it back
+            % under 'FDR' would silently read index 2 - always 0 - instead).
+            target_alt = z_target;
 
             t = 0;
             while t < t_max
@@ -255,6 +263,17 @@ classdef FireControlComputer < handle
                     end
                     frac = max(0.0, min(1.0, frac));
                     impact_pos = X_prev(1:3) + frac * (X(1:3) - X_prev(1:3));
+                    % Un-rotate back to the same Z-Up-sense convention
+                    % r_tgt/launcher_pos are already in (rotateVector is
+                    % self-inverse both ways - see CoordinateFrame.m),
+                    % so solveNumericalShooting's err_x/err_y/Jacobian
+                    % never has to know which index is "lateral" under
+                    % whichever frame the attached Dynamics actually uses -
+                    % a fix that only compares index 2 (right under 'NED')
+                    % against the target silently stops converging once a
+                    % munition's Dynamics uses 'FDR' instead, where index 2
+                    % is "down", not "right".
+                    impact_pos = CoordinateFrame.rotateVector(impact_pos, frame);
                     return;
                 end
 
@@ -262,7 +281,7 @@ classdef FireControlComputer < handle
                 X = integrator.step(deriv_fn, t, X, dt);
                 t = t + dt;
             end
-            impact_pos = X(1:3);
+            impact_pos = CoordinateFrame.rotateVector(X(1:3), frame);
         end
 
         %% Shared derivative evaluation - mirrors Simulation.evalDerivatives'

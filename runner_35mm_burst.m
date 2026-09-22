@@ -5,7 +5,11 @@ clear; clc; close all;
 env = Environment();
 
 % 2. Setup Target: same DJI-class drone as runner_35mm_antidrone.m
-target = TargetConstantVelocity([1000; 200; 120], [-12; 8; 0]);
+% forward=1000, down=-120 (120m above launch), right=-200 (200m left);
+% vel forward=-12 (closing), down=0 (level), right=-8. Same physical
+% scenario as before (forward=1000,crossrange=200,altitude=120), just
+% re-authored directly in FDR (see TargetBase's constructor comment).
+target = TargetConstantVelocity([1000; -120; -200], [-12; 0; -8], 'FDR');
 
 % 3. Weapon Platform: 35mm twin AA mount (muzzle velocity dispersion,
 %    aiming jitter, traverse limits, cyclic rate all come from here)
@@ -15,7 +19,7 @@ platform = WeaponPlatformFactory.create35mmAAMount();
 %    each round's lead solve uses the drone's actual position at that
 %    round's fire time, not a single lead frozen at t=0.
 mission = FireMission(platform, @MunitionFactory.create35mmHE, target, env);
-mission.Frame = 'NED';
+mission.Frame = 'FDR';
 mission.LauncherPos = [0; 0; 0];
 mission.NumRounds   = 10;
 
@@ -55,11 +59,11 @@ end
 figure('Name', 'Burst Impact Dispersion', 'Color', 'w');
 hold on; grid on; box on;
 if ~isempty(impact_pts)
-    plot(impact_pts(:,1), CoordinateFrame.altitudeColumn(impact_pts(:,3), mission.Frame), ...
+    plot(impact_pts(:,1), CoordinateFrame.altitudeColumn(impact_pts(:,2), mission.Frame), ...
         'bx', 'MarkerSize', 10, 'LineWidth', 1.5, 'DisplayName', 'Impact');
 end
 if ~isempty(target_pts)
-    plot(target_pts(:,1), CoordinateFrame.altitudeColumn(target_pts(:,3), mission.Frame), ...
+    plot(target_pts(:,1), CoordinateFrame.altitudeColumn(target_pts(:,2), mission.Frame), ...
         'r.', 'MarkerSize', 14, 'DisplayName', 'Target at impact');
 end
 legend('show', 'Location', 'best');

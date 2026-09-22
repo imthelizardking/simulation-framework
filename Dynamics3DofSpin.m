@@ -4,7 +4,7 @@ classdef Dynamics3DofSpin < Dynamics3Dof
     % is still handled by the same first-order pitch-follower heuristic as
     % the parent class (no real attitude/moment integration there); spin
     % is a genuine ODE state, integrated from the roll/spin-damping moment
-    % moments.Aero(1) (see AeroTabulatedSpin, its usual pairing). The spin
+    % moments.Aero(1). The spin
     % axis is assumed coincident with the velocity vector, valid while the
     % yaw of repose stays small - a full yaw-of-repose treatment lives in
     % DynamicsMPMM instead.

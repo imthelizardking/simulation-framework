@@ -1,8 +1,8 @@
 classdef ChargeFactory
     % Propellant/charge-zone presets. DM92 zone names and the 6M=943 m/s
-    % point are as given; the other DM92 zones and all M119A2 zones are
-    % illustrative (a plausible monotonic progression), not transcribed
-    % from a real firing table - same caveat as MunitionFactory's other
+    % point are as given; the other DM92 zones and all M4A2/M119A2 zones
+    % are illustrative (a plausible monotonic progression), not
+    % transcribed from a real firing table - same caveat as MunitionFactory's other
     % illustrative presets. Fixed-cartridge propellant names for the
     % small/medium-caliber rounds are generic placeholders, not real
     % manufacturer designations - unlike separate-loading artillery
@@ -18,20 +18,51 @@ classdef ChargeFactory
                 error('ChargeFactory:UnknownZone', 'DM92 has no charge zone "%s".', zone);
             end
             c = ChargeZone(zone, 'DM92', v0_table(zone), sd_table(zone));
-            ChargeFactory.applyFormFactors(c, 'getDM92', zone);
         end
 
-        %% M119A2 modular propelling charge (155mm) - MunitionFactory.createM107Artillery
+        %% M4A2 modular propelling charge (155mm) - MunitionFactory.createM107Artillery
+        function c = getM4A2(zone)
+            % CH-prefix zones (per data/<Munition>.mat's iform/fl charge-
+            % zone keys, see MunitionData): CH<N>W/CH<N>R, N = zone
+            % number, W/R = White/Red bag. CH and CX prefixes are two
+            % different propellant/charge SYSTEMS - CH is M4A2 (this
+            % method), CX is M119A2 (see getM119A2 below), as given - not
+            % independently verified against a source. CH5W/CH6W/CH7W =
+            % 415/497/580 m/s per the earlier source data this table
+            % already had; CH3W/CH4W (lower zones) and CH7R (zone-7
+            % supercharge) are new additions, illustrative like the rest
+            % of this file - not transcribed from a real firing table.
+            v0_table = containers.Map( ...
+                {'CH3W', 'CH4W', 'CH5W', 'CH6W', 'CH7W', 'CH7R'}, ...
+                {300.0,  360.0,  415.0,  497.0,  580.0,  650.0});
+            sd_table = containers.Map( ...
+                {'CH3W', 'CH4W', 'CH5W', 'CH6W', 'CH7W', 'CH7R'}, ...
+                {3.0,    3.5,    4.0,    5.0,    6.0,    7.0});
+            if ~isKey(v0_table, zone)
+                error('ChargeFactory:UnknownZone', 'M4A2 has no charge zone "%s".', zone);
+            end
+            c = ChargeZone(zone, 'M4A2', v0_table(zone), sd_table(zone));
+        end
+
+        %% M119A2 modular propelling charge (155mm, extended-range) - not yet paired with a MunitionFactory preset
         function c = getM119A2(zone)
-            % Charge5-7 updated to 415/497/580 m/s per newer source data.
-            % Charge8 removed - not part of this charge system.
-            v0_table = containers.Map({'Charge5', 'Charge6', 'Charge7'}, {415.0, 497.0, 580.0});
-            sd_table = containers.Map({'Charge5', 'Charge6', 'Charge7'}, {4.0, 5.0, 6.0});
+            % CX-prefix zones (see getM4A2's comment on the CH/CX
+            % distinction) - M119A2 tops out one zone higher (CX8R) than
+            % M4A2 (CH7R), matching the real M119-series' role as the
+            % newer, higher-zone successor to the M4-series. Entirely
+            % illustrative (a plausible monotonic progression, scaled up
+            % a bit from M4A2's) - not transcribed from a real firing
+            % table, and no current MunitionFactory preset uses this yet.
+            v0_table = containers.Map( ...
+                {'CX3W', 'CX4W', 'CX5W', 'CX6W', 'CX7W', 'CX8R'}, ...
+                {320.0,  385.0,  445.0,  530.0,  615.0,  700.0});
+            sd_table = containers.Map( ...
+                {'CX3W', 'CX4W', 'CX5W', 'CX6W', 'CX7W', 'CX8R'}, ...
+                {3.0,    3.5,    4.0,    5.0,    6.0,    7.0});
             if ~isKey(v0_table, zone)
                 error('ChargeFactory:UnknownZone', 'M119A2 has no charge zone "%s".', zone);
             end
             c = ChargeZone(zone, 'M119A2', v0_table(zone), sd_table(zone));
-            ChargeFactory.applyFormFactors(c, 'getM119A2', zone);
         end
 
         %% Single fixed-cartridge charge (no selectable zones)
@@ -40,36 +71,7 @@ classdef ChargeFactory
             if nargin < 2, v0 = 0.0; end
             if nargin < 3, stddev = 0.0; end
             c = ChargeZone('Fixed', propellant_name, v0, stddev);
-            ChargeFactory.applyFormFactors(c, 'getFixed', propellant_name);
         end
 
-    end
-
-    methods (Static, Access = private)
-        function applyFormFactors(chargeZone, method_name, zone)
-            % Optional data/<method_name>_<zone>.<ext> file overrides this
-            % specific propelling charge's STANAG 4355 MPMM form factors
-            % (IForm/FL/QD/QM - see ChargeZone/AeroMPMM); ChargeZone
-            % already default to 1.0 (no correction) when absent.
-            % ChargeZone is a handle, so mutating it here is visible to
-            % the caller without needing to return it.
-            %
-            % Best-effort file-naming convention - no real sample file
-            % was available to confirm the exact layout real firing-table
-            % data uses for these, unlike e.g. DatcomReader, which was
-            % reverse-engineered against a genuine sample (see that
-            % class). Field NAME spelling itself (IForm vs IFORM vs
-            % I_Form vs ...) is handled leniently by
-            % FactoryData.getOrAny, since that's the part explicitly
-            % expected to vary; if your real files also organize/name
-            % the FILES differently (e.g. one file per propellant system
-            % covering every zone, rather than one per zone), adjust the
-            % FactoryData.load() call below accordingly.
-            data = FactoryData.load(sprintf('%s_%s', method_name, zone));
-            chargeZone.IForm = FactoryData.getOrAny(data, {'IForm'}, chargeZone.IForm);
-            chargeZone.FL    = FactoryData.getOrAny(data, {'FL'},    chargeZone.FL);
-            chargeZone.QD    = FactoryData.getOrAny(data, {'QD'},    chargeZone.QD);
-            chargeZone.QM    = FactoryData.getOrAny(data, {'QM'},    chargeZone.QM);
-        end
     end
 end

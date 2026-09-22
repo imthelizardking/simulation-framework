@@ -14,7 +14,7 @@ classdef ParticleSwarmSimulation < handle
         Particles   cell         = {}
         Target                   = []
         Environment              = []
-        Frame       (1,:) char   = 'Z-Up'  % 'Z-Up' or 'NED' - see CoordinateFrame; set by Simulation.triggerFragmentation to match the parent flight
+        Frame       (1,:) char   = 'Z-Up'  % 'Z-Up', 'NED', or 'FDR' - see CoordinateFrame; set by Simulation.triggerFragmentation to match the parent flight
         Integrator               = RK4FixedStep()
         TimeSpan    (1,2) double = [0 15]
         Dt          (1,1) double = 0.001

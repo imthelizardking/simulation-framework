@@ -4,7 +4,7 @@ classdef Simulation < handle
         Munition                  = []  % Munition container OR raw BaseDynamics object
         Target                    = []  % TargetBase subclass OR struct
         Environment               = []  % Environment object
-        Frame     (1,:) char      = 'Z-Up'  % 'Z-Up' or 'NED' - see CoordinateFrame; propagated to Munition.Dynamics/Aero/Visualizer/the burst swarm at run()
+        Frame     (1,:) char      = 'Z-Up'  % 'Z-Up', 'NED', or 'FDR' (DynamicsMPMM/AeroMPMM only) - see CoordinateFrame; propagated to Munition.Dynamics/Aero/Visualizer/the burst swarm at run()
         Designator                = []  % BaseDesignator subclass (optional)
         GroundStation             = []  % GroundStation object (optional)
         Visualizer                = []  % BaseVisualizer subclass (optional)

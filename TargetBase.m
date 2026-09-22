@@ -11,10 +11,34 @@ classdef (Abstract) TargetBase < handle
     end
     
     methods
-        function obj = TargetBase(name, pos, vel)
+        function obj = TargetBase(name, pos, vel, frame)
+            % pos/vel are always stored in the framework's Z-Up-sense
+            % convention (downrange, crossrange, altitude/climb-rate) -
+            % the same "author once, auto-rotated at the point of
+            % consumption" contract Simulation.resolveTargetBus/
+            % ParticleSwarmSimulation.resolveTargetBus already document.
+            % frame (optional, default 'Z-Up') lets a caller author pos/
+            % vel directly in a munition's own convention instead (e.g.
+            % 'FDR' - forward/down/right, matching DynamicsMPMM/AeroMPMM)
+            % when that's more natural for the scenario being built -
+            % converted ONCE here via the same self-inverse
+            % CoordinateFrame.rotateVector every Dynamics class already
+            % uses, so Position/Velocity/getTargetBus and everything
+            % downstream never has to know which convention the scenario
+            % was actually written in.
             if nargin > 0, obj.Name = name; end
-            if nargin > 1, obj.Position = pos; end
-            if nargin > 2, obj.Velocity = vel; end
+            if nargin > 1
+                if nargin > 3 && ~isempty(frame)
+                    pos = CoordinateFrame.rotateVector(pos, frame);
+                end
+                obj.Position = pos;
+            end
+            if nargin > 2
+                if nargin > 3 && ~isempty(frame)
+                    vel = CoordinateFrame.rotateVector(vel, frame);
+                end
+                obj.Velocity = vel;
+            end
         end
         
         function bus = getTargetBus(obj)

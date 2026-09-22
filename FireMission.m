@@ -18,7 +18,7 @@ classdef FireMission < handle
         MunitionBuilder                 % function handle, e.g. @() MunitionFactory.create35mmHE()
         Target                          % TargetBase subclass, advanced across the whole mission
         Environment                    % Environment
-        Frame           (1,:) char   = 'Z-Up' % 'Z-Up' or 'NED' - see CoordinateFrame; passed to each round's Simulation
+        Frame           (1,:) char   = 'Z-Up' % 'Z-Up', 'NED', or 'FDR' - see CoordinateFrame; passed to each round's Simulation
         LauncherPos     (3,1) double = [0;0;0]
         FireMode        (1,:) char   = 'DirectLead' % passed to FireControlComputer.solveFiringAngles
         NumRounds       (1,1) double = 1

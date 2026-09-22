@@ -29,9 +29,17 @@ classdef AeroParticle < BaseAero
                 M_aero = [0; 0; 0];
                 return;
             end
-            cd_val = BaseAero.evalCoeff(obj.CD0, flow.mach);
-            F_aero = -flow.q_bar * cd_val * obj.RefArea * flow.vel_dir;
+            coeffs = obj.evaluateCoefficients(flow.mach);
+            F_aero = obj.dragEquation(coeffs, flow);
             M_aero = [0; 0; 0];
+        end
+
+        function coeffs = evaluateCoefficients(obj, mach)
+            coeffs.CD0 = BaseAero.evalCoeff(obj.CD0, mach);
+        end
+
+        function F_drag = dragEquation(obj, coeffs, flow)
+            F_drag = -flow.q_bar * coeffs.CD0 * obj.RefArea * flow.vel_dir;
         end
     end
 

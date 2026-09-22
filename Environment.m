@@ -240,7 +240,7 @@ classdef Environment < handle
             % consumed by any Aero force calculation in this framework -
             % this makes the data available, the same "expose it now,
             % wire it into the physics later" pattern already used for
-            % AeroTabulatedSpin's CMA/CMA3 overturning moment.
+            % AeroMPMM's CMA/CMA3 overturning moment.
             if ~isempty(obj.MetcmAltitudes)
                 h = obj.clampToMetcmRange(altitude);
                 w = [interp1(obj.MetcmAltitudes, obj.MetcmWind_NED(:,1), h, 'linear'); ...

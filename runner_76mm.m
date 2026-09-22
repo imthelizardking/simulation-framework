@@ -7,14 +7,16 @@ env = Environment();
 % 2. Setup Target: same inbound target as runner_sam_engagement.m (the
 %    "drone" used there), so the 76mm gun and the guided interceptor can
 %    be compared against an identical threat.
-target = TargetConstantVelocity([8000; 0; 3000], [-250; 0; 0]);
+% forward=8000, down=-3000 (3000m above launch), right=0; vel forward=-250
+% (closing), down=0, right=0. Same physical scenario as before
+% (forward=8000,crossrange=0,altitude=3000), just re-authored directly
+% in FDR (see TargetBase's constructor comment).
+target = TargetConstantVelocity([8000; -3000; 0], [-250; 0; 0], 'FDR');
 
-% 3. Instantiate Vehicle via MunitionFactory (uses AeroTabulated - see
+% 3. Instantiate Vehicle via MunitionFactory (uses AeroMPMM - see
 %    MunitionFactory.create76mmHE for the full CD0/CDA2/CDA4/CLA/CLA3
 %    coefficient set)
 shell = MunitionFactory.create76mmHE();
-shell.Dynamics.Frame = 'NED'; % must be set before buildLaunchState below - it reads this at build time
-shell.Aero.Frame     = 'NED';
 
 % 4. Fire Control: analytical direct-lead solve. solveNumericalShooting
 %    has no notion of target velocity (it aims at wherever the target is
@@ -48,7 +50,7 @@ shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0, ...
 %    error here. TimeSpan is padded well past the predicted intercept
 %    time to give the (slower-than-predicted) real shell room to arrive.
 sim = Simulation(shell, target, env, [0 sol.TimeOfFlight * 2], 0.005);
-sim.Frame = 'NED';
+sim.Frame = 'FDR';
 sim.Termination.ImpactDistance = 5.0;
 sim.Termination.MaxDownrange   = 200.0;
 
@@ -61,7 +63,7 @@ fprintf('Sim finished in %.2f seconds (%.2f s simulated).\n', toc, telemetry.tim
 final_pos = telemetry.pos(end, :)';
 final_tgt = telemetry.target_pos(end, :)';
 miss_dist = norm(final_pos - final_tgt);
-altitude_series = CoordinateFrame.altitudeColumn(telemetry.pos(:,3), telemetry.Frame);
+altitude_series = CoordinateFrame.altitudeColumn(telemetry.pos(:,2), telemetry.Frame);
 [apogee, apogee_idx] = max(altitude_series);
 speed_of_sound_series = arrayfun(@(h) env.getSpeedOfSound(h), altitude_series);
 max_mach = max(vecnorm(telemetry.vel, 2, 2) ./ speed_of_sound_series);

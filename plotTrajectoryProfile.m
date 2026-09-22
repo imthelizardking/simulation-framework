@@ -6,10 +6,20 @@ function plotTrajectoryProfile(tel, target_pos, fig_title)
 
     frame = 'Z-Up';
     if isfield(tel, 'Frame'), frame = tel.Frame; end
-    if strcmpi(frame, 'NED')
-        alt = -tel.pos(:,3);
+    % 'FDR' keeps altitude at column 2 (down) and crossrange at column 3
+    % (right) instead of 'NED'/'Z-Up''s column 3/column 2 - see
+    % CoordinateFrame.m's class comment.
+    if strcmpi(frame, 'FDR')
+        alt_col   = 2;
+        cross_col = 3;
     else
-        alt = tel.pos(:,3);
+        alt_col   = 3;
+        cross_col = 2;
+    end
+    if strcmpi(frame, 'NED') || strcmpi(frame, 'FDR')
+        alt = -tel.pos(:,alt_col);
+    else
+        alt = tel.pos(:,alt_col);
     end
     if ~isempty(target_pos)
         target_alt = CoordinateFrame.altitude(target_pos, frame);
@@ -25,9 +35,9 @@ function plotTrajectoryProfile(tel, target_pos, fig_title)
     xlabel('Downrange X (m)'); ylabel('Altitude (m)'); title('Side Profile');
 
     subplot(1, 2, 2);
-    plot(tel.pos(:,1), tel.pos(:,2), 'b-', 'LineWidth', 1.5); hold on; grid on;
+    plot(tel.pos(:,1), tel.pos(:,cross_col), 'b-', 'LineWidth', 1.5); hold on; grid on;
     if ~isempty(target_pos)
-        plot(target_pos(1), target_pos(2), 'r^', 'MarkerFaceColor', 'r', 'MarkerSize', 8);
+        plot(target_pos(1), target_pos(cross_col), 'r^', 'MarkerFaceColor', 'r', 'MarkerSize', 8);
     end
     xlabel('Downrange X (m)'); ylabel('Crossrange Y (m)'); title('Top-Down View');
 

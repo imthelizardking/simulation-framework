@@ -137,8 +137,17 @@ classdef Munition < handle
                 spin_rate = 0.0;
             end
 
-            frame = 'Z-Up';
-            if isprop(obj.Dynamics, 'Frame'), frame = obj.Dynamics.Frame; end
+            % A Dynamics class with no Frame property at all (e.g.
+            % DynamicsMPMM) is always-FDR by its own design (see that
+            % class' comment), not Z-Up - same fallback FireControlComputer
+            % uses for the same reason (see its own comment there).
+            if isprop(obj.Dynamics, 'Frame')
+                frame = obj.Dynamics.Frame;
+            elseif obj.Dynamics.StateDimension == BaseDynamics.FULL_STATE_DIM
+                frame = 'FDR';
+            else
+                frame = 'Z-Up';
+            end
 
             up_ref = CoordinateFrame.upVector(frame);
             if abs(dot(fwd, up_ref)) > 0.99

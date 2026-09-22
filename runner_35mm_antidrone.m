@@ -7,12 +7,14 @@ env = Environment();
 % 2. Setup Target: small commercial quadcopter (DJI-class), level flight
 %    at a typical cruise speed (~14 m/s here), crossing/closing on the gun
 %    position at a modest patrol altitude.
-target = TargetConstantVelocity([1000; 200; 120], [-12; 8; 0]);
+% forward=1000, down=-120 (120m above launch), right=-200 (200m left);
+% vel forward=-12 (closing), down=0 (level), right=-8. Same physical
+% scenario as before (forward=1000,crossrange=200,altitude=120), just
+% re-authored directly in FDR (see TargetBase's constructor comment).
+target = TargetConstantVelocity([1000; -120; -200], [-12; 0; -8], 'FDR');
 
 % 3. Instantiate Munition via MunitionFactory
 round = MunitionFactory.create35mmHE();
-round.Dynamics.Frame = 'NED'; % must be set before buildLaunchState below - it reads this at build time
-round.Aero.Frame     = 'NED';
 
 % 4. Fire Control: analytical direct-lead solve. Unlike
 %    solveNumericalShooting (built for a static target), solveDirectLead
@@ -46,7 +48,7 @@ round.Dynamics.InitialState = round.buildLaunchState(launcher_pos, v0, ...
 %    ~Mach 3.4 is not negligible), so it arrives slightly later than
 %    predicted and the lead point is imperfect by construction.
 sim = Simulation(round, target, env, [0 5], 0.001);
-sim.Frame = 'NED';
+sim.Frame = 'FDR';
 sim.Termination.ImpactDistance = 3.0;
 sim.Termination.MaxDownrange   = 100.0;
 sim.Visualizer = LiveEngagementPlotter(5); % finer decimation - engagement lasts ~1s

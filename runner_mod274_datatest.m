@@ -20,8 +20,11 @@ clear; clc; close all;
 % valid from that row's Mach breakpoint onward (see MunitionData).
 S.aero.phase.CD0  = [0.4 1.7 0.1; 0.5 1.8 0.2; 0.6 1.9 0.115; 0.7 2.2 0.117];
 S.aero.phase.CDA2 = [0.4 3.7 1.0; 0.5 3.8 1.1; 0.6 3.9 1.15;  0.7 4.2 1.17];
-S.inertial.Mass    = 45.0;
-S.inertial.Inertia = diag([0.15, 1.7, 1.7]);
+S.inertial.mass = 45.0;
+% inertia_matrix demonstrated here (full 3x3), vs. the axial/transverse
+% scalar pair used in the other example generators - both are valid,
+% see MunitionData.inertia.
+S.inertial.inertia_matrix = diag([0.15, 1.7, 1.7]);
 
 here = fileparts(mfilename('fullpath'));
 matPath = fullfile(here, 'data', 'MOD274_155mm_BB.mat');
@@ -40,19 +43,17 @@ end
 
 %% 3. Confirm MunitionFactory.createMOD274 actually picks the override up
 shell = MunitionFactory.createMOD274('6M');
-shell.Dynamics.Frame = 'NED'; % must be set before buildLaunchState below - it reads this at build time
-shell.Aero.Frame     = 'NED';
 c = shell.Aero.Tables.Clean;
 assert(isequal(c.CD0, aero_over.CD0),   'CD0 was not overridden from data/MOD274_155mm_BB.mat');
 assert(isequal(c.CDA2, aero_over.CDA2), 'CDA2 was not overridden from data/MOD274_155mm_BB.mat');
-assert(isequal(shell.MassProperties.Mass, S.inertial.Mass), 'Mass was not overridden from data/MOD274_155mm_BB.mat');
-assert(isequal(shell.MassProperties.Inertia, S.inertial.Inertia), 'Inertia was not overridden from data/MOD274_155mm_BB.mat');
+assert(isequal(shell.MassProperties.Mass, S.inertial.mass), 'Mass was not overridden from data/MOD274_155mm_BB.mat');
+assert(isequal(shell.MassProperties.Inertia, S.inertial.inertia_matrix), 'Inertia was not overridden from data/MOD274_155mm_BB.mat');
 fprintf('\nMunitionFactory.createMOD274 coefficients confirmed overridden by MunitionData.\n');
 
 %% 4. Fire it (fixed QE - the test drag values are too high for the
 %    FireControlComputer's normal 25 km shooting solution to converge)
 env = Environment();
-target = TargetStatic([3000; 0; 0]); % nominal only - not solved for
+target = TargetStatic([3000; 0; 0], [], 'FDR'); % forward=3km, down=0, right=0 - nominal only, not solved for
 launcher_pos = [0; 0; 0];
 v0 = shell.Charge.MuzzleVelocity;
 elevation = FireControlComputer.mil2rad(800); % 45 deg, expressed in NATO mils
@@ -61,17 +62,22 @@ azimuth = 0;
 shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0, elevation, azimuth);
 
 sim = Simulation(shell, target, env, [0 60], 0.005);
-sim.Frame = 'NED';
+sim.Frame = 'FDR';
 fprintf('\nFiring MOD274 with the data-file drag override at QE=800 mils, v0=%.0f m/s...\n', v0);
 telemetry = sim.run();
 
-[apogee, apogee_idx] = max(CoordinateFrame.altitudeColumn(telemetry.pos(:,3), telemetry.Frame));
+[apogee, apogee_idx] = max(CoordinateFrame.altitudeColumn(telemetry.pos(:,2), telemetry.Frame));
 final_pos = telemetry.pos(end, :)';
 fprintf('Termination Reason : %s\n', sim.TerminationReason);
 fprintf('Flight Time        : %.2f s\n', telemetry.time(end));
 fprintf('Apogee             : %.1f m at t=%.2f s\n', apogee, telemetry.time(apogee_idx));
 fprintf('Forward Range      : %.0f m\n', final_pos(1));
-fprintf('Deflection         : %.0f m\n', final_pos(2));
-fprintf('Total Range        : %.0f m\n', hypot(final_pos(1), final_pos(2)));
+fprintf('Deflection         : %.0f m\n', final_pos(3));
+fprintf('Total Range        : %.0f m\n', hypot(final_pos(1), final_pos(3)));
 
-plotTrajectoryProfile(telemetry, target.Position, 'MOD274 - MunitionData .mat Override Test');
+% telemetry.target_pos, not target.Position - the latter is the raw
+% Z-Up-sense value TargetStatic was constructed with, never rotated into
+% the sim's own frame; telemetry.target_pos is Simulation's own per-step
+% resolveTargetBus() output, already correctly rotated to match final_pos
+% (see Simulation.m's class comment on Frame).
+plotTrajectoryProfile(telemetry, telemetry.target_pos(end, :)', 'MOD274 - MunitionData .mat Override Test');

@@ -3,8 +3,8 @@
 % solver, no target, no spin - just Dynamics3Dof + Aero3DoF_Longitudinal
 % acting on a hand-thrown fin-stabilized dart, to see the basic pitch-
 % plane lift/drag/pitch-follower model in isolation. Contrast with
-% runner_25mm.m and friends, which now use Dynamics3DofSpin/
-% AeroTabulatedSpin for their rifled, spin-stabilized rounds.
+% runner_25mm.m and friends, which now use DynamicsMPMM/
+% AeroMPMM for their rifled, spin-stabilized rounds.
 clear; clc; close all;
 
 launch_angle_mil = 622.2; % edit this to try other launch angles (NATO mils, 6400/circle)

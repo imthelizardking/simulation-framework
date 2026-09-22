@@ -4,8 +4,8 @@ classdef MunitionFactory
         
         %% 155mm M107 HE Artillery Projectile (Unguided Ballistic)
         function m = createM107Artillery(charge_name)
-            if nargin < 1, charge_name = 'Charge7'; end
-            % A data/createM107Artillery.<json|xml|fci|xlsx|mat|txt|sldd>
+            if nargin < 1, charge_name = 'CH7W'; end
+            % A data/createM107Artillery.mat
             % file overrides Name/Type/RefArea/TwistRate/etc below if
             % present (see FactoryData). Mass/Inertia/aero coefficients
             % instead come from data/<Name>.mat if present (see
@@ -23,31 +23,35 @@ classdef MunitionFactory
             m.MassProperties.Inertia = MunitionData.inertia(mdata, diag([0.14, 1.62, 1.62])); % [Ix, Iy, Iz]
 
             % Subsystems
-            m.Dynamics   = Dynamics3DofSpin();
+            m.Dynamics   = DynamicsMPMM();
             % S_ref = pi*(0.155/2)^2 = 0.01887 m^2, typical zero-lift drag CD0 ~ 0.22.
-            % Gun-fired and rifled - spin-stabilized, hence AeroTabulatedSpin
-            % rather than the plain Aero3DoF_Longitudinal: CDA2/CDA4/CLA3 are
-            % zeroed out to reproduce the old CD0/CL_alpha-only buildup
-            % exactly, with Cl_p/CMagnus_pa added on top for spin damping and
-            % Magnus drift. Illustrative magnitudes (McCoy-typical order), not
-            % validated wind-tunnel data - same caveat as the rest of this file.
-            aero = AeroTabulatedSpin();
+            % Gun-fired and rifled - spin-stabilized, hence the high-
+            % fidelity MPMM pair (DynamicsMPMM + AeroMPMM - full vector
+            % yaw-of-repose, real gravity/Coriolis). Illustrative
+            % magnitudes (McCoy-typical order), not validated wind-tunnel
+            % data - same caveat as the rest of this file.
+            aero = AeroMPMM();
             aero.RefArea   = FactoryData.getOr(data, 'RefArea', 0.01887);
             aero.RefLength = 0.155;
-            coeffs.CD0   = FactoryData.getOr(aero_over, 'CD0',   0.22);
-            coeffs.CDA2  = FactoryData.getOr(aero_over, 'CDA2',  0);
-            coeffs.CDA4  = FactoryData.getOr(aero_over, 'CDA4',  0);
-            coeffs.CLA   = FactoryData.getOr(aero_over, 'CLA',   2.5);
-            coeffs.CLA3  = FactoryData.getOr(aero_over, 'CLA3',  0);
-            coeffs.CSPIN = FactoryData.getOr(aero_over, 'CSPIN', -0.03);
-            coeffs.CMA   = FactoryData.getOr(aero_over, 'CMA',   2.0);
-            coeffs.CMA3  = FactoryData.getOr(aero_over, 'CMA3',  0);
-            coeffs.CMAG  = FactoryData.getOr(aero_over, 'CMAG',  1.2);
-            aero.Tables.Clean   = coeffs;
-            aero.ActiveTableKey = 'Clean';
+            aero.Ix        = m.MassProperties.Inertia(1,1); % must be kept in sync - see AeroMPMM.Ix
+            aero.CD0   = FactoryData.getOr(aero_over, 'CD0',   0.22);
+            aero.CDA2  = FactoryData.getOr(aero_over, 'CDA2',  0);
+            aero.CDA4  = FactoryData.getOr(aero_over, 'CDA4',  0);
+            aero.CLA   = FactoryData.getOr(aero_over, 'CLA',   2.5);
+            aero.CLA3  = FactoryData.getOr(aero_over, 'CLA3',  0);
+            aero.CLA5  = FactoryData.getOr(aero_over, 'CLA5',  0);
+            aero.CSPIN = FactoryData.getOrAny(aero_over, {'CSPIN','CMASPIN'}, -0.03);
+            aero.CMA   = FactoryData.getOr(aero_over, 'CMA',   2.0);
+            aero.CMA3  = FactoryData.getOr(aero_over, 'CMA3',  0);
+            aero.CMAG  = FactoryData.getOrAny(aero_over, {'CMAG','CMAGF'},  1.2);
+            % IForm/FL left at AeroMPMM's neutral default (1.0) here -
+            % they can be a polynomial in quadrant elevation (see
+            % MunitionData.formFactor), which this factory method has no
+            % way to know yet. The caller re-evaluates them once QE is
+            % solved for, same two-pass pattern runner_m107.m uses.
             m.Aero = aero;
             m.TwistRate  = 20; % calibers/turn, illustrative (typical 155mm/39-cal tube figure)
-            m.Charge     = ChargeFactory.getM119A2(charge_name);
+            m.Charge     = ChargeFactory.getM4A2(charge_name);
             m.Propulsion = []; % Pure ballistic, no motor
             m.Sensors    = {};
             m.Guidance   = [];
@@ -56,7 +60,7 @@ classdef MunitionFactory
         
         %% 2.75-inch (70mm) Hydra-70 Unguided Rocket (Mk 66 Motor)
         function m = createHydra70()
-            % A data/createHydra70.<json|xml|fci|xlsx|mat|txt|sldd> file
+            % A data/createHydra70.mat file
             % overrides Name/Type/RefArea/etc below if present (see
             % FactoryData); Mass/Inertia/CD0/CL_alpha instead come from
             % data/<Name>.mat if present (see MunitionData).
@@ -96,7 +100,7 @@ classdef MunitionFactory
             % unclouded by any of the spin-stabilized machinery the other
             % presets now use. Illustrative hand-thrown fin-stabilized
             % dart, d = 0.02 m.
-            % A data/createFinStabilizedDart.<json|xml|fci|xlsx|mat|txt|sldd>
+            % A data/createFinStabilizedDart.mat
             % file overrides Name/Type/RefArea/etc below if present (see
             % FactoryData); Mass/Inertia/CD0/CL_alpha instead come from
             % data/<Name>.mat if present (see MunitionData).
@@ -126,7 +130,7 @@ classdef MunitionFactory
 
         %% 25mm Bushmaster Target Practice Tracer (M793)
         function m = create25mmM793()
-            % A data/create25mmM793.<json|xml|fci|xlsx|mat|txt|sldd> file
+            % A data/create25mmM793.mat file
             % overrides Name/Type/RefArea/etc below if present (see
             % FactoryData); Mass/Inertia/aero coefficients instead come
             % from data/<Name>.mat if present (see MunitionData).
@@ -140,24 +144,25 @@ classdef MunitionFactory
             m.MassProperties.Mass = MunitionData.mass(mdata, 0.185);
             m.MassProperties.Inertia = MunitionData.inertia(mdata, diag([1e-4, 1e-4, 1e-4]));
 
-            m.Dynamics   = Dynamics3DofSpin();
+            m.Dynamics   = DynamicsMPMM();
             % S_ref = pi*(0.025/2)^2 = 4.908e-4 m^2. Rifled/spin-stabilized -
-            % AeroTabulatedSpin with CDA2/CDA4/CLA3 zeroed reproduces the old
-            % CD0/CL_alpha-only buildup, plus illustrative Cl_p/CMagnus_pa.
-            aero = AeroTabulatedSpin();
+            % high-fidelity MPMM pair (DynamicsMPMM + AeroMPMM), same as
+            % every other spin-stabilized preset in this file - see
+            % createM107Artillery's comment.
+            aero = AeroMPMM();
             aero.RefArea   = FactoryData.getOr(data, 'RefArea', 4.908e-4);
             aero.RefLength = FactoryData.getOr(data, 'RefLength', 0.025);
-            coeffs.CD0   = FactoryData.getOr(aero_over, 'CD0',   0.18);
-            coeffs.CDA2  = FactoryData.getOr(aero_over, 'CDA2',  0);
-            coeffs.CDA4  = FactoryData.getOr(aero_over, 'CDA4',  0);
-            coeffs.CLA   = FactoryData.getOr(aero_over, 'CLA',   1.5);
-            coeffs.CLA3  = FactoryData.getOr(aero_over, 'CLA3',  0);
-            coeffs.CSPIN = FactoryData.getOr(aero_over, 'CSPIN', -0.02);
-            coeffs.CMA   = FactoryData.getOr(aero_over, 'CMA',   1.2);
-            coeffs.CMA3  = FactoryData.getOr(aero_over, 'CMA3',  0);
-            coeffs.CMAG  = FactoryData.getOr(aero_over, 'CMAG',  0.6);
-            aero.Tables.Clean   = coeffs;
-            aero.ActiveTableKey = 'Clean';
+            aero.Ix        = m.MassProperties.Inertia(1,1);
+            aero.CD0   = FactoryData.getOr(aero_over, 'CD0',   0.18);
+            aero.CDA2  = FactoryData.getOr(aero_over, 'CDA2',  0);
+            aero.CDA4  = FactoryData.getOr(aero_over, 'CDA4',  0);
+            aero.CLA   = FactoryData.getOr(aero_over, 'CLA',   1.5);
+            aero.CLA3  = FactoryData.getOr(aero_over, 'CLA3',  0);
+            aero.CLA5  = FactoryData.getOr(aero_over, 'CLA5',  0);
+            aero.CSPIN = FactoryData.getOrAny(aero_over, {'CSPIN','CMASPIN'}, -0.02);
+            aero.CMA   = FactoryData.getOr(aero_over, 'CMA',   1.2);
+            aero.CMA3  = FactoryData.getOr(aero_over, 'CMA3',  0);
+            aero.CMAG  = FactoryData.getOrAny(aero_over, {'CMAG','CMAGF'},  0.6);
             m.Aero = aero;
             m.TwistRate  = FactoryData.getOr(data, 'TwistRate', 20); % calibers/turn, illustrative
             m.Charge     = ChargeFactory.getFixed('25mm-Fixed', 1100.0, 5.0);
@@ -169,7 +174,7 @@ classdef MunitionFactory
 
         %% 35mm HE-T Anti-Aircraft/Anti-Drone Round (Unguided Direct-Fire)
         function m = create35mmHE()
-            % A data/create35mmHE.<json|xml|fci|xlsx|mat|txt|sldd> file
+            % A data/create35mmHE.mat file
             % overrides Name/Type/RefArea/etc below if present (see
             % FactoryData); Mass/Inertia/aero coefficients instead come
             % from data/<Name>.mat if present (see MunitionData).
@@ -188,25 +193,26 @@ classdef MunitionFactory
             m.MassProperties.Mass = MunitionData.mass(mdata, 0.55);
             m.MassProperties.Inertia = MunitionData.inertia(mdata, diag([0.0004, 0.006, 0.006]));
 
-            m.Dynamics = Dynamics3DofSpin();
+            m.Dynamics = DynamicsMPMM();
             % S_ref = pi*(0.035/2)^2 = 9.62e-4 m^2, typical HE-T CD0 ~ 0.25.
-            % Rifled/spin-stabilized - AeroTabulatedSpin with CDA2/CDA4/CLA3
-            % zeroed reproduces the old CD0/CL_alpha-only buildup, plus
-            % illustrative Cl_p/CMagnus_pa.
-            aero = AeroTabulatedSpin();
+            % Rifled/spin-stabilized - high-fidelity MPMM pair
+            % (DynamicsMPMM + AeroMPMM), same as every other spin-
+            % stabilized preset in this file - see
+            % createM107Artillery's comment.
+            aero = AeroMPMM();
             aero.RefArea   = FactoryData.getOr(data, 'RefArea', 9.621e-4);
             aero.RefLength = FactoryData.getOr(data, 'RefLength', 0.035);
-            coeffs.CD0   = FactoryData.getOr(aero_over, 'CD0',   0.25);
-            coeffs.CDA2  = FactoryData.getOr(aero_over, 'CDA2',  0);
-            coeffs.CDA4  = FactoryData.getOr(aero_over, 'CDA4',  0);
-            coeffs.CLA   = FactoryData.getOr(aero_over, 'CLA',   2.0);
-            coeffs.CLA3  = FactoryData.getOr(aero_over, 'CLA3',  0);
-            coeffs.CSPIN = FactoryData.getOr(aero_over, 'CSPIN', -0.025);
-            coeffs.CMA   = FactoryData.getOr(aero_over, 'CMA',   1.6);
-            coeffs.CMA3  = FactoryData.getOr(aero_over, 'CMA3',  0);
-            coeffs.CMAG  = FactoryData.getOr(aero_over, 'CMAG',  0.8);
-            aero.Tables.Clean   = coeffs;
-            aero.ActiveTableKey = 'Clean';
+            aero.Ix        = m.MassProperties.Inertia(1,1);
+            aero.CD0   = FactoryData.getOr(aero_over, 'CD0',   0.25);
+            aero.CDA2  = FactoryData.getOr(aero_over, 'CDA2',  0);
+            aero.CDA4  = FactoryData.getOr(aero_over, 'CDA4',  0);
+            aero.CLA   = FactoryData.getOr(aero_over, 'CLA',   2.0);
+            aero.CLA3  = FactoryData.getOr(aero_over, 'CLA3',  0);
+            aero.CLA5  = FactoryData.getOr(aero_over, 'CLA5',  0);
+            aero.CSPIN = FactoryData.getOrAny(aero_over, {'CSPIN','CMASPIN'}, -0.025);
+            aero.CMA   = FactoryData.getOr(aero_over, 'CMA',   1.6);
+            aero.CMA3  = FactoryData.getOr(aero_over, 'CMA3',  0);
+            aero.CMAG  = FactoryData.getOrAny(aero_over, {'CMAG','CMAGF'},  0.8);
             m.Aero = aero;
             m.TwistRate = FactoryData.getOr(data, 'TwistRate', 25); % calibers/turn, illustrative
             m.Charge = ChargeFactory.getFixed('35mm-Fixed', 1175.0, 4.0);
@@ -218,7 +224,7 @@ classdef MunitionFactory
 
         %% 76mm HE Projectile (Detailed Mach-Dependent Aero Table)
         function m = create76mmHE()
-            % A data/create76mmHE.<json|xml|fci|xlsx|mat|txt|sldd> file
+            % A data/create76mmHE.mat file
             % overrides Name/Type/RefArea/etc below if present (see
             % FactoryData); Mass/Inertia/aero coefficients instead come
             % from data/<Name>.mat if present (see MunitionData) -
@@ -239,11 +245,14 @@ classdef MunitionFactory
             m.MassProperties.Mass = MunitionData.mass(mdata, 6.0);
             m.MassProperties.Inertia = MunitionData.inertia(mdata, diag([0.006, 0.085, 0.085]));
 
-            m.Dynamics = Dynamics3DofSpin();
-
-            aero = AeroTabulatedSpin();
+            m.Dynamics = DynamicsMPMM();
+            % High-fidelity MPMM pair (DynamicsMPMM + AeroMPMM), same as
+            % every other spin-stabilized preset in this file - see
+            % createM107Artillery's comment.
+            aero = AeroMPMM();
             aero.RefArea   = FactoryData.getOr(data, 'RefArea', pi * (0.076/2)^2); % 0.004536 m^2
             aero.RefLength = FactoryData.getOr(data, 'RefLength', 0.076);
+            aero.Ix        = m.MassProperties.Inertia(1,1);
 
             % Illustrative coefficient set - representative drag-bucket /
             % rising-then-falling lift-slope shape for a spin-stabilized
@@ -263,21 +272,20 @@ classdef MunitionFactory
 
             defaultCLA3 = struct('Type', 'Polynomial', 'a0', -8.0, 'a1', 1.5);
 
-            coeffs.CD0  = FactoryData.getOr(aero_over, 'CD0', defaultCD0);
-            coeffs.CDA2 = FactoryData.getOr(aero_over, 'CDA2', defaultCDA2);
-            coeffs.CDA4 = FactoryData.getOr(aero_over, 'CDA4', 8.5); % plain scalar - constant across Mach
-            coeffs.CLA  = FactoryData.getOr(aero_over, 'CLA', defaultCLA);
-            coeffs.CLA3 = FactoryData.getOr(aero_over, 'CLA3', defaultCLA3);
+            aero.CD0  = FactoryData.getOr(aero_over, 'CD0', defaultCD0);
+            aero.CDA2 = FactoryData.getOr(aero_over, 'CDA2', defaultCDA2);
+            aero.CDA4 = FactoryData.getOr(aero_over, 'CDA4', 8.5); % plain scalar - constant across Mach
+            aero.CLA  = FactoryData.getOr(aero_over, 'CLA', defaultCLA);
+            aero.CLA3 = FactoryData.getOr(aero_over, 'CLA3', defaultCLA3);
+            aero.CLA5 = FactoryData.getOr(aero_over, 'CLA5', 0);
 
-            % Spin-stabilized extras (AeroTabulatedSpin) - illustrative
-            % constants, same caveat as the CD/CL buildup above.
-            coeffs.CSPIN = FactoryData.getOr(aero_over, 'CSPIN', -0.03);
-            coeffs.CMA   = FactoryData.getOr(aero_over, 'CMA', 2.0);
-            coeffs.CMA3  = FactoryData.getOr(aero_over, 'CMA3', 0);
-            coeffs.CMAG  = FactoryData.getOr(aero_over, 'CMAG', 1.0);
+            % Spin-stabilized extras - illustrative constants, same
+            % caveat as the CD/CL buildup above.
+            aero.CSPIN = FactoryData.getOrAny(aero_over, {'CSPIN','CMASPIN'}, -0.03);
+            aero.CMA   = FactoryData.getOr(aero_over, 'CMA', 2.0);
+            aero.CMA3  = FactoryData.getOr(aero_over, 'CMA3', 0);
+            aero.CMAG  = FactoryData.getOrAny(aero_over, {'CMAG','CMAGF'}, 1.0);
 
-            aero.Tables.Clean   = coeffs;
-            aero.ActiveTableKey = 'Clean';
             m.Aero = aero;
             m.TwistRate = FactoryData.getOr(data, 'TwistRate', 25); % calibers/turn, illustrative
             m.Charge = ChargeFactory.getFixed('76mm-Fixed', 800.0, 3.5);
@@ -292,7 +300,7 @@ classdef MunitionFactory
         function m = createMOD274(charge_name)
             if nargin < 1, charge_name = '6M'; end
 
-            % A data/createMOD274.<json|xml|fci|xlsx|mat|txt|sldd> file
+            % A data/createMOD274.mat file
             % overrides Name/Type/RefArea/etc below if present (see
             % FactoryData); Mass/Inertia/aero coefficients instead come
             % from data/<Name>.mat if present (see MunitionData) - same
@@ -309,31 +317,34 @@ classdef MunitionFactory
             m.MassProperties.Mass = MunitionData.mass(mdata, 45.0);
             m.MassProperties.Inertia = MunitionData.inertia(mdata, diag([0.15, 1.7, 1.7]));
 
-            m.Dynamics = Dynamics3DofSpin();
+            m.Dynamics = DynamicsMPMM();
             % Same bore/S_ref as M107; slightly lower baseline CD0 is
             % typical of modern extended-range shell shaping even before
             % the base-bleed reduction is applied on top. Same rifled/
-            % spin-stabilized treatment as M107 - AeroTabulatedSpin with
-            % CDA2/CDA4/CLA3 zeroed reproduces the old CD0/CL_alpha-only
-            % buildup, plus illustrative CSPIN/CMA/CMA3/CMAG.
-            aero = AeroTabulatedSpin();
+            % spin-stabilized treatment as M107 - high-fidelity MPMM pair
+            % (DynamicsMPMM + AeroMPMM), illustrative CD0/CDA2/CDA4/CLA3/
+            % CSPIN/CMA/CMA3/CMAG.
+            aero = AeroMPMM();
             aero.RefArea   = FactoryData.getOr(data, 'RefArea', 0.01887);
             aero.RefLength = 0.155;
-            coeffs.CD0   = FactoryData.getOr(aero_over, 'CD0',   0.21);
-            coeffs.CDA2  = FactoryData.getOr(aero_over, 'CDA2',  0);
-            coeffs.CDA4  = FactoryData.getOr(aero_over, 'CDA4',  0);
-            coeffs.CLA   = FactoryData.getOr(aero_over, 'CLA',   2.5);
-            coeffs.CLA3  = FactoryData.getOr(aero_over, 'CLA3',  0);
-            coeffs.CSPIN = FactoryData.getOr(aero_over, 'CSPIN', -0.03);
-            coeffs.CMA   = FactoryData.getOr(aero_over, 'CMA',   2.0);
-            coeffs.CMA3  = FactoryData.getOr(aero_over, 'CMA3',  0);
-            coeffs.CMAG  = FactoryData.getOr(aero_over, 'CMAG',  1.2);
-            aero.Tables.Clean   = coeffs;
-            aero.ActiveTableKey = 'Clean';
+            aero.Ix        = m.MassProperties.Inertia(1,1);
+            aero.CD0   = FactoryData.getOr(aero_over, 'CD0',   0.21);
+            aero.CDA2  = FactoryData.getOr(aero_over, 'CDA2',  0);
+            aero.CDA4  = FactoryData.getOr(aero_over, 'CDA4',  0);
+            aero.CLA   = FactoryData.getOr(aero_over, 'CLA',   2.5);
+            aero.CLA3  = FactoryData.getOr(aero_over, 'CLA3',  0);
+            aero.CLA5  = FactoryData.getOr(aero_over, 'CLA5',  0);
+            aero.CSPIN = FactoryData.getOrAny(aero_over, {'CSPIN','CMASPIN'}, -0.03);
+            aero.CMA   = FactoryData.getOr(aero_over, 'CMA',   2.0);
+            aero.CMA3  = FactoryData.getOr(aero_over, 'CMA3',  0);
+            aero.CMAG  = FactoryData.getOrAny(aero_over, {'CMAG','CMAGF'},  1.2);
             % Very basic base-bleed model (see Propulsion_DYU): a fixed
             % fractional CD0 reduction for BurnDuration seconds, full drag
             % after burnout. Values are illustrative, not from a gas-
-            % generator burn-rate model.
+            % generator burn-rate model. (This is the CD0-multiplier
+            % BaseBleed property, distinct from AeroMPMM's own optional
+            % BaseBleedOn CG/inertia-shift refinement, which stays off -
+            % see AeroMPMM.m.)
             aero.BaseBleed = Propulsion_DYU(30.0, 0.25);
             m.Aero = aero;
             m.TwistRate = FactoryData.getOr(data, 'TwistRate', 20); % calibers/turn, illustrative (same tube family as M107)
@@ -352,7 +363,7 @@ classdef MunitionFactory
             % Start from Hydra base and add GNC kit
             m = MunitionFactory.createHydra70();
 
-            % A data/createAPKWS.<json|xml|fci|xlsx|mat|txt|sldd> file
+            % A data/createAPKWS.mat file
             % overrides Name/Type/etc below if present (see FactoryData);
             % Mass instead comes from data/<Name>.mat if present (see
             % MunitionData) - note this is APKWS's OWN Name, a different

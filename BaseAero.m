@@ -114,8 +114,8 @@ classdef (Abstract) BaseAero < handle
             % concrete Aero (and DynamicsMPMM's yaw-of-repose) class needs -
             % reads density/speed-of-sound at the current altitude from env
             % rather than duplicating this per class. frame ('Z-Up'
-            % default, or 'NED' - see CoordinateFrame) only affects how
-            % altitude is read back out of X; vel/gamma need no special
+            % default, 'NED', or 'FDR' - see CoordinateFrame) only affects
+            % how altitude is read back out of X; vel/gamma need no special
             % handling because X is already expressed consistently in
             % that same frame (see CoordinateFrame's class comment).
             % vel_dir/gamma are zeroed when v_mag is ~0 rather than

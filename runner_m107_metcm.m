@@ -7,7 +7,7 @@
 % to see a bigger difference from the ISA-based runner.
 clear; clc; close all;
 
-charge_name   = 'Charge7'; % edit: 'Charge5' | 'Charge6' | 'Charge7'
+charge_name   = 'CH7W'; % edit: 'CH3W' | 'CH4W' | 'CH5W' | 'CH6W' | 'CH7W' | 'CH7R'
 elevation_mil = 600;       % edit: quadrant elevation (NATO mils, 6400/circle)
 azimuth_mil   = 0.0;       % edit: aim bearing
 
@@ -17,8 +17,6 @@ env = Environment('MetcmName', 'metcm_std');
 
 % 2. Instantiate Vehicle via MunitionFactory
 shell = MunitionFactory.createM107Artillery(charge_name);
-shell.Dynamics.Frame = 'NED'; % must be set before buildLaunchState below - it reads this at build time
-shell.Aero.Frame     = 'NED';
 v0 = shell.Charge.MuzzleVelocity;
 launcher_pos = [0; 0; 0];
 
@@ -39,16 +37,16 @@ shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0, ...
 
 % 5. Assemble Simulation & Execute
 sim = Simulation(shell, [], env, [0 90], 0.005);
-sim.Frame = 'NED';
+sim.Frame = 'FDR';
 
 tic;
 telemetry = sim.run();
 fprintf('Sim finished in %.2f seconds (%.2f s simulated).\n', toc, telemetry.time(end));
 
 % 6. Post-Flight Analysis
-[apogee, apogee_idx] = max(CoordinateFrame.altitudeColumn(telemetry.pos(:,3), telemetry.Frame));
+[apogee, apogee_idx] = max(CoordinateFrame.altitudeColumn(telemetry.pos(:,2), telemetry.Frame));
 forward_range = telemetry.pos(end, 1);
-deflection    = telemetry.pos(end, 2);
+deflection    = telemetry.pos(end, 3);
 total_range   = hypot(forward_range, deflection);
 
 fprintf('Termination Reason : %s\n', sim.TerminationReason);

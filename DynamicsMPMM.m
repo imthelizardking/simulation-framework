@@ -15,12 +15,15 @@ classdef DynamicsMPMM < BaseDynamics
     % mass_prop.Inertia is expected in the same diag([Ix,Iy,Iz])
     % convention MunitionFactory already uses elsewhere.
     %
-    % Always NED (X=forward, Y=right, Z=down - see CoordinateFrame.m):
+    % Always FDR (X=forward, Y=down, Z=right - see CoordinateFrame.m):
     % unlike Dynamics3Dof's dual Z-Up/NED Frame toggle, the 17-state
     % blueprint layout this class uses (BaseDynamics.IDX_POS et al.) is
-    % documented NED-only, so there's no Frame property here to keep in
+    % documented FDR-only, so there's no Frame property here to keep in
     % sync - only AeroMPMM.LatitudeDeg needs to match this class's own
-    % InitLatitudeDeg.
+    % InitLatitudeDeg. Note FDR is left-handed (see CoordinateFrame.m),
+    % so every genuine cross-product term below (Coriolis) carries an
+    % extra sign flip relative to a straight NED port - see
+    % computeCoriolisVector.
     properties
         % Launch latitude (degrees, + north/- south) - feeds the real-
         % gravity latitude correction and the Coriolis term. Must match
@@ -58,7 +61,7 @@ classdef DynamicsMPMM < BaseDynamics
             % Assembles the 17-element state from firing angles and
             % launch speed, same "elevation/azimuth keep their familiar
             % Z-Up meaning regardless of frame" contract Dynamics3Dof
-            % uses - this class is always NED (see class comment), so the
+            % uses - this class is always FDR (see class comment), so the
             % rotation is applied directly rather than via an obj.Frame
             % toggle. IDX_EULER/IDX_INERTIA are set once for the record
             % (telemetry/diagnostics) but never integrated/read back by
@@ -67,9 +70,9 @@ classdef DynamicsMPMM < BaseDynamics
             v_x = v0 * cos(elevation) * cos(azimuth);
             v_y = v0 * cos(elevation) * sin(azimuth);
             v_z = v0 * sin(elevation);
-            pos   = CoordinateFrame.rotateVector(launcher_pos, 'NED');
-            vel   = CoordinateFrame.rotateVector([v_x; v_y; v_z], 'NED');
-            pitch = CoordinateFrame.rotateAngle(elevation, 'NED');
+            pos   = CoordinateFrame.rotateVector(launcher_pos, 'FDR');
+            vel   = CoordinateFrame.rotateVector([v_x; v_y; v_z], 'FDR');
+            pitch = CoordinateFrame.rotateAngle(elevation, 'FDR');
 
             X0 = zeros(BaseDynamics.FULL_STATE_DIM, 1);
             X0(BaseDynamics.IDX_POS)         = pos;
@@ -103,15 +106,17 @@ classdef DynamicsMPMM < BaseDynamics
             % Inverse-square gravity toward Earth's center, with the
             % standard latitude correction for Earth's oblateness
             % (example_code.m's "method 3"). pos is this Dynamics'
-            % NED position (X=forward, Y=right, Z=down), so Earth's
-            % center sits at [0;0;EARTH_RADIUS] from the launch point -
-            % NOT [0;-R;0] as in example_code.m's own Y-up frame; see
-            % this file's class comment / AeroMPMM's COORDINATE FRAME
-            % NOTE for the derivation of that correction.
+            % FDR position (X=forward, Y=down, Z=right), so Earth's
+            % center sits at [0;EARTH_RADIUS;0] from the launch point -
+            % NOT [0;-R;0] as in example_code.m's own Y-up frame, and not
+            % [0;0;R] as under the (unused here) NED convention; see this
+            % file's class comment. No cross product is involved, so this
+            % is a pure index relabeling - the handedness flip that FDR
+            % carries relative to NED doesn't apply here.
             g0 = DynamicsMPMM.G0;
             g  = g0 * (1 - 0.0026 * cosd(2 * latitude_deg));
             R  = DynamicsMPMM.EARTH_RADIUS;
-            r  = pos - [0; 0; R];
+            r  = pos - [0; R; 0];
             r_mag = norm(r);
             acc_gravity = -g * (R^2 / r_mag^3) * r;
         end
@@ -119,21 +124,26 @@ classdef DynamicsMPMM < BaseDynamics
         function acc_coriolis = computeCoriolisVector(vel, latitude_deg, azimuth, sim_coriolis)
             % Earth-rotation Coriolis acceleration, -2*(Omega x vel).
             % Omega (Earth's rotation vector) is expressed in this
-            % Dynamics' local NED frame from latitude and the frame's own
-            % true bearing (azimuth, see InitAzimuth) - re-derived here
-            % for NED, not copied from example_code.m's Y-up
-            % v_Omega = [Ohm*cosd(LAT)*cosd(AZ); Ohm*sind(LAT);
-            % -Ohm*cosd(LAT)*sind(AZ)] (see this file's/AeroMPMM's
-            % COORDINATE FRAME NOTE for the derivation).
+            % Dynamics' local FDR frame from latitude and the frame's own
+            % true bearing (azimuth, see InitAzimuth):
+            % v_Omega = [Ohm*cosd(LAT)*cosd(AZ); -Ohm*sind(LAT);
+            % -Ohm*cosd(LAT)*sind(AZ)] - same physical components as the
+            % NED derivation, just with the down/right entries swapped to
+            % match FDR's Y=down/Z=right (see this file's class comment).
+            % FDR is left-handed, so the cross product itself also flips
+            % sign relative to the NED formula (-2*cross(...) becomes
+            % +2*cross(...)) to represent the same physical acceleration -
+            % verified independently against the raw (forward,right,down)
+            % vector algebra, not just the abstract sign rule.
             if nargin < 4 || ~sim_coriolis
                 acc_coriolis = [0; 0; 0];
                 return;
             end
             Omega = DynamicsMPMM.EARTH_ROTATION_RATE;
             v_omega = Omega * [cosd(latitude_deg) * cos(azimuth); ...
-                               -cosd(latitude_deg) * sin(azimuth); ...
-                               -sind(latitude_deg)];
-            acc_coriolis = -2 * cross(v_omega, vel);
+                               -sind(latitude_deg); ...
+                               -cosd(latitude_deg) * sin(azimuth)];
+            acc_coriolis = 2 * cross(v_omega, vel);
         end
     end
 end
