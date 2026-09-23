@@ -49,6 +49,21 @@ classdef MunitionFactory
             % MunitionData.formFactor), which this factory method has no
             % way to know yet. The caller re-evaluates them once QE is
             % solved for, same two-pass pattern runner_m107.m uses.
+
+            % Course-correction airbrake coefficients (see AeroMPMM's
+            % Phase2/airbrake_ADT properties) - read from data/<Name>.mat's
+            % aero.phase2.* section the same way phase-1 coefficients are
+            % (MunitionData.aeroCoeffs(mdata, 'phase2')), so a real
+            % firing-table-derived airbrake drag increase can override
+            % this illustrative default without touching this file.
+            % airbrake_ADT itself is left at AeroMPMM's Inf ("never
+            % deploy") default - a runner/controller sets it per shot.
+            phase2_over = MunitionData.aeroCoeffs(mdata, 'phase2');
+            if isempty(fieldnames(phase2_over))
+                aero.Phase2 = struct('CD0', 0.6); % illustrative airbrakes-deployed drag bump, not validated
+            else
+                aero.Phase2 = phase2_over;
+            end
             m.Aero = aero;
             m.TwistRate  = 20; % calibers/turn, illustrative (typical 155mm/39-cal tube figure)
             m.Charge     = ChargeFactory.getM4A2(charge_name);

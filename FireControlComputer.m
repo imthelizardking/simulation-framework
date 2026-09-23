@@ -459,5 +459,155 @@ classdef FireControlComputer < handle
             frac = (r0 - standoff) / (r0 - r1);
             t_burst = t0 + frac * (t1 - t0);
         end
+
+        function [adt, info] = solveDeployTimeForRange(munition_builder, current_state, current_t, desired_range, env, tol, max_iter)
+            % Course-correction fuze solve: finds the airbrake_ADT (see
+            % AeroMPMM) that brings a round already in flight down to
+            % desired_range meters, by bisection over candidate deploy
+            % times. Bisects rather than root-finding on a derivative
+            % because the relationship is monotonic but not smooth in any
+            % convenient closed form: an EARLIER deploy time means MORE of
+            % the flight happens under the higher-drag phase-2
+            % coefficients, so range decreases monotonically as
+            % airbrake_ADT decreases.
+            %
+            % Deliberately mirrors solveBurstTimeForStandoff's own recon-
+            % flight pattern (munition_builder is a caller-supplied
+            % closure, called fresh for every candidate) rather than
+            % reusing that method directly, for the same reason that
+            % method exists: munition_builder must copy EVERY instance-
+            % level setting off the real round (launch latitude,
+            % SimCoriolis, Aero.LatitudeDeg, all phase-1 AND phase-2 aero
+            % coefficients, mass/inertia, twist-rate-derived spin) - a
+            % fresh MunitionFactory.createXxx() call alone silently drops
+            % all of that (the exact bug this framework hit building
+            % solveBurstTimeForStandoff's own recon). Each bisection
+            % candidate needs its OWN fresh recon round (not the same one
+            % reused) because AeroMPMM's Phase2Active latch is one-shot -
+            % reusing one recon object across trials would leave it stuck
+            % in phase 2 after the first trial that deploys.
+            %
+            % current_state/current_t are the REAL round's own state and
+            % absolute time-since-launch at the moment this is called
+            % (e.g. nav_state/t from CourseCorrectionController.step) -
+            % every recon flight below starts from there, under exact,
+            % unmodified physics, not a fresh from-zero launch.
+            %
+            % Edge cases (not errors - valid, reported outcomes):
+            %   - desired_range is beyond even the "never deploy" recon's
+            %     own range -> clamp airbrake_ADT = Inf (never deploy).
+            %   - desired_range is closer than even an "immediate deploy"
+            %     (airbrake_ADT = current_t) recon achieves -> clamp
+            %     airbrake_ADT = current_t (deploy right now).
+            % Both are printed, not silently swallowed.
+            if nargin < 6 || isempty(tol), tol = 3.0; end          % meters
+            if nargin < 7 || isempty(max_iter), max_iter = 30; end
+
+            ground_alt = 0.0; % ground-impact reference - matches every runner's launcher_pos = [0;0;0]
+
+            [range_never, t_impact_never] = FireControlComputer.reconFlightRange( ...
+                munition_builder, current_state, current_t, Inf, env, ground_alt);
+
+            if desired_range >= range_never
+                adt = Inf;
+                info = struct('EdgeCase', 'NeverDeploy', 'AchievedRange', range_never, ...
+                    'Iterations', 0, 'RangeAtNeverDeploy', range_never, 'RangeAtImmediateDeploy', NaN);
+                fprintf(['[solveDeployTimeForRange] Desired range %.1f m is beyond even the ' ...
+                    'no-deploy trajectory (%.1f m) - clamping to airbrake_ADT = Inf (never deploy).\n'], ...
+                    desired_range, range_never);
+                return;
+            end
+
+            [range_immediate, ~] = FireControlComputer.reconFlightRange( ...
+                munition_builder, current_state, current_t, current_t, env, ground_alt);
+
+            if desired_range <= range_immediate
+                adt = current_t;
+                info = struct('EdgeCase', 'DeployImmediately', 'AchievedRange', range_immediate, ...
+                    'Iterations', 0, 'RangeAtNeverDeploy', range_never, 'RangeAtImmediateDeploy', range_immediate);
+                fprintf(['[solveDeployTimeForRange] Desired range %.1f m is closer than even an ' ...
+                    'immediate deploy achieves (%.1f m) - clamping to airbrake_ADT = %.3f s (deploy now).\n'], ...
+                    desired_range, range_immediate, current_t);
+                return;
+            end
+
+            % Bisect over [current_t, t_impact_never] - any candidate at
+            % or past t_impact_never is physically equivalent to "never
+            % deploy" (the un-braked round has already landed by then), so
+            % this is a real, finite stand-in for the Inf upper bound
+            % rather than an arbitrary constant.
+            lo = current_t;
+            hi = t_impact_never;
+            adt = 0.5 * (lo + hi);
+            range_mid = NaN;
+            k = 0;
+            for k = 1:max_iter
+                adt = 0.5 * (lo + hi);
+                [range_mid, ~] = FireControlComputer.reconFlightRange( ...
+                    munition_builder, current_state, current_t, adt, env, ground_alt);
+                if abs(range_mid - desired_range) <= tol
+                    break;
+                end
+                if range_mid > desired_range
+                    hi = adt; % still overshooting -> deploy earlier (more drag time)
+                else
+                    lo = adt; % undershooting -> deploy later (less drag time)
+                end
+            end
+
+            info = struct('EdgeCase', 'None', 'AchievedRange', range_mid, 'Iterations', k, ...
+                'RangeAtNeverDeploy', range_never, 'RangeAtImmediateDeploy', range_immediate);
+        end
+    end
+
+    methods (Static, Access = private)
+        function [range, t_impact] = reconFlightRange(munition_builder, current_state, current_t, adt, env, ground_alt)
+            % One recon flight for solveDeployTimeForRange: builds a
+            % fresh munition_builder() copy (fresh every call - see that
+            % method's comment on why), starts it from the REAL round's
+            % current_state/current_t rather than a fresh launch, sets the
+            % candidate airbrake_ADT under test, and runs it to ground
+            % impact under exact physics (a real Simulation object, same
+            % as solveBurstTimeForStandoff's own recon flights - not a
+            % degraded/coarser physics path).
+            recon = munition_builder();
+            if ~isa(recon.Aero, 'AeroMPMM')
+                error('FireControlComputer:solveDeployTimeForRange', ...
+                    'solveDeployTimeForRange requires an AeroMPMM-based munition (airbrake_ADT lives there).');
+            end
+            recon.Aero.airbrake_ADT = adt;
+            recon.Aero.Phase2Active = false;
+            recon.Dynamics.InitialState = current_state;
+
+            % No target needed - only ground-impact termination matters
+            % for this recon; Simulation's resolveTargetBus falls back to
+            % a harmless zeroed struct when Target is [].
+            %
+            % max_flight_time is a worst-case ceiling, not tuned per
+            % munition - same t_max=90.0 convention simulateFastBallistic
+            % already uses for the same reason (a round-size-specific
+            % guess here previously cut M107-class flight times short,
+            % silently returning the round's mid-flight position instead
+            % of its true impact point - see the TerminationReason check
+            % below, added for the same reason: fail loudly instead of
+            % ever returning that again).
+            max_flight_time = 90.0;
+            recon_sim = Simulation(recon, [], env, [current_t, current_t + max_flight_time], 0.002);
+            recon_sim.Frame = 'FDR';
+            recon_sim.Termination = struct('MaxTime', [], 'ImpactDistance', [], ...
+                'MinAltitude', ground_alt, 'MaxAltitude', [], 'MaxDownrange', [], 'PassedTarget', false);
+
+            tel = recon_sim.run();
+            if ~strcmp(recon_sim.TerminationReason, 'MinAltitude')
+                error('FireControlComputer:solveDeployTimeForRange', ...
+                    ['Recon flight (airbrake_ADT candidate = %.3f s) never reached ground impact within ' ...
+                     '%.1f s past t=%.3f s (got as far as t=%.2f s, range %.1f m). Increase max_flight_time ' ...
+                     'in reconFlightRange.'], ...
+                    adt, max_flight_time, current_t, tel.time(end), hypot(tel.pos(end,1), tel.pos(end,3)));
+            end
+            final_pos = tel.pos(end, :)';
+            range = hypot(final_pos(1), final_pos(3));
+            t_impact = tel.time(end);
+        end
     end
 end

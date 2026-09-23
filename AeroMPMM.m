@@ -110,6 +110,32 @@ classdef AeroMPMM < BaseAero
         % BaseBleedOn above: that flag is only the CG/inertia-shift
         % refinement, this is only the CD0 reduction.
         BaseBleed = []
+
+        % Course-correction airbrake deploy time (s since launch). Inf
+        % (default) = never deploys, i.e. this class behaves exactly as
+        % before this property existed. Once t >= airbrake_ADT,
+        % getForcesAndMoments overwrites whichever coefficient properties
+        % are named in Phase2 (see below) and latches Phase2Active - a
+        % permanent, one-shot switch, not a continuous blend. RefArea is
+        % deliberately never touched by this mechanism (airbrakes here
+        % model a drag-coefficient change, not a reference-area change).
+        airbrake_ADT (1,1) double = Inf
+
+        % Set true, once, the first getForcesAndMoments call where
+        % t >= airbrake_ADT fires. Never reset afterward - see
+        % airbrake_ADT above.
+        Phase2Active (1,1) logical = false
+
+        % Post-deploy coefficient overrides, keyed by the SAME property
+        % names as this class's own coefficients (e.g. Phase2.CD0,
+        % Phase2.CDA2, ...). Only the fields actually present are
+        % overwritten at deploy - fields left out keep whatever phase-1
+        % value they already had, same "override only what's given"
+        % convention as FactoryData.getOr. Empty struct (default) means
+        % deploy is a no-op even if airbrake_ADT is finite - set both a
+        % time and at least one Phase2 field to get an actual airbrake
+        % effect.
+        Phase2 struct = struct()
     end
 
     properties (Access = private)
@@ -120,6 +146,18 @@ classdef AeroMPMM < BaseAero
 
     methods
         function [F_aero, M_aero] = getForcesAndMoments(obj, t, X, env, ~)
+            % One-shot airbrake deploy switch (see airbrake_ADT/
+            % Phase2Active/Phase2 property comments). Checked before the
+            % early low-speed return below so a deploy time that happens
+            % to land near apogee (v_mag ~ 0) still latches.
+            if t >= obj.airbrake_ADT && ~obj.Phase2Active
+                fn = fieldnames(obj.Phase2);
+                for i = 1:numel(fn)
+                    obj.(fn{i}) = obj.Phase2.(fn{i});
+                end
+                obj.Phase2Active = true;
+            end
+
             flow = BaseAero.computeFlowState(X, env, 'FDR');
             if flow.v_mag < 1e-3
                 F_aero = [0; 0; 0];
