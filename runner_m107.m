@@ -21,7 +21,6 @@ shell = MunitionFactory.createM107Artillery('CH7W');
 shell.Dynamics.InitLatitudeDeg = latitude_deg;
 shell.Dynamics.SimCoriolis     = true;
 shell.Aero.LatitudeDeg         = latitude_deg;
-mdata = MunitionData.load(shell.Name); % re-loaded here for the post-solve form-factor correction in step 4
 
 % 4. Fire Control Computer (Solves Quadrant Elevation & Wind Crab Angle)
 fcc = FireControlComputer(env.Gravity, 'Z-Up');
@@ -40,19 +39,15 @@ fprintf('Azimuth (Aim Bearing)   : %.1f mils (Wind corrected)\n', sol.Azimuth);
 fprintf('Predicted Flight Time   : %.2f s\n', sol.TimeOfFlight);
 fprintf('Convergence Miss Error  : %.3f m\n', sol.MissDistance);
 
-% IForm/FL depend on the actual charge zone AND the solved quadrant
-% elevation (see MunitionData.formFactor) - only knowable now. Same
-% "solve with a nominal value, correct once the real one is known"
-% two-pass pattern the *_velocity_correction runners use for muzzle
-% velocity.
-shell.Aero.IForm = MunitionData.formFactor(mdata, 'iform', shell.Charge.Name, sol.Elevation, 1.0);
-shell.Aero.FL    = MunitionData.formFactor(mdata, 'fl',    shell.Charge.Name, sol.Elevation, 1.0);
-fprintf('Form Factors (at QE=%.1f mils, zone %s) : IForm=%.4f, FL=%.4f\n', ...
-    sol.Elevation, shell.Charge.Name, shell.Aero.IForm, shell.Aero.FL);
-
-% 5. Apply Solved Initial State to Munition
+% 5. Apply Solved Initial State to Munition. IForm/FL (charge-zone- and
+% QE-dependent, see MunitionData.formFactor) are applied automatically
+% inside buildLaunchState now - see Munition.applyFormFactors - so
+% there's no manual "look them up, then set Aero.IForm/FL" step here
+% anymore; it's read back below purely to report what was applied.
 shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0_charge7, ...
     FireControlComputer.mil2rad(sol.Elevation), FireControlComputer.mil2rad(sol.Azimuth));
+fprintf('Form Factors (at QE=%.1f mils, zone %s) : IForm=%.4f, FL=%.4f\n', ...
+    sol.Elevation, shell.Charge.Name, shell.Aero.IForm, shell.Aero.FL);
 
 % 6. Assemble Simulation & Execute
 % NOTE: no Visualizer attached - LiveEngagementPlotter works fine against

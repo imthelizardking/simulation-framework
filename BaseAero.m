@@ -7,6 +7,25 @@ classdef (Abstract) BaseAero < handle
         ActiveTableKey  (1,:) char = 'Clean'
         DeploymentRatio (1,1) double = 0.0
         Frame           (1,:) char = 'Z-Up'    % 'Z-Up' or 'NED' - see CoordinateFrame; must match the attached Dynamics
+
+        % STANAG 4355 fitting/form factors - generic drag/lift tuning
+        % multipliers against real firing-table data (see MunitionData.
+        % formFactor, Munition.applyFormFactors). Neutral (1.0) reproduces
+        % whatever this class's own force equations already compute
+        % unchanged. AeroMPMM applies these ITSELF, internally, using its
+        % own true alpha_e-relative drag/lift terms (see that class) -
+        % every OTHER concrete Aero class gets them applied generically
+        % instead, by Munition.getDerivatives calling
+        % BaseAero.applyFormFactors on the returned F_aero: since every
+        % other class here builds F_aero as exactly (drag along
+        % -velocity) + (lift perpendicular to velocity), that force
+        % vector can be split back into those two parts from the velocity
+        % direction alone and scaled independently - exact, not an
+        % approximation, for any class following that convention. A class
+        % with no lift term (e.g. AeroParticle) is unaffected by FL, since
+        % its perpendicular-to-velocity component is already zero.
+        IForm (1,1) double = 1.0   % drag-component multiplier
+        FL    (1,1) double = 1.0   % lift-component multiplier
     end
     methods (Abstract)
         [F_aero, M_aero] = getForcesAndMoments(obj, t, X, env, fin_deflections)
@@ -138,6 +157,27 @@ classdef (Abstract) BaseAero < handle
                 flow.vel_dir = [0; 0; 0];
                 flow.gamma   = 0;
             end
+        end
+
+        function F_scaled = applyFormFactors(F_aero, vel, IForm, FL)
+            % Generic post-hoc IForm/FL scaling for any Aero class that
+            % builds F_aero as (drag along -velocity) + (lift
+            % perpendicular to velocity) - see the IForm/FL property
+            % comment for why this split is exact, not approximate, for
+            % that convention. Called by Munition.getDerivatives for
+            % every Aero class except AeroMPMM (which applies its own
+            % IForm/FL internally already - calling this too would square
+            % the effect). A no-op (IForm=FL=1, or v_mag~0) returns F_aero
+            % unchanged.
+            v_mag = norm(vel);
+            if v_mag < 1e-6 || (IForm == 1.0 && FL == 1.0)
+                F_scaled = F_aero;
+                return;
+            end
+            vel_dir = vel / v_mag;
+            F_drag_component = dot(F_aero, vel_dir) * vel_dir; % component along the velocity axis (drag is normally negative here)
+            F_lift_component = F_aero - F_drag_component;      % remainder, perpendicular to velocity by construction
+            F_scaled = IForm * F_drag_component + FL * F_lift_component;
         end
     end
 end

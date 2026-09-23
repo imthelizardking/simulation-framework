@@ -47,6 +47,50 @@ classdef Munition < handle
             else
                 X0 = obj.Dynamics.buildLaunchState(launcher_pos, v0, elevation, azimuth, obj.MassProperties.Mass);
             end
+
+            obj.applyFormFactors(elevation);
+        end
+
+        function applyFormFactors(obj, elevation)
+            % STANAG 4355 IForm/FL (see AeroMPMM, MunitionData.formFactor)
+            % are a polynomial in quadrant elevation - only evaluable once
+            % QE is known, and buildLaunchState's own `elevation` argument
+            % IS that QE (the caller already solved for it and converted
+            % mils->radians before calling buildLaunchState - see
+            % FireControlComputer's mil/rad boundary comment). Applying it
+            % here means every runner gets this for free automatically,
+            % instead of each one needing to repeat the manual "solve,
+            % then MunitionData.formFactor, then set Aero.IForm/FL"
+            % snippet runner_m107.m used to require by hand.
+            %
+            % A no-op whenever there's nothing to apply: no Aero, or no
+            % data/<Name>.mat file for this munition (MunitionData.load
+            % returns [] - the standard "optional override, fall back to
+            % whatever's already configured" contract every MunitionData/
+            % FactoryData accessor already has). IForm/FL are on EVERY
+            % Aero class now (inherited from BaseAero) - AeroMPMM applies
+            % them internally, every other class picks them up generically
+            % via BaseAero.applyFormFactors in Munition.getDerivatives, so
+            % there's no per-class isprop check needed here anymore. The
+            % fallback `default` passed to formFactor is the CURRENT
+            % IForm/FL value, not a hardcoded 1.0 - so a zone/field
+            % genuinely missing from the data file leaves whatever was
+            % already configured untouched, rather than silently
+            % resetting it.
+            if isempty(obj.Aero)
+                return;
+            end
+            mdata = MunitionData.load(obj.Name);
+            if isempty(mdata)
+                return;
+            end
+            qe_mils = FireControlComputer.rad2mil(elevation);
+            zone_name = '';
+            if ~isempty(obj.Charge)
+                zone_name = obj.Charge.Name;
+            end
+            obj.Aero.IForm = MunitionData.formFactor(mdata, 'iform', zone_name, qe_mils, obj.Aero.IForm);
+            obj.Aero.FL    = MunitionData.formFactor(mdata, 'fl',    zone_name, qe_mils, obj.Aero.FL);
         end
 
         function updateGNC(obj, t, env, target)
@@ -93,10 +137,21 @@ classdef Munition < handle
             
             if ~isempty(obj.Aero)
                 [F_aero, M_aero] = obj.Aero.getForcesAndMoments(t, X, env, fin_deflection);
+                % IForm/FL: AeroMPMM applies them itself, internally,
+                % against its own true alpha_e-relative terms - applying
+                % them again here would square the effect. Every other
+                % Aero class gets them applied generically instead, via
+                % the exact drag/lift decomposition BaseAero.
+                % applyFormFactors does from the velocity direction alone
+                % (see BaseAero.IForm's property comment for why that
+                % split is exact for those classes' force convention).
+                if ~isa(obj.Aero, 'AeroMPMM')
+                    F_aero = BaseAero.applyFormFactors(F_aero, X(4:6), obj.Aero.IForm, obj.Aero.FL);
+                end
             else
                 F_aero = [0;0;0]; M_aero = [0;0;0];
             end
-            
+
             forces.Propulsion    = F_prop;
             forces.Aero          = F_aero;
             forces.FinDeflection = fin_deflection;

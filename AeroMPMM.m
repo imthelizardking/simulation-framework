@@ -81,9 +81,13 @@ classdef AeroMPMM < BaseAero
 
         % Fitting/form factors (STANAG 4355 "iform"/"fL"/"QD"/"QM") - unit
         % gain (1.0) reproduces the textbook formulas below exactly;
-        % override to tune against real firing-table data.
-        IForm = 1.0    % drag form factor
-        FL    = 1.0    % lift form factor
+        % override to tune against real firing-table data. IForm/FL are
+        % inherited from BaseAero (used directly, below, in dragEquation/
+        % liftEquation) rather than redeclared here, since this class
+        % applies them itself, internally, against its own true alpha_e-
+        % relative drag/lift terms - unlike every other Aero class, which
+        % gets them applied generically instead (see BaseAero.IForm's
+        % property comment and BaseAero.applyFormFactors).
         QD    = 1.0    % drag-buildup alpha_e scaling
         QM    = 1.0    % Magnus scaling
 
