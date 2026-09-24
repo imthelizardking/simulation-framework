@@ -10,7 +10,7 @@
 % flights, not degraded ones (see FireControlComputer.
 % solveDeployTimeForRange) - and sets it on the live round. AeroMPMM's
 % one-shot Phase2 switch does the rest on its own from there.
-clear; clc; close all;
+clear; clc; clf;
 
 Desired_Range = 15000.0; % m - the range the airbrake correction should bring the round down to
 Multiplier    = 1.15;    % fire control aims at Multiplier*Desired_Range - the deliberate overshoot the airbrake then corrects away

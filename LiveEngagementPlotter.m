@@ -99,12 +99,28 @@ classdef LiveEngagementPlotter < BaseVisualizer
             % Seeker/FOV cone and PN-Angle-FOV command breakdown only apply
             % to a seeker-guided munition; an unguided direct-fire round
             % has neither, so both sections degrade gracefully instead of
-            % erroring on a missing field. NOTE: this cone's trig is only
-            % verified for 'Z-Up' - no guided/seeker scenario in this
-            % framework currently opts into 'NED', so it hasn't been
-            % exercised or adapted for it.
-            has_seeker = isfield(gnc_bus, 'Sensors') && isfield(gnc_bus.Sensors, 'SeekerLOAL');
-            if has_seeker
+            % erroring on a missing field. NOTE: the SeekerLOAL branch's
+            % cone trig is only verified for 'Z-Up' - no Dynamics3Dof
+            % guided/seeker scenario in this framework currently opts into
+            % 'NED', so it hasn't been exercised or adapted for it. The
+            % Seeker3D branch below is frame-correct for 'Z-Up'/'NED'/'FDR'
+            % (see its own comment) since a genuinely 6-DoF vehicle can
+            % actually fly in 'NED'.
+            has_seeker_loal = isfield(gnc_bus, 'Sensors') && isfield(gnc_bus.Sensors, 'SeekerLOAL');
+            has_seeker_3d   = isfield(gnc_bus, 'Sensors') && isfield(gnc_bus.Sensors, 'Seeker3D');
+            has_seeker_sal  = isfield(gnc_bus, 'Sensors') && isfield(gnc_bus.Sensors, 'SAL');
+            if has_seeker_3d && has_seeker_sal
+                % A vehicle carrying both (e.g. the GMLRS example) - show
+                % whichever is actually driving terminal guidance right
+                % now; SAL takes priority once locked, since that's the
+                % one actually steering by then.
+                if gnc_bus.Sensors.SAL.IsLocked
+                    has_seeker_3d = false;
+                else
+                    has_seeker_sal = false;
+                end
+            end
+            if has_seeker_loal
                 seeker = gnc_bus.Sensors.SeekerLOAL;
                 fov_len = seeker.Range + 100;
                 max_fov = deg2rad(20);
@@ -117,6 +133,41 @@ classdef LiveEngagementPlotter < BaseVisualizer
                 if seeker.IsBlind, fov_color = [1 0 0]; end
                 set(obj.h_fov_upper, 'XData', [pos(1), x_up], 'YData', [pos(3), z_up], 'Color', fov_color);
                 set(obj.h_fov_lower, 'XData', [pos(1), x_dn], 'YData', [pos(3), z_dn], 'Color', fov_color);
+                set(obj.h_fov_text, 'String', sprintf('FOV: %.1f deg', rad2deg(seeker.LookAngle)));
+            elseif has_seeker_3d || has_seeker_sal
+                if has_seeker_sal
+                    seeker = gnc_bus.Sensors.SAL;
+                else
+                    seeker = gnc_bus.Sensors.Seeker3D;
+                end
+                fov_len = seeker.Range + 100;
+
+                % Project the TRUE 3D nose direction (Seeker3D.NoseDir,
+                % from Dynamics6DoF's real attitude DCM) onto this plot's
+                % (Range, Altitude) plane, via CoordinateFrame.altitude
+                % rather than a hand-derived per-frame sign - correct
+                % under 'Z-Up'/'NED'/'FDR' alike, unlike the SeekerLOAL
+                % branch above (which assumes 'Z-Up' pos(3) directly) or a
+                % hardcoded planar "pitch" (meaningless for a genuinely
+                % 3D-attitude vehicle - X(7) isn't even pitch for this
+                % class, see Dynamics6DoF). The LOCK/BLIND COLOR still
+                % comes from Seeker3D's own true 3D look angle (nose vs
+                % LOS dot product, computed in the sensor itself) - this
+                % projection only decides where the boundary LINES point
+                % on this 2D view, not whether the target counts as seen.
+                nose = seeker.NoseDir;
+                nose_alt = CoordinateFrame.altitude(pos + nose, obj.Frame) - alt;
+                pitch_eff = atan2(nose_alt, nose(1));
+
+                x_up = pos(1) + fov_len * cos(pitch_eff + seeker.MaxFOV);
+                z_up = alt     + fov_len * sin(pitch_eff + seeker.MaxFOV);
+                x_dn = pos(1) + fov_len * cos(pitch_eff - seeker.MaxFOV);
+                z_dn = alt     + fov_len * sin(pitch_eff - seeker.MaxFOV);
+
+                fov_color = [0 0.8 0];
+                if seeker.IsBlind, fov_color = [1 0 0]; end
+                set(obj.h_fov_upper, 'XData', [pos(1), x_up], 'YData', [alt, z_up], 'Color', fov_color);
+                set(obj.h_fov_lower, 'XData', [pos(1), x_dn], 'YData', [alt, z_dn], 'Color', fov_color);
                 set(obj.h_fov_text, 'String', sprintf('FOV: %.1f deg', rad2deg(seeker.LookAngle)));
             else
                 set(obj.h_fov_upper, 'XData', NaN, 'YData', NaN);

@@ -8,7 +8,7 @@
 % is known. Standoff/timespan are scaled up from the 25/35mm examples
 % for 76mm HE's larger lethal radius and this scenario's much longer
 % range and flight time.
-clear; clc; close all;
+clear; clc; clf;
 
 % 1. Setup Environment (standard atmosphere, no wind)
 env = Environment();

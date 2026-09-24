@@ -6,7 +6,7 @@
 % then adds the two things the factory can't know at construction time:
 % launch latitude (a scenario choice) and the QE-dependent form factors
 % (only knowable after the fire-control solve below).
-clear; clc; close all;
+clear; clc; clf;
 
 % 1. Setup Environment (Standard atmosphere, optional crosswind)
 env = Environment(); % No wind

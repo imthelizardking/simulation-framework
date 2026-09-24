@@ -5,7 +5,7 @@
 % fcc.solveDirect(...) wraps them in the same sol-shaped struct
 % solveNumericalShooting/solveFiringAngles return, so everything from
 % buildLaunchState onward is identical to the indirect-fire runners.
-clear; clc; close all;
+clear; clc; clf;
 
 charge_name   = 'CH7W'; % edit: 'CH3W' | 'CH4W' | 'CH5W' | 'CH6W' | 'CH7W' | 'CH7R'
 elevation_mil = 600;     % edit: quadrant elevation (NATO mils, 6400/circle)

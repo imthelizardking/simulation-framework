@@ -3,7 +3,7 @@
 % switch in isolation - no sensor, no controller, no deploy-time solver.
 % The deploy time is just a plain scalar set directly below. Otherwise
 % identical to runner_m107.m (same fire-control solve, same launch).
-clear; clc; close all;
+clear; clc; clf;
 
 airbrake_deploy_time = 12.0; % s since launch - edit this to see its effect on range
 

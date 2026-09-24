@@ -1,5 +1,5 @@
 %% Scenario: Basic Surface-to-Air Missile Engagement (APKWS-class Interceptor)
-clear; clc; close all;
+clear; clc; clf;
 
 % 1. Setup Environment
 env = Environment(); % No wind, standard atmosphere

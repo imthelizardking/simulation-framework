@@ -1,5 +1,5 @@
 %% Scenario: MOD274 155mm Base-Bleed HE Artillery via MunitionFactory
-clear; clc; close all;
+clear; clc; clf;
 
 % 1. Setup Environment
 env = Environment(); % No wind - isolate the base-bleed effect

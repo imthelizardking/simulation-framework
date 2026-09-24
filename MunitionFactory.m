@@ -44,6 +44,8 @@ classdef MunitionFactory
             aero.CMA   = FactoryData.getOr(aero_over, 'CMA',   2.0);
             aero.CMA3  = FactoryData.getOr(aero_over, 'CMA3',  0);
             aero.CMAG  = FactoryData.getOrAny(aero_over, {'CMAG','CMAGF'},  1.2);
+            aero.QD    = FactoryData.getOr(aero_over, 'QD', 1.0); % drag-buildup alpha_e scaling
+            aero.QM    = FactoryData.getOr(aero_over, 'QM', 1.0); % Magnus scaling
             % IForm/FL left at AeroMPMM's neutral default (1.0) here -
             % they can be a polynomial in quadrant elevation (see
             % MunitionData.formFactor), which this factory method has no
@@ -178,6 +180,8 @@ classdef MunitionFactory
             aero.CMA   = FactoryData.getOr(aero_over, 'CMA',   1.2);
             aero.CMA3  = FactoryData.getOr(aero_over, 'CMA3',  0);
             aero.CMAG  = FactoryData.getOrAny(aero_over, {'CMAG','CMAGF'},  0.6);
+            aero.QD    = FactoryData.getOr(aero_over, 'QD', 1.0); % drag-buildup alpha_e scaling
+            aero.QM    = FactoryData.getOr(aero_over, 'QM', 1.0); % Magnus scaling
             m.Aero = aero;
             m.TwistRate  = FactoryData.getOr(data, 'TwistRate', 20); % calibers/turn, illustrative
             m.Charge     = ChargeFactory.getFixed('25mm-Fixed', 1100.0, 5.0);
@@ -228,6 +232,8 @@ classdef MunitionFactory
             aero.CMA   = FactoryData.getOr(aero_over, 'CMA',   1.6);
             aero.CMA3  = FactoryData.getOr(aero_over, 'CMA3',  0);
             aero.CMAG  = FactoryData.getOrAny(aero_over, {'CMAG','CMAGF'},  0.8);
+            aero.QD    = FactoryData.getOr(aero_over, 'QD', 1.0); % drag-buildup alpha_e scaling
+            aero.QM    = FactoryData.getOr(aero_over, 'QM', 1.0); % Magnus scaling
             m.Aero = aero;
             m.TwistRate = FactoryData.getOr(data, 'TwistRate', 25); % calibers/turn, illustrative
             m.Charge = ChargeFactory.getFixed('35mm-Fixed', 1175.0, 4.0);
@@ -300,6 +306,8 @@ classdef MunitionFactory
             aero.CMA   = FactoryData.getOr(aero_over, 'CMA', 2.0);
             aero.CMA3  = FactoryData.getOr(aero_over, 'CMA3', 0);
             aero.CMAG  = FactoryData.getOrAny(aero_over, {'CMAG','CMAGF'}, 1.0);
+            aero.QD    = FactoryData.getOr(aero_over, 'QD', 1.0); % drag-buildup alpha_e scaling
+            aero.QM    = FactoryData.getOr(aero_over, 'QM', 1.0); % Magnus scaling
 
             m.Aero = aero;
             m.TwistRate = FactoryData.getOr(data, 'TwistRate', 25); % calibers/turn, illustrative
@@ -353,6 +361,8 @@ classdef MunitionFactory
             aero.CMA   = FactoryData.getOr(aero_over, 'CMA',   2.0);
             aero.CMA3  = FactoryData.getOr(aero_over, 'CMA3',  0);
             aero.CMAG  = FactoryData.getOrAny(aero_over, {'CMAG','CMAGF'},  1.2);
+            aero.QD    = FactoryData.getOr(aero_over, 'QD', 1.0); % drag-buildup alpha_e scaling
+            aero.QM    = FactoryData.getOr(aero_over, 'QM', 1.0); % Magnus scaling
             % Very basic base-bleed model (see Propulsion_DYU): a fixed
             % fractional CD0 reduction for BurnDuration seconds, full drag
             % after burnout. Values are illustrative, not from a gas-
@@ -455,6 +465,129 @@ classdef MunitionFactory
             guid.T_SeekerOn = t_seeker_on;
             m.Guidance   = guid;
             m.Controller = LongitudinalFinController();
+        end
+
+        %% Mini Missile - Genuine 6-DoF Rigid Body (Free-Flight Physics Core)
+        function m = createMiniMissile6DoF()
+            % A data/createMiniMissile6DoF.mat file overrides Name/Type/
+            % RefArea/RefLength/etc below if present (see FactoryData);
+            % Mass/Inertia/aero coefficients instead come from data/
+            % <Name>.mat (see MunitionData) - static coefficients
+            % (CN_alpha/CY_beta/CA0/CA_alpha2/Cm_alpha/Cn_beta/Cl_beta)
+            % plus damping (Cm_q/Cn_r/Cl_p) and control-effectiveness
+            % (Cm_delta/Cn_delta/Cl_delta) derivatives, the last two
+            % groups defaulting to 0 (no rate damping, no fin authority)
+            % until real Missile DATCOM $DAMP/$CONTROL-derived numbers are
+            % supplied - see AeroMissile6DoF's own property comments.
+            %
+            % No Sensors/Guidance/Controller wired up yet - this preset is
+            % the free-flight physics core (Dynamics6DoF + AeroMissile6DoF)
+            % on its own, meant to be exercised/verified with an
+            % unguided/free-flight runner before any autopilot is layered
+            % on top. TwistRate stays 0 - fin-stabilized/actively
+            % controlled, not spin-stabilized, so Munition.buildLaunchState
+            % dispatches straight to Dynamics6DoF.buildLaunchState.
+            data = FactoryData.load('createMiniMissile6DoF');
+            m = Munition(FactoryData.getOr(data, 'Name', 'MiniMissile_6DoF'));
+            m.Type = FactoryData.getOr(data, 'Type', 'Guided');
+            mdata = MunitionData.load(m.Name);
+            aero_over = MunitionData.aeroCoeffs(mdata);
+
+            % Illustrative mini-missile mass properties: ~9 kg, d = 0.10 m
+            % body, ~1.2 m length - not validated against any real
+            % airframe.
+            m.MassProperties.Mass = MunitionData.mass(mdata, 9.0);
+            m.MassProperties.Inertia = MunitionData.inertia(mdata, diag([0.015, 0.9, 0.9])); % [Ixx, Iyy, Izz]
+
+            m.Dynamics = Dynamics6DoF();
+            aero = AeroMissile6DoF();
+            aero.RefArea   = FactoryData.getOr(data, 'RefArea', pi * (0.10/2)^2); % 0.007854 m^2
+            aero.RefLength = FactoryData.getOr(data, 'RefLength', 0.10);
+            aero.CN_alpha  = FactoryData.getOr(aero_over, 'CN_alpha',   2.0);
+            aero.CY_beta   = FactoryData.getOr(aero_over, 'CY_beta',    2.0);
+            aero.CA0       = FactoryData.getOr(aero_over, 'CA0',        0.3);
+            aero.CA_alpha2 = FactoryData.getOr(aero_over, 'CA_alpha2',  0);
+            aero.Cm_alpha  = FactoryData.getOr(aero_over, 'Cm_alpha',  -2.0);
+            aero.Cn_beta   = FactoryData.getOr(aero_over, 'Cn_beta',   -2.0);
+            aero.Cl_beta   = FactoryData.getOr(aero_over, 'Cl_beta',    0);
+            % Damping/control derivatives: 0 until real DATCOM $DAMP/
+            % $CONTROL data is available (see this method's own comment).
+            aero.Cm_q     = FactoryData.getOr(aero_over, 'Cm_q',     0);
+            aero.Cn_r     = FactoryData.getOr(aero_over, 'Cn_r',     0);
+            aero.Cl_p     = FactoryData.getOr(aero_over, 'Cl_p',     0);
+            aero.Cm_delta = FactoryData.getOr(aero_over, 'Cm_delta', 0);
+            aero.Cn_delta = FactoryData.getOr(aero_over, 'Cn_delta', 0);
+            aero.Cl_delta = FactoryData.getOr(aero_over, 'Cl_delta', 0);
+            m.Aero = aero;
+
+            m.TwistRate = 0; % fin-stabilized/actively controlled, not spin-stabilized
+            m.Propulsion = Propulsion_SolidMotor( ...
+                FactoryData.getOr(data, 'Thrust', 4000.0), ...
+                FactoryData.getOr(data, 'BurnTime', 2.5));
+            m.Sensors    = {};
+            m.Guidance   = [];
+            m.Controller = [];
+        end
+
+        %% M31 GMLRS Unitary - HIMARS-fired Guided Rocket (GNSS/IMU Midcourse + SAL Terminal)
+        function m = createM31GMLRSUnitary()
+            % A data/createM31GMLRSUnitary.mat file overrides Name/Type/
+            % RefArea/RefLength/Thrust/BurnTime/etc below if present (see
+            % FactoryData); Mass/Inertia/aero coefficients instead come
+            % from data/<Name>.mat (see MunitionData) - same coefficient
+            % set as createMiniMissile6DoF (CN_alpha/CY_beta/CA0/
+            % CA_alpha2/Cm_alpha/Cn_beta/Cl_beta static, Cm_q/Cn_r/Cl_p
+            % damping, Cm_delta/Cn_delta/Cl_delta control - all defaulting
+            % to 0 for the damping/control group until real Missile DATCOM
+            % $DAMP/$CONTROL data exists - see AeroMissile6DoF).
+            %
+            % Real M31 GMLRS Unitary dimensions (illustrative starting
+            % point, not validated against a real firing table): 227mm
+            % (0.227m) diameter, ~3.94m length, ~200kg total mass - a much
+            % larger, heavier round than createMiniMissile6DoF's
+            % illustrative 9kg/0.10m vehicle, same Dynamics6DoF/
+            % AeroMissile6DoF pipeline underneath.
+            %
+            % No Sensors/Guidance/Controller wired up here - GNSS/IMU/
+            % SALSeeker/GMLRSMidcourseGuidance/Autopilot6DoF all need
+            % scenario-specific configuration (a LaserDesignator instance,
+            % an AimPoint, etc.) that only the runner can know - see
+            % runner_m31_gmlrs_himars.m.
+            data = FactoryData.load('createM31GMLRSUnitary');
+            m = Munition(FactoryData.getOr(data, 'Name', 'M31_GMLRS_Unitary'));
+            m.Type = FactoryData.getOr(data, 'Type', 'Guided');
+            mdata = MunitionData.load(m.Name);
+            aero_over = MunitionData.aeroCoeffs(mdata);
+
+            m.MassProperties.Mass = MunitionData.mass(mdata, 200.0);
+            m.MassProperties.Inertia = MunitionData.inertia(mdata, diag([1.3, 260.0, 260.0])); % [Ixx, Iyy, Izz]
+
+            m.Dynamics = Dynamics6DoF();
+            aero = AeroMissile6DoF();
+            aero.RefArea   = FactoryData.getOr(data, 'RefArea', pi * (0.227/2)^2); % 0.04046 m^2
+            aero.RefLength = FactoryData.getOr(data, 'RefLength', 0.227);
+            aero.CN_alpha  = FactoryData.getOr(aero_over, 'CN_alpha',   2.5);
+            aero.CY_beta   = FactoryData.getOr(aero_over, 'CY_beta',    2.5);
+            aero.CA0       = FactoryData.getOr(aero_over, 'CA0',        0.35);
+            aero.CA_alpha2 = FactoryData.getOr(aero_over, 'CA_alpha2',  0);
+            aero.Cm_alpha  = FactoryData.getOr(aero_over, 'Cm_alpha',  -2.5);
+            aero.Cn_beta   = FactoryData.getOr(aero_over, 'Cn_beta',   -2.5);
+            aero.Cl_beta   = FactoryData.getOr(aero_over, 'Cl_beta',    0);
+            aero.Cm_q     = FactoryData.getOr(aero_over, 'Cm_q',     0);
+            aero.Cn_r     = FactoryData.getOr(aero_over, 'Cn_r',     0);
+            aero.Cl_p     = FactoryData.getOr(aero_over, 'Cl_p',     0);
+            aero.Cm_delta = FactoryData.getOr(aero_over, 'Cm_delta', 0);
+            aero.Cn_delta = FactoryData.getOr(aero_over, 'Cn_delta', 0);
+            aero.Cl_delta = FactoryData.getOr(aero_over, 'Cl_delta', 0);
+            m.Aero = aero;
+
+            m.TwistRate = 0; % fin-stabilized/actively controlled, not spin-stabilized
+            m.Propulsion = Propulsion_SolidMotor( ...
+                FactoryData.getOr(data, 'Thrust', 50000.0), ...
+                FactoryData.getOr(data, 'BurnTime', 3.5));
+            m.Sensors    = {};
+            m.Guidance   = [];
+            m.Controller = [];
         end
 
     end

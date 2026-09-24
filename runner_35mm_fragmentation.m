@@ -6,7 +6,7 @@
 % drag+gravity-only flight (see Particle/AeroParticle) until it meets the
 % target or loses its chance. A second live, zoomed-in plot
 % (ParticleSwarmPlotter) shows the swarm dispersing.
-clear; clc; close all;
+clear; clc; clf;
 
 % 1. Setup Environment (standard atmosphere, no wind)
 env = Environment();

@@ -13,7 +13,7 @@
 % short and steep on purpose; this runner is about confirming the
 % override wires through correctly end-to-end, not a realistic MOD274
 % flight.
-clear; clc; close all;
+clear; clc; clf;
 
 %% 1. Build and save a small illustrative data/MOD274_155mm_BB.mat
 % Columns: [Mach, a0, a1] - row R's local polynomial coeff = a0 + a1*mach,

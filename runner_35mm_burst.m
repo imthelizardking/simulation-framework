@@ -1,5 +1,5 @@
 %% Scenario: 35mm Anti-Drone Burst Engagement (Multiple Rounds, Realistic Timing)
-clear; clc; close all;
+clear; clc; clf;
 
 % 1. Setup Environment
 env = Environment();

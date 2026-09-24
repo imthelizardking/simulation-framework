@@ -5,7 +5,7 @@
 % burst time is first programmed from the charge's NOMINAL muzzle
 % velocity (before this round has actually been fired), then corrected
 % once the round's own measured muzzle velocity is known.
-clear; clc; close all;
+clear; clc; clf;
 
 % 1. Setup Environment (standard atmosphere, no wind)
 env = Environment();

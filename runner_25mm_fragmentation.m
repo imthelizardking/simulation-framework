@@ -11,7 +11,7 @@
 % ForwardExplosionParticleModel/ParticleModelFactory.createForward25mm
 % (rings of small cylindrical casing fragments), just at 25mm scale and a
 % tighter burst standoff.
-clear; clc; close all;
+clear; clc; clf;
 
 % 1. Setup Environment (standard atmosphere, no wind)
 env = Environment();

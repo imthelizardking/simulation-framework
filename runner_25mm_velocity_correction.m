@@ -15,7 +15,7 @@
 % re-run is the whole "iterative" part of this very basic algorithm:
 % redo the same calculation once better information is available, not a
 % convergence loop.
-clear; clc; close all;
+clear; clc; clf;
 
 % 1. Setup Environment (standard atmosphere, no wind)
 env = Environment();

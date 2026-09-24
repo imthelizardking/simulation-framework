@@ -5,7 +5,7 @@
 % plane lift/drag/pitch-follower model in isolation. Contrast with
 % runner_25mm.m and friends, which now use DynamicsMPMM/
 % AeroMPMM for their rifled, spin-stabilized rounds.
-clear; clc; close all;
+clear; clc; clf;
 
 launch_angle_mil = 622.2; % edit this to try other launch angles (NATO mils, 6400/circle)
 

@@ -1,5 +1,5 @@
 %% Scenario: Basic 25mm M793 Ballistic Launch at a Fixed Angle
-clear; clc; close all;
+clear; clc; clf;
 
 launch_angle_mil = 800.0; % edit this to try other quadrant elevations (NATO mils, 6400/circle)
 

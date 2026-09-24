@@ -1,5 +1,5 @@
 %% Scenario: 76mm HE Land-to-Air Engagement (Detailed Mach-Dependent Aero Table)
-clear; clc; close all;
+clear; clc; clf;
 
 % 1. Setup Environment (standard atmosphere, no wind)
 env = Environment();

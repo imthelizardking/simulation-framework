@@ -7,7 +7,7 @@
 % lowest sufficient charge rather than always maxing out. Target is closer
 % than runner_m107.m's (which needs CH7W) specifically so a lower
 % charge actually gets selected here - compare the two.
-clear; clc; close all;
+clear; clc; clf;
 
 % 1. Setup Environment
 env = Environment();

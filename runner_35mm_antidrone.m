@@ -1,5 +1,5 @@
 %% Scenario: 35mm Anti-Drone Direct-Fire Engagement (Land-to-Air)
-clear; clc; close all;
+clear; clc; clf;
 
 % 1. Setup Environment (standard atmosphere, no wind)
 env = Environment();

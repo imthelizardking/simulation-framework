@@ -139,13 +139,18 @@ classdef Munition < handle
                 [F_aero, M_aero] = obj.Aero.getForcesAndMoments(t, X, env, fin_deflection);
                 % IForm/FL: AeroMPMM applies them itself, internally,
                 % against its own true alpha_e-relative terms - applying
-                % them again here would square the effect. Every other
-                % Aero class gets them applied generically instead, via
-                % the exact drag/lift decomposition BaseAero.
-                % applyFormFactors does from the velocity direction alone
-                % (see BaseAero.IForm's property comment for why that
-                % split is exact for those classes' force convention).
-                if ~isa(obj.Aero, 'AeroMPMM')
+                % them again here would square the effect. AeroMissile6DoF
+                % is excluded for a different reason: it builds F_aero in
+                % BODY axes (CA/CN/CY-style), not as drag-along-velocity +
+                % lift-perpendicular-to-velocity - applyFormFactors' split
+                % (from the INERTIAL velocity direction, X(4:6)) would be
+                % meaningless against a body-axis vector. Every other Aero
+                % class gets IForm/FL applied generically instead, via the
+                % exact drag/lift decomposition BaseAero.applyFormFactors
+                % does from the velocity direction alone (see BaseAero.
+                % IForm's property comment for why that split is exact for
+                % those classes' force convention).
+                if ~isa(obj.Aero, 'AeroMPMM') && ~isa(obj.Aero, 'AeroMissile6DoF')
                     F_aero = BaseAero.applyFormFactors(F_aero, X(4:6), obj.Aero.IForm, obj.Aero.FL);
                 end
             else

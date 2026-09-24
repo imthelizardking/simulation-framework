@@ -5,7 +5,7 @@
 % s "standard
 % conditions" (calm, near-ISA) - swap in a real (non-standard) METCM file
 % to see a bigger difference from the ISA-based runner.
-clear; clc; close all;
+clear; clc; clf;
 
 charge_name   = 'CH7W'; % edit: 'CH3W' | 'CH4W' | 'CH5W' | 'CH6W' | 'CH7W' | 'CH7R'
 elevation_mil = 600;       % edit: quadrant elevation (NATO mils, 6400/circle)

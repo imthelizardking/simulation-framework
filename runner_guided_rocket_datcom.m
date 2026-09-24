@@ -8,7 +8,7 @@
 %   MunitionFactory.createGuidedRocketDatcom('your_datcom_output_name')
 % (data/<name>.txt must be DATCOM's own printed output listing, not a
 % MATLAB script - see DatcomReader.)
-clear; clc; close all;
+clear; clc; clf;
 
 % 1. Setup Environment
 env = Environment(); % No wind, standard atmosphere

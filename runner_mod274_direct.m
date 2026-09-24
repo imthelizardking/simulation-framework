@@ -4,7 +4,7 @@
 % yourself - useful here in particular to watch the base-bleed drag
 % reduction unfold over a known, fixed trajectory shape rather than
 % whatever shape FireControlComputer's shooting solver happens to land on.
-clear; clc; close all;
+clear; clc; clf;
 
 charge_name   = '6M';  % edit: '3M' | '4M' | '5M' | '6M'
 elevation_mil = 711.1; % edit: quadrant elevation (NATO mils, near max-range for 6M)
