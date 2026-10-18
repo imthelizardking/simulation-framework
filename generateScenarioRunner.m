@@ -13,6 +13,7 @@ function filepath = generateScenarioRunner(params)
     %   LauncherPos  - 3x1, Z-Up (downrange, crossrange, altitude)
     %   Direct mode:
     %     ElevationMil, AzimuthMil - scalars, mils
+    %     MuzzleVelocity - m/s; overrides round.Charge.MuzzleVelocity
     %   Indirect mode:
     %     TargetPos - 3x1, Z-Up
     %     Branch    - 'Low' or 'High' (FireControlComputer branch)
@@ -60,7 +61,13 @@ function filepath = generateScenarioRunner(params)
     lines{end+1} = '';
     lines{end+1} = '%% 2. Instantiate Vehicle';
     lines{end+1} = sprintf('round = %s;', entry.FactoryCall);
-    lines{end+1} = 'v0 = round.Charge.MuzzleVelocity;';
+    if strcmp(params.FiringMode, 'Direct')
+        lines{end+1} = sprintf(['v0 = %.3f; %% muzzle velocity, from Scenario Builder ' ...
+            '(round.Charge.MuzzleVelocity is this charge''s own default - edit here to try another)'], ...
+            params.MuzzleVelocity);
+    else
+        lines{end+1} = 'v0 = round.Charge.MuzzleVelocity;';
+    end
     lines{end+1} = '';
 
     switch params.FiringMode
@@ -82,11 +89,15 @@ function filepath = generateScenarioRunner(params)
             lines{end+1} = '';
             lines{end+1} = '%% 5. Post-Flight Analysis';
             lines{end+1} = '[apogee, apogee_idx] = max(CoordinateFrame.altitudeColumn(telemetry.pos(:,2), telemetry.Frame));';
-            lines{end+1} = 'final_pos = telemetry.pos(end, :)'';';
-            lines{end+1} = 'impact_range = hypot(final_pos(1), final_pos(3));';
+            lines{end+1} = 'final_pos     = telemetry.pos(end, :)'';';
+            lines{end+1} = 'downrange     = final_pos(1);';
+            lines{end+1} = 'deflection    = final_pos(3);';
+            lines{end+1} = 'impact_range  = hypot(downrange, deflection);';
             lines{end+1} = '';
             lines{end+1} = 'fprintf(''Termination Reason : %s\n'', sim.TerminationReason);';
             lines{end+1} = 'fprintf(''Apogee              : %.1f m at t=%.2f s\n'', apogee, telemetry.time(apogee_idx));';
+            lines{end+1} = 'fprintf(''Downrange           : %.1f m\n'', downrange);';
+            lines{end+1} = 'fprintf(''Deflection          : %.1f m\n'', deflection);';
             lines{end+1} = 'fprintf(''Impact Range        : %.1f m\n'', impact_range);';
             lines{end+1} = 'fprintf(''Time of Flight      : %.2f s\n'', telemetry.time(end));';
             lines{end+1} = '';
@@ -123,13 +134,19 @@ function filepath = generateScenarioRunner(params)
             lines{end+1} = 'fprintf(''Sim finished in %.2f seconds (%.2f s simulated).\n'', toc, telemetry.time(end));';
             lines{end+1} = '';
             lines{end+1} = '%% 7. Post-Flight Analysis';
-            lines{end+1} = 'final_pos = telemetry.pos(end, :)'';';
-            lines{end+1} = 'final_tgt = telemetry.target_pos(end, :)'';';
-            lines{end+1} = 'miss_dist = norm(final_pos([1 3]) - final_tgt([1 3]));';
+            lines{end+1} = 'final_pos     = telemetry.pos(end, :)'';';
+            lines{end+1} = 'final_tgt     = telemetry.target_pos(end, :)'';';
+            lines{end+1} = 'downrange     = final_pos(1);';
+            lines{end+1} = 'deflection    = final_pos(3);';
+            lines{end+1} = 'total_range   = hypot(downrange, deflection);';
+            lines{end+1} = 'miss_dist     = norm(final_pos([1 3]) - final_tgt([1 3]));';
             lines{end+1} = '[apogee, apogee_idx] = max(CoordinateFrame.altitudeColumn(telemetry.pos(:,2), telemetry.Frame));';
             lines{end+1} = '';
             lines{end+1} = 'fprintf(''Termination Reason   : %s\n'', sim.TerminationReason);';
             lines{end+1} = 'fprintf(''Apogee               : %.1f m at t=%.2f s\n'', apogee, telemetry.time(apogee_idx));';
+            lines{end+1} = 'fprintf(''Downrange            : %.1f m\n'', downrange);';
+            lines{end+1} = 'fprintf(''Deflection           : %.1f m\n'', deflection);';
+            lines{end+1} = 'fprintf(''Total Range          : %.1f m\n'', total_range);';
             lines{end+1} = 'fprintf(''Impact Miss Distance : %.2f m\n'', miss_dist);';
             lines{end+1} = 'fprintf(''Time of Flight       : %.2f s\n'', telemetry.time(end));';
             lines{end+1} = '';
