@@ -98,9 +98,7 @@ classdef MunitionFactory
                 FactoryData.getOr(aero_over, 'CL_alpha', 3.2), ...
                 FactoryData.getOr(data, 'RefArea', 0.00385));
             % Mk 66 Mod 4: ~5900 N average thrust for ~1.1 seconds
-            m.Propulsion = Propulsion_SolidMotor( ...
-                FactoryData.getOr(data, 'Thrust', 5900.0), ...
-                FactoryData.getOr(data, 'BurnTime', 1.1));
+            m.Propulsion = Propulsion_SolidMotor.fromData(data, 5900.0, 1.1);
             % Rocket-motor propelled, not a gun-fired charge - Charge stays
             % empty (no propelling-charge concept applies here).
             m.Sensors    = {};
@@ -453,9 +451,7 @@ classdef MunitionFactory
             m.Aero = DatcomReader.load(datcom_name, ...
                 FactoryData.getOr(data, 'RefArea', 0.822192), ...   % 8.85 ft^2
                 FactoryData.getOr(data, 'RefLength', 0.755904));    % 2.48 ft
-            m.Propulsion = Propulsion_SolidMotor( ...
-                FactoryData.getOr(data, 'Thrust', 5900.0), ...
-                FactoryData.getOr(data, 'BurnTime', 1.1));
+            m.Propulsion = Propulsion_SolidMotor.fromData(data, 5900.0, 1.1);
 
             seeker_fov_deg = FactoryData.getOr(data, 'SeekerFOV_deg', 20);
             t_seeker_on    = FactoryData.getOr(data, 'T_SeekerOn', 1.2); % Seeker uncages after motor burnout
@@ -521,9 +517,7 @@ classdef MunitionFactory
             m.Aero = aero;
 
             m.TwistRate = 0; % fin-stabilized/actively controlled, not spin-stabilized
-            m.Propulsion = Propulsion_SolidMotor( ...
-                FactoryData.getOr(data, 'Thrust', 4000.0), ...
-                FactoryData.getOr(data, 'BurnTime', 2.5));
+            m.Propulsion = Propulsion_SolidMotor.fromData(data, 4000.0, 2.5);
             m.Sensors    = {};
             m.Guidance   = [];
             m.Controller = [];
@@ -582,9 +576,7 @@ classdef MunitionFactory
             m.Aero = aero;
 
             m.TwistRate = 0; % fin-stabilized/actively controlled, not spin-stabilized
-            m.Propulsion = Propulsion_SolidMotor( ...
-                FactoryData.getOr(data, 'Thrust', 50000.0), ...
-                FactoryData.getOr(data, 'BurnTime', 3.5));
+            m.Propulsion = Propulsion_SolidMotor.fromData(data, 50000.0, 3.5);
             m.Sensors    = {};
             m.Guidance   = [];
             m.Controller = [];
