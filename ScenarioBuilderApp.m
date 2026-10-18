@@ -21,6 +21,7 @@ classdef ScenarioBuilderApp < handle
         LauncherYField
         LauncherZField
         DirectPanel
+        MuzzleVelocityField
         ElevationField
         AzimuthField
         IndirectPanel
@@ -59,7 +60,8 @@ classdef ScenarioBuilderApp < handle
             keys = fieldnames(catalog);
             labels = cellfun(@(k) catalog.(k).Label, keys, 'UniformOutput', false);
             obj.MunitionDropdown = uidropdown(obj.Fig, 'Position', [150 y 300 24], ...
-                'Items', labels, 'ItemsData', keys);
+                'Items', labels, 'ItemsData', keys, ...
+                'ValueChangedFcn', @(src, event) obj.refreshMuzzleVelocityDefault());
             y = y - rowH;
 
             uilabel(obj.Fig, 'Text', 'Firing Mode', 'Position', [20 y 120 22]);
@@ -80,18 +82,20 @@ classdef ScenarioBuilderApp < handle
             obj.LauncherZField = uieditfield(obj.Fig, 'numeric', 'Position', [170 y 100 24], 'Value', 0);
             y = y - rowH - 10;
 
-            panelY = y - 110;
+            panelY = y - 140;
 
             % Direct-mode controls
-            obj.DirectPanel = uipanel(obj.Fig, 'Position', [10 panelY 460 110], ...
+            obj.DirectPanel = uipanel(obj.Fig, 'Position', [10 panelY 460 140], ...
                 'Title', 'Direct Fire Parameters');
+            uilabel(obj.DirectPanel, 'Text', 'Muzzle Velocity (m/s)', 'Position', [20 90 130 22]);
+            obj.MuzzleVelocityField = uieditfield(obj.DirectPanel, 'numeric', 'Position', [160 90 100 24], 'Value', 0);
             uilabel(obj.DirectPanel, 'Text', 'Elevation (mils)', 'Position', [20 55 120 22]);
             obj.ElevationField = uieditfield(obj.DirectPanel, 'numeric', 'Position', [160 55 100 24], 'Value', 800);
             uilabel(obj.DirectPanel, 'Text', 'Azimuth (mils)', 'Position', [20 20 120 22]);
             obj.AzimuthField = uieditfield(obj.DirectPanel, 'numeric', 'Position', [160 20 100 24], 'Value', 0);
 
             % Indirect-mode controls (same footprint, toggled by Visible)
-            obj.IndirectPanel = uipanel(obj.Fig, 'Position', [10 panelY 460 110], ...
+            obj.IndirectPanel = uipanel(obj.Fig, 'Position', [10 panelY 460 140], ...
                 'Title', 'Indirect Fire Parameters', 'Visible', 'off');
             uilabel(obj.IndirectPanel, 'Text', 'Target Downrange X', 'Position', [20 70 130 22]);
             obj.TargetXField = uieditfield(obj.IndirectPanel, 'numeric', 'Position', [170 70 100 24], 'Value', 7500);
@@ -111,6 +115,8 @@ classdef ScenarioBuilderApp < handle
             statusH = btnY - statusY - 10;
             obj.StatusArea = uitextarea(obj.Fig, 'Position', [20 statusY 440 statusH], ...
                 'Editable', 'off', 'Value', {'Ready.'});
+
+            obj.refreshMuzzleVelocityDefault();
         end
 
         function onFiringModeChanged(obj)
@@ -123,8 +129,46 @@ classdef ScenarioBuilderApp < handle
             end
         end
 
+        function refreshMuzzleVelocityDefault(obj)
+            % Pre-fills Muzzle Velocity with the currently-selected
+            % munition's own charge default (round.Charge.MuzzleVelocity)
+            % whenever the munition changes, so the field always starts
+            % at a sensible, real value instead of an arbitrary constant -
+            % still fully editable afterward to try another charge/
+            % dispersion draw. Constructs the munition just to read that
+            % one field; cheap (no file I/O beyond MunitionData.load) and
+            % the same FactoryCall the generated script itself will call.
+            catalog = munitionCatalog();
+            entry = catalog.(obj.MunitionDropdown.Value);
+            try
+                round = eval(entry.FactoryCall); %#ok<NASGU> - only .Charge.MuzzleVelocity is used below
+                obj.MuzzleVelocityField.Value = round.Charge.MuzzleVelocity;
+            catch
+                % Leave whatever value is already in the field - a
+                % catalog entry that fails to construct here will fail
+                % identically when the generated script calls the same
+                % FactoryCall at Run time, where the real error is far
+                % more useful than one raised just from this UI refresh.
+            end
+        end
+
         function log(obj, msg)
             obj.StatusArea.Value = [obj.StatusArea.Value; {msg}];
+            scroll(obj.StatusArea, 'bottom');
+            drawnow;
+        end
+
+        function logBlock(obj, text)
+            % Splits captured multi-line fprintf output (see onRunPushed)
+            % into one StatusArea entry per line, same one-line-per-call
+            % convention log() already uses - a single multi-line string
+            % would otherwise render as one long unwrapped entry.
+            text_lines = strsplit(text, newline);
+            text_lines = text_lines(~cellfun(@isempty, strtrim(text_lines)));
+            if isempty(text_lines)
+                return;
+            end
+            obj.StatusArea.Value = [obj.StatusArea.Value; text_lines(:)];
             scroll(obj.StatusArea, 'bottom');
             drawnow;
         end
@@ -135,8 +179,9 @@ classdef ScenarioBuilderApp < handle
             params.LauncherPos = [obj.LauncherXField.Value; obj.LauncherYField.Value; obj.LauncherZField.Value];
 
             if strcmp(params.FiringMode, 'Direct')
-                params.ElevationMil = obj.ElevationField.Value;
-                params.AzimuthMil   = obj.AzimuthField.Value;
+                params.ElevationMil   = obj.ElevationField.Value;
+                params.AzimuthMil     = obj.AzimuthField.Value;
+                params.MuzzleVelocity = obj.MuzzleVelocityField.Value;
             else
                 params.TargetPos = [obj.TargetXField.Value; obj.TargetYField.Value; obj.TargetZField.Value];
                 params.Branch    = obj.BranchDropdown.Value;
@@ -159,10 +204,23 @@ classdef ScenarioBuilderApp < handle
                 % method. Without this, `clear` wipes out this method's
                 % own local `obj` variable (the app handle itself),
                 % breaking every obj.log(...) call after it - including
-                % the one in this catch block.
+                % the one in this catch block. evalc wraps that same
+                % evalin('base', ...) call to capture every fprintf the
+                % generated script prints (Termination Reason/Apogee/
+                % Downrange/Deflection/Total Range/Time of Flight, ...) as
+                % text instead of letting it go straight to the Command
+                % Window - evalc's capture is a stdout redirect for the
+                % duration of the call, not scoped to a particular
+                % workspace, so it still sees output from code actually
+                % running in 'base' via the nested evalin. logBlock below
+                % then echoes it into StatusArea, the whole reason for
+                % this indirection - figures/plots the script opens are
+                % unaffected (evalc only captures text).
                 escaped_path = strrep(filepath, '''', '''''');
-                evalin('base', ['run(''' escaped_path ''')']);
-                obj.log('Finished. See the Command Window / figure for full output.');
+                run_cmd = ['run(''' escaped_path ''')'];
+                captured = evalc('evalin(''base'', run_cmd)');
+                obj.logBlock(captured);
+                obj.log('Finished.');
             catch err
                 obj.log(sprintf('Simulation error: %s', err.message));
             end
