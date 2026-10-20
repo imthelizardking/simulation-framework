@@ -44,7 +44,10 @@ classdef AeroMissile6DoF < BaseAero
         Cm_alpha (1,1) double = -2.0  % pitching-moment slope (NEGATIVE = statically stable: restoring moment opposes alpha)
         Cn_beta  (1,1) double = -2.0  % yawing-moment slope (NEGATIVE = directionally stable, weathercock)
         Cl_beta  (1,1) double = 0     % rolling moment due to sideslip - ~0 for a true axisymmetric body; kept for honesty, not assumed zero
-
+        %% gemini adddition:
+        CN_delta (1,1) double = 0 % Normal force per unit pitch-fin deflection
+        CY_delta (1,1) double = 0 % Side force per unit yaw-fin deflection
+        %% gemini adddition:
         % Damping (rate) derivatives - need a Missile DATCOM $DAMP run to
         % populate for real; 0 (default) = no rate damping at all, which
         % will tend to leave pitch/yaw oscillations underdamped. See
@@ -119,7 +122,10 @@ classdef AeroMissile6DoF < BaseAero
         function F_body = forceEquation(obj, coeffs, alpha, beta, q_bar)
             CA = coeffs.CA0 + coeffs.CA_alpha2 * alpha^2;
             CN = coeffs.CN_alpha * alpha;
+            %% gemini addition:
             CY = coeffs.CY_beta * beta;
+            %CN = coeffs.CN_alpha * alpha + coeffs.CN_delta * d_pitch;CY = coeffs.CY_beta * beta   + coeffs.CY_delta * d_yaw;
+            %% gemini addition            
             % Standard body-axis force convention: axial force opposes
             % +X (drag), normal force acts along -Z for positive alpha
             % (nose-up relative wind -> "lift"-like force), side force
