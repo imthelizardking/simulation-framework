@@ -28,6 +28,7 @@ classdef Propulsion_SolidMotor < BasePropulsion
     % No ambient-pressure correction - the table/average thrust is used
     % as-is at every altitude.
     properties
+        Name         (1,:) char   = ''        % optional motor designation, e.g. 'MK66 Mod4'
         Mode         (1,:) char   = 'average' % 'average' | 'table'
         ThrustForce  (1,1) double = 1200.0    % N - method 1 input; for a table, its impulse-averaged thrust (info only)
         BurnDuration (1,1) double = 2.0       % s - method 1 input; for a table, its last time point
@@ -155,6 +156,69 @@ classdef Propulsion_SolidMotor < BasePropulsion
             obj = Propulsion_SolidMotor(t, F, propellant_mass);
         end
 
+        function obj = MK66Mod4(propellant_mass)
+            % Mk 66 Mod 4 (Hydra 70 / APKWS) rocket motor, as a thrust
+            % table. Digitized by eye from a published "Thrust Curve
+            % Comparison" chart (MOD 4 trace, lbf vs s, ~70 degF static
+            % test) - shape and impulse are representative, individual
+            % points are only good to roughly +/-50 lbf / +/-5 ms. The
+            % ~70-80 lbf baseline before ignition and after burnout is
+            % kept as read from the chart (likely load-cell offset); the
+            % table ends at 1.20 s, after which thrust is 0.
+            if nargin < 1, propellant_mass = 0; end
+            LBF_TO_N = 4.4482216;
+            tbl_lbf = [ ...
+                0.000,   80
+                0.012,   90
+                0.015,  400
+                0.021, 1100
+                0.027, 1700
+                0.034, 1980
+                0.052, 1800
+                0.075, 1720
+                0.092, 1680
+                0.134, 1600
+                0.176, 1560
+                0.210, 1540
+                0.268, 1500
+                0.294, 1470
+                0.319, 1470
+                0.336, 1500
+                0.352, 1530
+                0.378, 1510
+                0.403, 1550
+                0.436, 1540
+                0.453, 1580
+                0.468, 1630
+                0.495, 1590
+                0.520, 1600
+                0.545, 1620
+                0.570, 1680
+                0.600, 1690
+                0.629, 1780
+                0.663, 1850
+                0.696, 1880
+                0.747, 1940
+                0.789, 1990
+                0.830, 2040
+                0.864, 2080
+                0.885, 2100
+                0.902, 2060
+                0.919, 1900
+                0.938, 1500
+                0.956, 1000
+                0.973,  500
+                0.990,  250
+                1.013,  100
+                1.040,  130
+                1.061,   80
+                1.124,   75
+                1.200,   70 ];
+            obj = Propulsion_SolidMotor([tbl_lbf(:,1), tbl_lbf(:,2) * LBF_TO_N], ...
+                propellant_mass);
+            obj.Name = 'MK66 Mod4';
+        end
+
         function obj = fromData(data, default_thrust, default_burn_time)
             % MunitionFactory data-override hook. Recognized fields:
             %   ThrustTable    - Nx2 [time_s, thrust_N] -> method 2 (wins if present)
@@ -163,8 +227,24 @@ classdef Propulsion_SolidMotor < BasePropulsion
             %   PropellantMass - kg, optional (enables mass depletion)
             % Missing fields fall back to the factory's defaults, so a
             % munition with no data file behaves exactly as before.
+            %
+            % default_thrust may instead be a Propulsion_SolidMotor (e.g.
+            % MK66Mod4()), used as-is when the data file has no motor
+            % fields; Thrust/BurnTime given without the other fall back to
+            % that motor's impulse-averaged thrust / burn duration.
             mp  = FactoryData.getOr(data, 'PropellantMass', 0);
             tbl = FactoryData.getOr(data, 'ThrustTable', []);
+            if isa(default_thrust, 'Propulsion_SolidMotor')
+                base = default_thrust;
+                default_thrust    = base.ThrustForce;
+                default_burn_time = base.BurnDuration;
+                has_avg = isstruct(data) && (isfield(data, 'Thrust') || isfield(data, 'BurnTime'));
+                if isempty(tbl) && ~has_avg
+                    obj = base;
+                    obj.FuelMass = FactoryData.getOr(data, 'PropellantMass', base.FuelMass);
+                    return;
+                end
+            end
             if ~isempty(tbl)
                 obj = Propulsion_SolidMotor(tbl, mp);
             else
