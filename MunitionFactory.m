@@ -399,6 +399,12 @@ classdef MunitionFactory
             mdata = MunitionData.load(m.Name);
             m.MassProperties.Mass = MunitionData.mass(mdata, 15.0); % GNC mid-section adds weight
 
+            % Mk 66 Mod 4 motor as a measured-shape thrust table instead of
+            % Hydra70's 5900 N x 1.1 s average step; a ThrustTable/Thrust/
+            % BurnTime/PropellantMass field in data/createAPKWS.mat still
+            % overrides it (see Propulsion_SolidMotor.fromData).
+            m.Propulsion = Propulsion_SolidMotor.fromData(data, Propulsion_SolidMotor.MK66Mod4());
+
             % Attach LOAL Seeker and Guidance (LaserSeeker referenced here
             % previously does not exist anywhere in the codebase; SeekerLOAL
             % is the sensor OptimalAngleFOVGuidance/LiveEngagementPlotter

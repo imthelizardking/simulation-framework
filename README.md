@@ -52,7 +52,8 @@ scenario:
 - **Base bleed:** `Propulsion_DYU` is a drag-reduction helper attached to an aero model's
   `BaseBleed` property (not a `BasePropulsion`).
 - **Solid rocket motor:** `Propulsion_SolidMotor` accepts either an average thrust plus burn
-  time, or a time-vs-thrust table.
+  time, or a time-vs-thrust table. `Propulsion_SolidMotor.MK66Mod4()` is a named preset
+  (Mk 66 Mod 4 thrust curve, used by `createAPKWS`).
 
 ### Simulation loop
 
