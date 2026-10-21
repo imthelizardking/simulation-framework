@@ -12,8 +12,10 @@ classdef AeroParticle < BaseAero
     end
 
     methods
-        function obj = AeroParticle(cd, shape, dims, ref_mode)
-            obj.CD0 = cd;
+        function obj = AeroParticle(~, shape, dims, ref_mode)
+            % First arg (legacy per-particle cd) is ignored: drag now comes
+            % from particleDragModel.
+            obj.CD0 = obj.particleDragModel(0);
             obj.Shape = shape;
             obj.Dimensions = dims;
             if nargin > 3 && ~isempty(ref_mode)
@@ -35,7 +37,13 @@ classdef AeroParticle < BaseAero
         end
 
         function coeffs = evaluateCoefficients(obj, mach)
-            coeffs.CD0 = BaseAero.evalCoeff(obj.CD0, mach);
+            coeffs.CD0 = obj.particleDragModel(mach);
+        end
+
+        function cd = particleDragModel(obj, mach) %#ok<INUSD>
+            % Single source of drag coefficient for particle motion.
+            % Placeholder: constant 0.5 for every particle, any Mach.
+            cd = 0.5;
         end
 
         function F_drag = dragEquation(obj, coeffs, flow)
