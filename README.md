@@ -55,6 +55,25 @@ scenario:
   time, or a time-vs-thrust table. `Propulsion_SolidMotor.MK66Mod4()` is a named preset
   (Mk 66 Mod 4 thrust curve, used by `createAPKWS`).
 
+### Engagement flow
+
+High-level layout of an indirect-fire engagement with a fragmenting round:
+
+```mermaid
+flowchart TD
+    A["FCC<br/>sets firing conditions"] --> B["Object flight<br/>indirect-fire trajectory"]
+    B --> C["Burst time reached<br/>particles are released"]
+    C --> D["Particle motion<br/>per-particle flight and drag"]
+    D --> E{"Particle meets object?<br/>checked against target shape"}
+    M["3D target model<br/>(planned)"] -.-> E
+    E -- hit --> F{"Can particle penetrate?<br/>particle vs target material"}
+    E -- miss --> D
+    F -- yes --> G["Penetration"]
+    F -- no --> H["No effect"]
+```
+
+The 3D target model is planned; target shape checks will move to it once it exists.
+
 ### Simulation loop
 
 Everything is wired together by [`Simulation.m`](Simulation.m), which steps the target,
