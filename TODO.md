@@ -31,3 +31,4 @@
 29. [ ] NAD sensor object for muzzle velocity measurement with configurable error
 30. [ ] Realistic timing/latency modeling (measurement time, calculation time, etc.)
 31. [ ] Add QD, QM, IFORM, FL to equations and DATCOM reading logic
+32. [ ] Apply axial coefficient convention
