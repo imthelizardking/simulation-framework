@@ -81,7 +81,12 @@ Supporting scene objects:
 
 [`FireControlComputer.m`](FireControlComputer.m) solves for the launch elevation/azimuth
 and predicted time-of-flight needed to hit a given target (numerical shooting solver over
-the actual aero/propulsion/gravity model). It also handles automatic charge selection
+the actual aero/propulsion/gravity model). For moving targets,
+`solveTrajectoryShooting` flies full `Simulation` runs of the round (same dt/Frame
+as the real shot) and Newton-iterates elevation/azimuth on the miss at the true
+point of closest approach, so the solved trajectory is the one the engagement
+flies; the analytic `solveFiringAngles(..., 'DirectLead')` (vacuum, constant-speed)
+is only its initial guess. It also handles automatic charge selection
 (`solveNumericalShootingAutoCharge`), fuze burst time for a given standoff
 (`solveBurstTimeForStandoff`), and airbrake deploy time for course-correction fuzes
 (`solveDeployTimeForRange`). Most runner scripts use it to set

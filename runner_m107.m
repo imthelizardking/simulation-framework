@@ -27,7 +27,7 @@ fcc = FireControlComputer(env.Gravity, 'Z-Up');
 v0_charge7 = shell.Charge.MuzzleVelocity; % M4A2 CH7W (White bag, zone 7)
 
 fprintf('Running Fire Control numerical shooting solver...\n');
-sol = fcc.solveNumericalShooting(shell, launcher_pos, v0_charge7, target.getTargetBus(), env, 'Low');
+sol = fcc.solveNumericalShooting(shell, launcher_pos, v0_charge7, target.getTargetBus(), env, 'Low', 0.005, 'FDR');
 
 if ~sol.IsValid
     error('Target is out of range or solution failed to converge!');

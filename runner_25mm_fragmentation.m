@@ -29,28 +29,30 @@ target = TargetConstantVelocity([700; -100; -150], [-10; 0; -6], 'FDR');
 round = MunitionFactory.create25mmM793();
 round.ParticleModel = ParticleModelFactory.createForward25mm();
 
-% 4. Fire Control: analytical direct-lead solve (same approach as
-%    runner_35mm_fragmentation.m)
+% 4. Fire Control: trajectory shooting (same approach as
+%    runner_35mm_fragmentation.m) - iterates real Simulation flights of
+%    this round against the moving target until the trajectory passes
+%    through it, with the same dt/Frame as the live shot below.
 fcc = FireControlComputer(env.Gravity, 'Z-Up');
 v0 = round.Charge.MuzzleVelocity;
 launcher_pos = [0; 0; 0];
 
-sol = fcc.solveFiringAngles(launcher_pos, v0, target.getTargetBus(), 'DirectLead');
+sol = fcc.solveTrajectoryShooting(@MunitionFactory.create25mmM793, launcher_pos, v0, ...
+    target, env, [0 5], 0.001, 'FDR');
 if ~sol.IsValid
-    error('No valid direct-lead solution (target out of envelope or geometry infeasible).');
+    error('No valid trajectory solution (target out of envelope or geometry infeasible).');
 end
 
-fprintf('=== Direct-Lead Solution ===\n');
+fprintf('=== Trajectory Shooting Solution ===\n');
 fprintf('Elevation                : %.1f mils\n', sol.Elevation);
 fprintf('Azimuth                  : %.1f mils\n', sol.Azimuth);
 fprintf('Predicted Intercept Time : %.3f s\n', sol.TimeOfFlight);
+fprintf('Predicted Miss Distance  : %.3f m (%d iterations)\n', sol.MissDistance, sol.Iterations);
 
 % 5. Apply Solved Initial State. BurstTime is set so the round is exactly
 %    STANDOFF_RANGE meters from the target at burst - found the same way
 %    as runner_35mm_fragmentation.m, off a "recon" flight of the same
-%    unburst round/target rather than a guessed time offset (solveDirectLead
-%    ignores drag, so its predicted TimeOfFlight doesn't land on a fixed
-%    standoff distance reliably).
+%    unburst round/target rather than a guessed time offset.
 STANDOFF_RANGE = 10.0; % m; burst this far short of the target
 round.Dynamics.InitialState = round.buildLaunchState(launcher_pos, v0, ...
     FireControlComputer.mil2rad(sol.Elevation), FireControlComputer.mil2rad(sol.Azimuth));

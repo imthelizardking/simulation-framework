@@ -20,7 +20,12 @@ classdef FireMission < handle
         Environment                    % Environment
         Frame           (1,:) char   = 'Z-Up' % 'Z-Up', 'NED', or 'FDR' - see CoordinateFrame; passed to each round's Simulation
         LauncherPos     (3,1) double = [0;0;0]
-        FireMode        (1,:) char   = 'DirectLead' % passed to FireControlComputer.solveFiringAngles
+        % 'Trajectory' = FireControlComputer.solveTrajectoryShooting (real
+        % Simulation flights of the round, same Frame/Dt as the shot);
+        % anything else ('DirectLead', 'Indirect') is passed to
+        % FireControlComputer.solveFiringAngles' analytic solvers.
+        FireMode        (1,:) char   = 'Trajectory'
+        MaxFlightTime   (1,1) double = 30.0  % s, bounds each solveTrajectoryShooting flight
         NumRounds       (1,1) double = 1
         Dt              (1,1) double = 0.005
         TimeOfFlightPad (1,1) double = 2.0   % Simulation TimeSpan = predicted TOF * this
@@ -85,7 +90,12 @@ classdef FireMission < handle
                 charge = munition.Charge;
                 v0_round = charge.MuzzleVelocity + charge.MuzzleVelocityStdDev * randn();
 
-                sol = fcc.solveFiringAngles(obj.LauncherPos, v0_round, tgt_bus, obj.FireMode);
+                if strcmpi(obj.FireMode, 'Trajectory')
+                    sol = fcc.solveTrajectoryShooting(obj.MunitionBuilder, obj.LauncherPos, v0_round, ...
+                        tgt_bus, obj.Environment, [0 obj.MaxFlightTime], obj.Dt, obj.Frame);
+                else
+                    sol = fcc.solveFiringAngles(obj.LauncherPos, v0_round, tgt_bus, obj.FireMode);
+                end
 
                 r = struct('RoundNum', i, 'FireTime', t_mission, 'IsValid', sol.IsValid, ...
                     'Elevation', NaN, 'Azimuth', NaN, 'MuzzleVelocity', v0_round, ...

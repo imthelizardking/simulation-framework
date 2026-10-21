@@ -28,7 +28,7 @@ end
 %    reaches the target.
 fcc = FireControlComputer(env.Gravity, 'Z-Up');
 launcher_pos = [0; 0; 0];
-[sol, chosen_idx] = fcc.solveNumericalShootingAutoCharge(candidates, launcher_pos, target.getTargetBus(), env, 'Low');
+[sol, chosen_idx] = fcc.solveNumericalShootingAutoCharge(candidates, launcher_pos, target.getTargetBus(), env, 'Low', 0.005, 'FDR');
 
 if chosen_idx == 0
     error('No available charge reaches the target.');

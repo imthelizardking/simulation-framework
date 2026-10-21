@@ -64,7 +64,7 @@ aim_target = TargetStatic([Multiplier * Desired_Range; 0; 0], [], 'FDR');
 
 fprintf('Running Fire Control numerical shooting solver (aiming at %.1f m = %.2fx Desired_Range)...\n', ...
     Multiplier * Desired_Range, Multiplier);
-sol = fcc.solveNumericalShooting(shell, launcher_pos, v0_nominal, aim_target.getTargetBus(), env, 'Low');
+sol = fcc.solveNumericalShooting(shell, launcher_pos, v0_nominal, aim_target.getTargetBus(), env, 'Low', 0.005, 'FDR');
 
 if ~sol.IsValid
     error('Aim point is out of range or solution failed to converge!');

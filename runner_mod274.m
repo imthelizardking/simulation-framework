@@ -19,7 +19,7 @@ launcher_pos = [0; 0; 0];
 
 fprintf('Firing MOD274 on %s charge %s (%.0f m/s)...\n', shell.Charge.Propellant, shell.Charge.Name, v0);
 fprintf('Running Fire Control numerical shooting solver...\n');
-sol = fcc.solveNumericalShooting(shell, launcher_pos, v0, target.getTargetBus(), env, 'Low');
+sol = fcc.solveNumericalShooting(shell, launcher_pos, v0, target.getTargetBus(), env, 'Low', 0.005, 'FDR');
 
 if ~sol.IsValid
     error('Target is out of range or solution failed to converge!');

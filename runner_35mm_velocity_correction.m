@@ -22,28 +22,31 @@ round = MunitionFactory.create35mmHE();
 round.ParticleModel = ParticleModelFactory.createForward35mm();
 builder = @MunitionFactory.create35mmHE;
 
-% 4. Fire Control: analytical direct-lead solve using the charge's
-%    NOMINAL (rated) muzzle velocity - the best estimate available when
-%    aiming, before this specific round has actually been fired.
+% 4. Fire Control: trajectory shooting (real Simulation flights of this
+%    round against the moving target, same dt/Frame as the live shot)
+%    using the charge's NOMINAL (rated) muzzle velocity - the best
+%    estimate available when aiming, before this specific round has
+%    actually been fired.
 fcc = FireControlComputer(env.Gravity, 'Z-Up');
 v0_nominal = round.Charge.MuzzleVelocity;
 launcher_pos = [0; 0; 0];
+timespan = [0 5]; dt = 0.001; impact_dist = 3.0; max_downrange = 100.0;
 
-sol = fcc.solveFiringAngles(launcher_pos, v0_nominal, target.getTargetBus(), 'DirectLead');
+sol = fcc.solveTrajectoryShooting(builder, launcher_pos, v0_nominal, target, env, timespan, dt, 'FDR');
 if ~sol.IsValid
-    error('No valid direct-lead solution (target out of envelope or geometry infeasible).');
+    error('No valid trajectory solution (target out of envelope or geometry infeasible).');
 end
 
-fprintf('=== Direct-Lead Solution (nominal v0 = %.1f m/s) ===\n', v0_nominal);
+fprintf('=== Trajectory Shooting Solution (nominal v0 = %.1f m/s) ===\n', v0_nominal);
 fprintf('Elevation                : %.1f mils\n', sol.Elevation);
 fprintf('Azimuth                  : %.1f mils\n', sol.Azimuth);
+fprintf('Predicted Miss Distance  : %.3f m (%d iterations)\n', sol.MissDistance, sol.Iterations);
 
 % 5. Pre-fire (programmed) burst time: the fuze setting the fire control
 %    computer transmits BEFORE knowing this round's true muzzle
 %    velocity, aimed at bursting STANDOFF_RANGE meters short of the
 %    target.
 STANDOFF_RANGE = 25.0; % m; burst this far short of the target
-timespan = [0 5]; dt = 0.001; impact_dist = 3.0; max_downrange = 100.0;
 
 nominal_burst_time = FireControlComputer.solveBurstTimeForStandoff(...
     builder, launcher_pos, v0_nominal, sol.Elevation, sol.Azimuth, ...

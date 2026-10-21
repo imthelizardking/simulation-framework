@@ -16,37 +16,34 @@ target = TargetConstantVelocity([1000; -120; -200], [-12; 0; -8], 'FDR');
 % 3. Instantiate Munition via MunitionFactory
 round = MunitionFactory.create35mmHE();
 
-% 4. Fire Control: analytical direct-lead solve. Unlike
-%    solveNumericalShooting (built for a static target), solveDirectLead
-%    accounts for the target's velocity - the right tool for a direct-fire
-%    gun engagement against something moving, rather than a lobbed shot at
-%    a fixed point.
+% 4. Fire Control: trajectory shooting. Unlike solveNumericalShooting
+%    (built for a static target) it leads the moving target, and unlike
+%    the analytic direct-lead solve (vacuum, constant bullet speed) every
+%    candidate is a real Simulation flight of this round - same dt/Frame
+%    as the live shot below - so the solved trajectory is the one flown.
 fcc = FireControlComputer(env.Gravity, 'Z-Up');
 v0 = round.Charge.MuzzleVelocity; % see MunitionFactory.create35mmHE
 launcher_pos = [0; 0; 0];
 
-sol = fcc.solveFiringAngles(launcher_pos, v0, target.getTargetBus(), 'DirectLead');
+sol = fcc.solveTrajectoryShooting(@MunitionFactory.create35mmHE, launcher_pos, v0, ...
+    target, env, [0 5], 0.001, 'FDR');
 
 if ~sol.IsValid
-    error('No valid direct-lead solution (target out of envelope or geometry infeasible).');
+    error('No valid trajectory solution (target out of envelope or geometry infeasible).');
 end
 
-fprintf('=== Direct-Lead Solution ===\n');
+fprintf('=== Trajectory Shooting Solution ===\n');
 fprintf('Elevation                : %.1f mils\n', sol.Elevation);
 fprintf('Azimuth                  : %.1f mils\n', sol.Azimuth);
 fprintf('Predicted Intercept Time : %.3f s\n', sol.TimeOfFlight);
+fprintf('Predicted Miss Distance  : %.3f m (%d iterations)\n', sol.MissDistance, sol.Iterations);
 
 % 5. Apply Solved Initial State
 round.Dynamics.InitialState = round.buildLaunchState(launcher_pos, v0, ...
     FireControlComputer.mil2rad(sol.Elevation), FireControlComputer.mil2rad(sol.Azimuth));
 
 % 6. Assemble Simulation & Execute. Unguided direct-fire round with no
-%    terminal correction - ImpactDistance is set to a proximity-fuse-like
-%    radius rather than a tight direct-hit tolerance, because
-%    solveDirectLead's quadratic assumes constant bullet velocity and
-%    ignores drag: the real round decelerates in flight (CD0=0.25 at
-%    ~Mach 3.4 is not negligible), so it arrives slightly later than
-%    predicted and the lead point is imperfect by construction.
+%    terminal correction - ImpactDistance is a proximity-fuse-like radius.
 sim = Simulation(round, target, env, [0 5], 0.001);
 sim.Frame = 'FDR';
 sim.Termination.ImpactDistance = 3.0;

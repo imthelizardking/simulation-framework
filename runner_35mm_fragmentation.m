@@ -22,28 +22,26 @@ target = TargetConstantVelocity([1000; -120; -200], [-12; 0; -8], 'FDR');
 round = MunitionFactory.create35mmHE();
 round.ParticleModel = ParticleModelFactory.createForward35mm();
 
-% 4. Fire Control: analytical direct-lead solve (same as runner_35mm_antidrone)
+% 4. Fire Control: trajectory shooting (same as runner_35mm_antidrone)
 fcc = FireControlComputer(env.Gravity, 'Z-Up');
 v0 = round.Charge.MuzzleVelocity;
 launcher_pos = [0; 0; 0];
 
-sol = fcc.solveFiringAngles(launcher_pos, v0, target.getTargetBus(), 'DirectLead');
+sol = fcc.solveTrajectoryShooting(@MunitionFactory.create35mmHE, launcher_pos, v0, ...
+    target, env, [0 5], 0.001, 'FDR');
 if ~sol.IsValid
-    error('No valid direct-lead solution (target out of envelope or geometry infeasible).');
+    error('No valid trajectory solution (target out of envelope or geometry infeasible).');
 end
 
-fprintf('=== Direct-Lead Solution ===\n');
+fprintf('=== Trajectory Shooting Solution ===\n');
 fprintf('Elevation                : %.1f mils\n', sol.Elevation);
 fprintf('Azimuth                  : %.1f mils\n', sol.Azimuth);
 fprintf('Predicted Intercept Time : %.3f s\n', sol.TimeOfFlight);
+fprintf('Predicted Miss Distance  : %.3f m (%d iterations)\n', sol.MissDistance, sol.Iterations);
 
 % 5. Apply Solved Initial State. BurstTime is set so the round is exactly
 %    STANDOFF_RANGE meters from the target at burst, not a guessed time
-%    offset: solveDirectLead's quadratic ignores drag (see
-%    runner_35mm_antidrone.m's own comment on this), so the round's real,
-%    drag-decelerated arrival is later than sol.TimeOfFlight predicts and a
-%    fixed time offset wouldn't reliably land on a fixed standoff distance.
-%    Instead, a "recon" flight of the same unburst round/target is run
+%    offset: a "recon" flight of the same unburst round/target is run
 %    first purely to find the real time-vs-range curve, and BurstTime is
 %    picked off of that.
 STANDOFF_RANGE = 25.0; % m; burst this far short of the target

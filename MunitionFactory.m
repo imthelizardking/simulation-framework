@@ -256,7 +256,9 @@ classdef MunitionFactory
             % programmed proximity/standoff burst time, so the round can't
             % fly on as unexploded ordnance if it never gets close enough
             % to the target to trigger (see Munition.SelfDestructTime).
-            m.SelfDestructTime = FactoryData.getOr(data, 'SelfDestructTime', 8.0);
+            % Long enough for the 8 km / 3 km-altitude air target in
+            % runner_76mm*.m (~12 s real, drag-decelerated flight time).
+            m.SelfDestructTime = FactoryData.getOr(data, 'SelfDestructTime', 15.0);
             mdata = MunitionData.load(m.Name);
             aero_over = MunitionData.aeroCoeffs(mdata);
 

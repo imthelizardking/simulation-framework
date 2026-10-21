@@ -10,12 +10,9 @@
 % close enough to uncage - correcting for however far the target has
 % moved since the aimpoint was set.
 %
-% Range kept to 25 km (well under GMLRS's real ~70 km class) rather than
-% pushed to realistic max range - FireControlComputer.simulateFastBallistic
-% (used internally by every solveNumericalShooting call in this codebase,
-% not something specific to this runner) caps recon flight time at 90 s;
-% a much longer/higher lofted shot risks that cap during the solve itself.
-% Extend once this pipeline is confirmed working.
+% Range kept to 25 km (well under GMLRS's real ~70 km class).
+% solveNumericalShooting's solve flights are real Simulation runs capped
+% at 300 s each, so a longer lofted shot is possible but slower to solve.
 %
 % IMPORTANT - fin effectiveness and autopilot gains: AeroMissile6DoF.
 % Cm_delta/Cn_delta default to 0 in MunitionFactory.createM31GMLRSUnitary
@@ -70,13 +67,15 @@ missile.Controller = autopilot;
 % 5. Fire Control Computer - high-angle (lofted) solve toward the FIXED
 % aimpoint, using the round's actual rail-launch speed; the recon flights
 % inside solveNumericalShooting exercise the same Propulsion_SolidMotor
-% boost phase the real round has, since munition_prototype IS this round.
+% boost phase the real round has, since munition_prototype IS this round
+% (flown as real Simulation runs with its GNC stack detached - the
+% uncontrolled ballistic arc; midcourse/SAL guidance corrects from there).
 fcc = FireControlComputer(env.Gravity, 'Z-Up');
 aim_target = TargetStatic(aimpoint_zup);
 v0_rail = 50.0;
 
 fprintf('Running Fire Control numerical shooting solver (lofted/High branch)...\n');
-sol = fcc.solveNumericalShooting(missile, launcher_pos, v0_rail, aim_target.getTargetBus(), env, 'High');
+sol = fcc.solveNumericalShooting(missile, launcher_pos, v0_rail, aim_target.getTargetBus(), env, 'High', 0.005, 'NED');
 
 if ~sol.IsValid
     error('Aimpoint out of range or solution failed to converge!');

@@ -18,24 +18,29 @@ target = TargetConstantVelocity([8000; -3000; 0], [-250; 0; 0], 'FDR');
 %    coefficient set)
 shell = MunitionFactory.create76mmHE();
 
-% 4. Fire Control: analytical direct-lead solve. solveNumericalShooting
-%    has no notion of target velocity (it aims at wherever the target is
-%    at t=0), so it's the wrong tool now that the target is moving -
-%    solveDirectLead accounts for target velocity plus ballistic drop.
+% 4. Fire Control: trajectory shooting. solveNumericalShooting has no
+%    notion of target velocity (it aims at wherever the target is at
+%    t=0), and the analytic direct-lead solve ignores drag - over this
+%    long, high-drag trajectory the shell decelerates substantially and
+%    would arrive well behind its lead point. solveTrajectoryShooting
+%    iterates real Simulation flights (same dt/Frame as below) against
+%    the moving target instead.
 fcc = FireControlComputer(env.Gravity, 'Z-Up');
 v0 = shell.Charge.MuzzleVelocity; % see MunitionFactory.create76mmHE
 launcher_pos = [0; 0; 0];
 
-sol = fcc.solveFiringAngles(launcher_pos, v0, target.getTargetBus(), 'DirectLead');
+sol = fcc.solveTrajectoryShooting(@MunitionFactory.create76mmHE, launcher_pos, v0, ...
+    target, env, [0 30], 0.005, 'FDR');
 
 if ~sol.IsValid
-    error('No valid direct-lead solution (target out of envelope or geometry infeasible).');
+    error('No valid trajectory solution (target out of envelope or geometry infeasible).');
 end
 
-fprintf('=== Direct-Lead Solution ===\n');
+fprintf('=== Trajectory Shooting Solution ===\n');
 fprintf('Elevation                : %.1f mils\n', sol.Elevation);
 fprintf('Azimuth                  : %.1f mils\n', sol.Azimuth);
 fprintf('Predicted Intercept Time : %.3f s\n', sol.TimeOfFlight);
+fprintf('Predicted Miss Distance  : %.3f m (%d iterations)\n', sol.MissDistance, sol.Iterations);
 
 % 5. Apply Solved Initial State
 shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0, ...
@@ -43,13 +48,8 @@ shell.Dynamics.InitialState = shell.buildLaunchState(launcher_pos, v0, ...
 
 % 6. Assemble Simulation & Execute. Unguided direct-fire round with no
 %    terminal correction - ImpactDistance is a large-HE proximity-effect
-%    radius rather than a tight direct-hit tolerance, since
-%    solveDirectLead ignores drag entirely: over this longer, higher-drag
-%    trajectory than the 35mm case, the shell decelerates substantially
-%    and arrives later than predicted, so expect a more noticeable lead
-%    error here. TimeSpan is padded well past the predicted intercept
-%    time to give the (slower-than-predicted) real shell room to arrive.
-sim = Simulation(shell, target, env, [0 sol.TimeOfFlight * 2], 0.005);
+%    radius.
+sim = Simulation(shell, target, env, [0 sol.TimeOfFlight * 1.2], 0.005);
 sim.Frame = 'FDR';
 sim.Termination.ImpactDistance = 5.0;
 sim.Termination.MaxDownrange   = 200.0;

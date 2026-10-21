@@ -37,7 +37,7 @@ classdef Dynamics6DoF < BaseDynamics
     % same "hardcode the one frame this class actually needs" choice
     % DynamicsMPMM made for FDR. Frame is still a real property so the
     % isprop(...,'Frame') fallbacks elsewhere in this framework
-    % (Munition.spawnParticles, FireControlComputer.simulateFastBallistic)
+    % (Munition.spawnParticles, FireControlComputer.nativeFrame)
     % read 'NED' correctly instead of guessing 'FDR' from StateDimension.
     %
     % IMPORTANT for any runner using this class: Simulation.run()

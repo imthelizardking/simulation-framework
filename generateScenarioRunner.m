@@ -111,7 +111,7 @@ function filepath = generateScenarioRunner(params)
             lines{end+1} = '%% 4. Fire Control Computer (solves Quadrant Elevation & Azimuth)';
             lines{end+1} = 'fcc = FireControlComputer(env.Gravity, ''Z-Up'');';
             lines{end+1} = 'fprintf(''Running Fire Control numerical shooting solver...\n'');';
-            lines{end+1} = sprintf('sol = fcc.solveNumericalShooting(round, launcher_pos, v0, target.getTargetBus(), env, ''%s'');', params.Branch);
+            lines{end+1} = sprintf('sol = fcc.solveNumericalShooting(round, launcher_pos, v0, target.getTargetBus(), env, ''%s'', 0.005, ''FDR'');', params.Branch);
             lines{end+1} = '';
             lines{end+1} = 'if ~sol.IsValid';
             lines{end+1} = '    error(''Target is out of range or solution failed to converge!'');';
