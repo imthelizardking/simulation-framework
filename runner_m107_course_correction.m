@@ -12,7 +12,9 @@
 % one-shot Phase2 switch does the rest on its own from there.
 clear; clc; clf;
 
-Desired_Range = 15000.0; % m - the range the airbrake correction should bring the round down to
+% Multiplier*Desired_Range must stay inside CH7W's real max range (~13.7 km
+% at ~800 mils QE under this model) for fire control to have a solution.
+Desired_Range = 11500.0; % m - the range the airbrake correction should bring the round down to
 Multiplier    = 1.15;    % fire control aims at Multiplier*Desired_Range - the deliberate overshoot the airbrake then corrects away
 
 % 1. Setup Environment
