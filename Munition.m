@@ -28,6 +28,7 @@ classdef Munition < handle
         BurstTime                 = []  % s since launch at which fragmentation triggers; [] = never bursts
         SelfDestructTime          = []  % s since launch; hard ceiling on BurstTime - forces a burst at this time regardless of BurstTime (unset or programmed later), so the round can't fly on as an unexploded dud. [] = no ceiling. See Simulation.checkTermination and FireControlComputer.solveBurstTimeForStandoff.
         ParticleModel             = []  % BaseParticleModel subclass instance, consumed by spawnParticles
+        FragmentationType (1,:) char = 'pre-fragmented';
     end
 
     methods
