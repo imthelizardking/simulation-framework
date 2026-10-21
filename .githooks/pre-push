@@ -1,0 +1,6 @@
+#!/bin/sh
+# Run the regression suite before every push. Skip once with: git push --no-verify
+cd "$(git rev-parse --show-toplevel)" || exit 1
+MATLAB=${MATLAB_BIN:-/Applications/MATLAB_R2023b.app/bin/matlab}
+echo "Running regression tests..."
+"$MATLAB" -batch "addpath('tests'); runAllTests" || { echo "Regression tests failed - push aborted."; exit 1; }
