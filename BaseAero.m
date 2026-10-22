@@ -144,7 +144,6 @@ classdef (Abstract) BaseAero < handle
             vel   = X(4:6);
             v_mag = norm(vel);
             altitude = CoordinateFrame.altitude(X, frame);
-
             flow.vel   = vel;
             flow.v_mag = v_mag;
             flow.mach  = v_mag / env.getSpeedOfSound(altitude);

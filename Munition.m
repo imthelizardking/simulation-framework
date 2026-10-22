@@ -163,7 +163,6 @@ classdef Munition < handle
             forces.FinDeflection = fin_deflection;
             moments.Propulsion   = M_prop;
             moments.Aero         = M_aero;
-            
             dX = obj.Dynamics.computeDerivatives(t, X, forces, moments, obj.MassProperties, m_dot);
         end
 

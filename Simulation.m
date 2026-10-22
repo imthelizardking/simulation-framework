@@ -377,7 +377,7 @@ classdef Simulation < handle
             % reaching the comparison below would silently never trigger
             % (NaN comparisons are always false), so don't call this with
             % an unresolved Termination struct.
-            if nargin < 6, frame = 'Z-Up'; end
+            if nargin < 6, frame = 'NED'; end
             is_term = false;
             reason  = '';
 

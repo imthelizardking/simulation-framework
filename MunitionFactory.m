@@ -413,14 +413,14 @@ classdef MunitionFactory
             % actually expect via sensor_bus.SeekerLOAL). prf_code is kept
             % as an input for future laser-designator integration but is
             % not consumed yet.
-            seeker_fov_deg = FactoryData.getOr(data, 'SeekerFOV_deg', 20);
-            t_seeker_on    = FactoryData.getOr(data, 'T_SeekerOn', 1.2); % Seeker uncages after motor burnout
-            m.Sensors    = { SeekerLOAL(deg2rad(seeker_fov_deg), t_seeker_on) };
-            guid = OptimalAngleFOVGuidance();
-            guid.UseFOV = true;
-            guid.T_SeekerOn = t_seeker_on;
-            m.Guidance   = guid;
-            m.Controller = LongitudinalFinController();
+            % seeker_fov_deg = FactoryData.getOr(data, 'SeekerFOV_deg', 20);
+            % t_seeker_on    = FactoryData.getOr(data, 'T_SeekerOn', 1.2); % Seeker uncages after motor burnout
+            % m.Sensors    = { SeekerLOAL(deg2rad(seeker_fov_deg), t_seeker_on) };
+            % guid = OptimalAngleFOVGuidance();
+            % guid.UseFOV = true;
+            % guid.T_SeekerOn = t_seeker_on;
+            % m.Guidance   = guid;
+            % m.Controller = LongitudinalFinController();
         end
 
         %% Guided Rocket with Missile DATCOM Aero Tables (70mm-class)
@@ -439,8 +439,8 @@ classdef MunitionFactory
             % against genuine DATCOM output. Swap in your own rocket's
             % DATCOM run once you have one; its reference dimensions will
             % differ from the defaults below.
-            data = FactoryData.load('createGuidedRocketDatcom');
-            m = Munition(FactoryData.getOr(data, 'Name', 'GuidedRocket_DATCOM'));
+            data = FactoryData.load('createAPKWS');
+            m = Munition(FactoryData.getOr(data, 'Name', 'createAPKWS'));
             m.Type = FactoryData.getOr(data, 'Type', 'Guided');
             mdata = MunitionData.load(m.Name);
 
@@ -450,25 +450,26 @@ classdef MunitionFactory
             m.MassProperties.Mass = MunitionData.mass(mdata, 15.0);
             m.MassProperties.Inertia = MunitionData.inertia(mdata, diag([0.008, 0.45, 0.45]));
 
-            m.Dynamics = Dynamics3Dof();
+            % m.Dynamics = Dynamics3DoF();
+            m.Dynamics = Dynamics6DoF();
             % RefArea/RefLength default to Example Problem 1's own SREF/
             % CBARR (8.85 ft^2, 2.48 ft - see data/EX1_inout.txt's $OPTINS
             % card), converted to SI: the CD/CL table is only physically
             % meaningful with the reference dimensions DATCOM normalized
             % it against.
             m.Aero = DatcomReader.load(datcom_name, ...
-                FactoryData.getOr(data, 'RefArea', 0.822192), ...   % 8.85 ft^2
-                FactoryData.getOr(data, 'RefLength', 0.755904));    % 2.48 ft
-            m.Propulsion = Propulsion_SolidMotor.fromData(data, 5900.0, 1.1);
-
-            seeker_fov_deg = FactoryData.getOr(data, 'SeekerFOV_deg', 20);
-            t_seeker_on    = FactoryData.getOr(data, 'T_SeekerOn', 1.2); % Seeker uncages after motor burnout
-            m.Sensors    = { SeekerLOAL(deg2rad(seeker_fov_deg), t_seeker_on) };
-            guid = OptimalAngleFOVGuidance();
-            guid.UseFOV = true;
-            guid.T_SeekerOn = t_seeker_on;
-            m.Guidance   = guid;
-            m.Controller = LongitudinalFinController();
+                FactoryData.getOr(data, 'RefArea', 0.003848451), ...   % 8.85 ft^2
+                FactoryData.getOr(data, 'RefLength', 0.07));    % 2.48 ft
+            m.Propulsion = Propulsion_SolidMotor.MK66Mod4(7);
+            
+            % seeker_fov_deg = FactoryData.getOr(data, 'SeekerFOV_deg', 20);
+            % t_seeker_on    = FactoryData.getOr(data, 'T_SeekerOn', 1.2); % Seeker uncages after motor burnout
+            % m.Sensors    = { SeekerLOAL(deg2rad(seeker_fov_deg), t_seeker_on) };
+            % guid = OptimalAngleFOVGuidance();
+            % guid.UseFOV = true;
+            % guid.T_SeekerOn = t_seeker_on;
+            % m.Guidance   = guid;
+            % m.Controller = LongitudinalFinController();
         end
 
         %% Mini Missile - Genuine 6-DoF Rigid Body (Free-Flight Physics Core)

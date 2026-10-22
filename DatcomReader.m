@@ -1,261 +1,312 @@
 classdef DatcomReader
-    % Reads a Missile DATCOM printed-output listing (data/<name>.txt - the
-    % standard line-printer text DATCOM writes, e.g. for006.dat/*.out) and
-    % normalizes its "CHARACTERISTICS AT ANGLE OF ATTACK" tables into an
-    % AeroDatcom object.
+    % DATCOMREADER Reads USAF Automated Missile DATCOM (REV 03/11) formatted
+    % output listings (e.g. for006.dat, data/<name>.txt, data/<name>.dat)
+    % and normalizes static forces, moments, stability derivatives, and dynamic
+    % rate damping derivatives into an AeroDatcom object or a struct.
     %
-    % Format confirmed against a real Digital DATCOM run: data/ex1_in.txt,
-    % "Example Problem 1" from the DATCOM Users Manual (data/EX1_inout.txt
-    % is that run's INPUT deck, for reference). DATCOM does NOT write a
-    % MATLAB script - its native output is this fixed-format text listing,
-    % with one "CHARACTERISTICS AT ANGLE OF ATTACK AND IN SIDESLIP" block
-    % per Mach/case, each block holding a Mach number and a table of
-    %   ALPHA  CD  CL  CM  CN  CA  XCP  CLA  CMA  CYB  CNB  CLB
-    % rows (CD/CL already wind-axis, computed by DATCOM itself - no
-    % body->wind transform needed on this side, unlike the CN/CA-only
-    % assumption an earlier version of this reader made before a real
-    % sample file was available to check against). All 11 non-ALPHA
-    % columns are captured onto the resulting AeroDatcom; CLA/CMA/CYB/CNB/
-    % CLB are DATCOM's own derivatives, tabulated PER DEGREE (see the
-    % table's "-------DERIVATIVE (PER DEGREE)-------" banner in the raw
-    % listing) - convert to per-radian before mixing with this framework's
-    % own per-radian coefficients (e.g. DynamicsMPMM.CLalpha).
-    %
-    % This table alone does not cover everything Missile DATCOM can print
-    % (dynamic/rate derivatives like CNQ/CMQ/CLP from a $DAMP request, or
-    % control-surface effectiveness from $CONTROL, live in separate table
-    % formats). Those aren't parsed here because no real sample DATCOM run
-    % requesting them exists yet in data/ to verify a parser against - see
-    % the note above about not fabricating a layout without a genuine
-    % sample. Add a parser for them once such a run is available.
-    %
-    % A case with no method available for a condition prints "NDM" (No
-    % DATCOM Methods) in place of numbers for that whole Mach block; such
-    % blocks are skipped rather than fabricating a coefficient. If the
-    % same Mach number appears in more than one case (a deck commonly
-    % refines the same flight condition across CASEID/NEXT CASE blocks,
-    % e.g. an axisymmetric-body pass followed by a cambered-body pass at
-    % the same Mach), the LAST such block in the file wins - it represents
-    % the deck's most-refined configuration at that condition.
+    % Angular derivatives (CNA, CMA, CYB, CLNB, CLLB) and dynamic rate
+    % derivatives (CNQ, CMQ, CAQ, CNAD, CMAD, CYR, CLNR, CLLR, CYP, CLNP, CLLP)
+    % are converted from DATCOM's native [1/deg] to standard [1/rad].
+
     methods (Static)
         function aero = load(name, ref_area, ref_length)
-            here = fileparts(mfilename('fullpath'));
-            path = fullfile(here, 'data', [name '.txt']);
-            if ~isfile(path)
-                error('DatcomReader:load', 'No DATCOM output found at data/%s.txt', name);
+            % Resolve input file path
+            path = DatcomReader.resolveFilePath(name);
+
+            % Parse raw data into unified record struct
+            records = DatcomReader.parseRawDatcom(path);
+            if isempty(records)
+                error('DatcomReader:load', 'No valid aerodynamic records found in %s', path);
             end
 
-            blocks = DatcomReader.parseBlocks(path);
-            if isempty(blocks)
-                error('DatcomReader:load', ...
-                    ['data/%s.txt has no usable "CHARACTERISTICS AT ANGLE OF ATTACK" ' ...
-                     'table (missing, all NDM, or an unrecognized layout).'], name);
-            end
+            % Extract canonical Alpha and Mach schedules
+            all_mach  = [records.Mach];
+            all_alpha = [records.Alpha];
+            mach_unique  = sort(unique(all_mach));
+            alpha_unique = sort(unique(all_alpha));
 
-            % Canonical alpha schedule: DATCOM keeps ALSCHD fixed across
-            % NEXT CASE blocks unless a case explicitly overrides it, so
-            % every block should share it. Blocks that don't match the
-            % first block's schedule are dropped rather than misaligned
-            % against it.
-            alpha_deg = blocks(1).alpha_deg;
-            keep = true(1, numel(blocks));
-            for i = 2:numel(blocks)
-                if numel(blocks(i).alpha_deg) ~= numel(alpha_deg) || ...
-                        max(abs(blocks(i).alpha_deg - alpha_deg)) > 1e-6
-                    keep(i) = false;
-                end
-            end
-            blocks = blocks(keep);
-            if isempty(blocks)
-                error('DatcomReader:load', ...
-                    'data/%s.txt has no blocks sharing a common ALPHA schedule.', name);
-            end
-
-            mach_list = [blocks.mach];
-            [mach_sorted, order] = sort(mach_list); % stable: ties keep file order
-            blocks = blocks(order);
-            mach_unique = unique(mach_sorted, 'stable');
             n_mach  = numel(mach_unique);
-            n_alpha = numel(alpha_deg);
-            CD  = zeros(n_alpha, n_mach);
-            CL  = zeros(n_alpha, n_mach);
-            CM  = zeros(n_alpha, n_mach);
-            CN  = zeros(n_alpha, n_mach);
-            CA  = zeros(n_alpha, n_mach);
-            XCP = zeros(n_alpha, n_mach);
-            CLA = zeros(n_alpha, n_mach);
-            CMA = zeros(n_alpha, n_mach);
-            CYB = zeros(n_alpha, n_mach);
-            CNB = zeros(n_alpha, n_mach);
-            CLB = zeros(n_alpha, n_mach);
-            for i = 1:numel(blocks)
-                col = find(mach_unique == blocks(i).mach, 1);
-                CD(:, col)  = blocks(i).CD(:); % later (higher i) blocks overwrite earlier duplicates
-                CL(:, col)  = blocks(i).CL(:);
-                CM(:, col)  = blocks(i).CM(:);
-                CN(:, col)  = blocks(i).CN(:);
-                CA(:, col)  = blocks(i).CA(:);
-                XCP(:, col) = blocks(i).XCP(:);
-                CLA(:, col) = blocks(i).CLA(:);
-                CMA(:, col) = blocks(i).CMA(:);
-                CYB(:, col) = blocks(i).CYB(:);
-                CNB(:, col) = blocks(i).CNB(:);
-                CLB(:, col) = blocks(i).CLB(:);
-            end
-            [mach_unique, order2] = sort(mach_unique);
-            CD  = CD(:, order2);
-            CL  = CL(:, order2);
-            CM  = CM(:, order2);
-            CN  = CN(:, order2);
-            CA  = CA(:, order2);
-            XCP = XCP(:, order2);
-            CLA = CLA(:, order2);
-            CMA = CMA(:, order2);
-            CYB = CYB(:, order2);
-            CNB = CNB(:, order2);
-            CLB = CLB(:, order2);
+            n_alpha = numel(alpha_unique);
 
+            % Allocate 2D matrices [n_alpha x n_mach] to match AeroDatcom layout
+            CD   = zeros(n_alpha, n_mach);
+            CL   = zeros(n_alpha, n_mach);
+            CM   = zeros(n_alpha, n_mach);
+            CN   = zeros(n_alpha, n_mach);
+            CA   = zeros(n_alpha, n_mach);
+            CY   = zeros(n_alpha, n_mach);
+            CLN  = zeros(n_alpha, n_mach);
+            CLL  = zeros(n_alpha, n_mach);
+            XCP  = zeros(n_alpha, n_mach);
+            CLA  = zeros(n_alpha, n_mach);
+            CMA  = zeros(n_alpha, n_mach);
+            CYB  = zeros(n_alpha, n_mach);
+            CNB  = zeros(n_alpha, n_mach);
+            CLB  = zeros(n_alpha, n_mach);
+            CMQ  = zeros(n_alpha, n_mach);
+            CNQ  = zeros(n_alpha, n_mach);
+            CAQ  = zeros(n_alpha, n_mach);
+            CMAD = zeros(n_alpha, n_mach);
+            CNAD = zeros(n_alpha, n_mach);
+            CLNR = zeros(n_alpha, n_mach);
+            CYR  = zeros(n_alpha, n_mach);
+            CLLR = zeros(n_alpha, n_mach);
+            CLLP = zeros(n_alpha, n_mach);
+            CLNP = zeros(n_alpha, n_mach);
+            CYP  = zeros(n_alpha, n_mach);
+
+            rad_factor = 180 / pi;
+
+            % Populate grid
+            for k = 1:numel(records)
+                r = records(k);
+                i_a = find(abs(alpha_unique - r.Alpha) < 1e-4, 1);
+                i_m = find(abs(mach_unique  - r.Mach)  < 1e-4, 1);
+
+                if isempty(i_a) || isempty(i_m), continue; end
+
+                CD(i_a, i_m)   = r.CD;
+                CL(i_a, i_m)   = r.CL;
+                CM(i_a, i_m)   = r.CM;
+                CN(i_a, i_m)   = r.CN;
+                CA(i_a, i_m)   = r.CA;
+                CY(i_a, i_m)   = r.CY;
+                CLN(i_a, i_m)  = r.CLN;
+                CLL(i_a, i_m)  = r.CLL;
+                XCP(i_a, i_m)  = r.XCP;
+
+                % Convert static angle derivatives from 1/deg to 1/rad
+                CLA(i_a, i_m)  = r.CNA * rad_factor; % Normal-force slope ≈ lift slope
+                CMA(i_a, i_m)  = r.CMA * rad_factor;
+                CYB(i_a, i_m)  = r.CYB * rad_factor;
+                CNB(i_a, i_m)  = r.CLNB * rad_factor;
+                CLB(i_a, i_m)  = r.CLLB * rad_factor;
+
+                % Dynamic rate damping derivatives (already in 1/rad from parseRawDatcom)
+                CMQ(i_a, i_m)  = r.CMQ;
+                CNQ(i_a, i_m)  = r.CNQ;
+                CAQ(i_a, i_m)  = r.CAQ;
+                CMAD(i_a, i_m) = r.CMAD;
+                CNAD(i_a, i_m) = r.CNAD;
+                CLNR(i_a, i_m) = r.CLNR;
+                CYR(i_a, i_m)  = r.CYR;
+                CLLR(i_a, i_m) = r.CLLR;
+                CLLP(i_a, i_m) = r.CLLP;
+                CLNP(i_a, i_m) = r.CLNP;
+                CYP(i_a, i_m)  = r.CYP;
+            end
+
+            % Instantiate AeroDatcom object
             aero = AeroDatcom();
             if nargin > 1 && ~isempty(ref_area),   aero.RefArea   = ref_area;   end
             if nargin > 2 && ~isempty(ref_length), aero.RefLength = ref_length; end
 
-            aero.Mach  = mach_unique;
-            aero.Alpha = deg2rad(alpha_deg(:)');
-            aero.CD    = CD;
-            aero.CL    = CL;
-            aero.CM    = CM;
-            aero.CN    = CN;
-            aero.CA    = CA;
-            aero.XCP   = XCP;
-            aero.CLA   = CLA;
-            aero.CMA   = CMA;
-            aero.CYB   = CYB;
-            aero.CNB   = CNB;
-            aero.CLB   = CLB;
-            aero.CL_alpha = DatcomReader.estimateCLAlpha(aero);
+            aero.Mach  = mach_unique(:)';
+            aero.Alpha = deg2rad(alpha_unique(:)'); % Stored in radians
+
+            aero.CD   = CD;
+            aero.CL   = CL;
+            aero.CM   = CM;
+            aero.CN   = CN;
+            aero.CA   = CA;
+            aero.CY   = CY;
+            aero.CLN  = CLN;
+            aero.CLL  = CLL;
+            aero.XCP  = XCP;
+            aero.CLA  = CLA;
+            aero.CMA  = CMA;
+            aero.CYB  = CYB;
+            aero.CNB  = CNB;
+            aero.CLB  = CLB;
+
+            % Dynamic damping matrices
+            if isprop(aero, 'CMQ'),  aero.CMQ  = CMQ;  end
+            if isprop(aero, 'CNQ'),  aero.CNQ  = CNQ;  end
+            if isprop(aero, 'CAQ'),  aero.CAQ  = CAQ;  end
+            if isprop(aero, 'CMAD'), aero.CMAD = CMAD; end
+            if isprop(aero, 'CNAD'), aero.CNAD = CNAD; end
+            if isprop(aero, 'CLNR'), aero.CLNR = CLNR; end
+            if isprop(aero, 'CYR'),  aero.CYR  = CYR;  end
+            if isprop(aero, 'CLLP'), aero.CLLP = CLLP; end
+            if isprop(aero, 'CLLR'), aero.CLLR = CLLR; end
+
+            if isprop(aero, 'CL_alpha')
+                aero.CL_alpha = DatcomReader.estimateCLAlpha(aero);
+            end
+        end
+
+        function aero_struct = loadStruct(filename)
+            % LOADSTRUCT Direct extraction returning a struct with 3-column
+            % [Mach, Alpha, Value] matrices for every coefficient.
+            if nargin < 1
+                filename = 'for006.dat';
+            end
+            path = DatcomReader.resolveFilePath(filename);
+            records = DatcomReader.parseRawDatcom(path);
+
+            all_fields = {'CN','CM','CA','CY','CLN','CLL','CL','CD','XCP', ...
+                          'CNA','CMA','CYB','CLNB','CLLB', ...
+                          'CNQ','CMQ','CAQ','CNAD','CMAD','CYR','CLNR','CLLR','CYP','CLNP','CLLP'};
+
+            num_pts = numel(records);
+            mach_vec  = [records.Mach]';
+            alpha_vec = [records.Alpha]';
+
+            [~, sort_idx] = sortrows([mach_vec, alpha_vec], [1, 2]);
+
+            aero_struct = struct();
+            for f = 1:length(all_fields)
+                fn = all_fields{f};
+                val_vec = [records.(fn)]';
+                aero_struct.(fn) = [mach_vec(sort_idx), alpha_vec(sort_idx), val_vec(sort_idx)];
+            end
+
+            aero_struct.MachGrid  = unique(mach_vec)';
+            aero_struct.AlphaGrid = unique(alpha_vec)';
         end
     end
 
     methods (Static, Access = private)
-        function blocks = parseBlocks(path)
-            raw = fileread(path);
-            lines = strsplit(raw, {'\r\n', '\n'});
-            blocks = struct('mach', {}, 'alpha_deg', {}, 'CD', {}, 'CL', {}, ...
-                'CM', {}, 'CN', {}, 'CA', {}, 'XCP', {}, 'CLA', {}, 'CMA', {}, ...
-                'CYB', {}, 'CNB', {}, 'CLB', {});
-
-            title_idx = find(contains(lines, 'CHARACTERISTICS AT ANGLE OF ATTACK'));
-            for k = 1:numel(title_idx)
-                i0 = title_idx(k);
-                i1 = min(i0 + 80, numel(lines));
-                window = lines(i0:i1);
-
-                mach = DatcomReader.extractMach(window);
-                if isempty(mach), continue; end
-
-                hdr = find(contains(window, '0 ALPHA') & contains(window, ' CD ') & contains(window, ' CN '), 1);
-                if isempty(hdr), continue; end
-
-                alpha_deg = [];
-                cd_vals  = [];
-                cl_vals  = [];
-                cm_vals  = [];
-                cn_vals  = [];
-                ca_vals  = [];
-                xcp_vals = [];
-                cla_vals = [];
-                cma_vals = [];
-                cyb_vals = [];
-                cnb_vals = [];
-                clb_vals = [];
-                valid = true;
-                for j = (hdr + 1):numel(window)
-                    line = window{j};
-                    if ~isempty(line) && line(1) == '1'
-                        break; % line-printer top-of-page: end of this block
-                    end
-                    m = regexp(line, '^\s*(-?\d+\.\d+)\s+(.*)$', 'tokens', 'once');
-                    if isempty(m)
-                        continue; % blank / carriage-control-only line between rows
-                    end
-                    a = str2double(m{1});
-                    rest = strsplit(strtrim(m{2}));
-                    if any(strcmpi(rest, 'NDM'))
-                        valid = false;
-                        break;
-                    end
-                    % Fixed DATCOM column layout after ALPHA: CD CL CM CN
-                    % CA XCP CLA CMA CYB CNB CLB (see class header comment)
-                    % - all 11 should be present on a non-NDM row.
-                    if numel(rest) < 11
-                        valid = false;
-                        break;
-                    end
-                    cd_v = str2double(rest{1});
-                    cl_v = str2double(rest{2});
-                    cm_v = str2double(rest{3});
-                    cn_v = str2double(rest{4});
-                    ca_v = str2double(rest{5});
-                    % XCP = CM/CN is undefined wherever CN crosses zero
-                    % (typically alpha=0); DATCOM prints "******" there
-                    % instead of a number, which str2double turns into NaN
-                    % - a per-point gap, not a reason to drop the whole
-                    % block the way a NDM row or a bad CD/CL would.
-                    xcp_v = str2double(rest{6});
-                    cla_v = str2double(rest{7});
-                    cma_v = str2double(rest{8});
-                    cyb_v = str2double(rest{9});
-                    cnb_v = str2double(rest{10});
-                    clb_v = str2double(rest{11});
-                    if isnan(cd_v) || isnan(cl_v)
-                        valid = false;
-                        break;
-                    end
-                    alpha_deg(end + 1) = a; %#ok<AGROW>
-                    cd_vals(end + 1)  = cd_v; %#ok<AGROW>
-                    cl_vals(end + 1)  = cl_v; %#ok<AGROW>
-                    cm_vals(end + 1)  = cm_v; %#ok<AGROW>
-                    cn_vals(end + 1)  = cn_v; %#ok<AGROW>
-                    ca_vals(end + 1)  = ca_v; %#ok<AGROW>
-                    xcp_vals(end + 1) = xcp_v; %#ok<AGROW>
-                    cla_vals(end + 1) = cla_v; %#ok<AGROW>
-                    cma_vals(end + 1) = cma_v; %#ok<AGROW>
-                    cyb_vals(end + 1) = cyb_v; %#ok<AGROW>
-                    cnb_vals(end + 1) = cnb_v; %#ok<AGROW>
-                    clb_vals(end + 1) = clb_v; %#ok<AGROW>
-                end
-
-                if valid && ~isempty(alpha_deg)
-                    blocks(end + 1) = struct('mach', mach, 'alpha_deg', alpha_deg, ...
-                        'CD', cd_vals, 'CL', cl_vals, 'CM', cm_vals, ...
-                        'CN', cn_vals, 'CA', ca_vals, 'XCP', xcp_vals, ...
-                        'CLA', cla_vals, 'CMA', cma_vals, 'CYB', cyb_vals, ...
-                        'CNB', cnb_vals, 'CLB', clb_vals); %#ok<AGROW>
-                end
+        function path = resolveFilePath(name)
+            if isfile(name)
+                path = name;
+                return;
+            end
+            here = fileparts(mfilename('fullpath'));
+            cand1 = fullfile(here, 'data', [name '.txt']);
+            cand2 = fullfile(here, 'data', [name '.dat']);
+            cand3 = fullfile(here, 'data', name);
+            if isfile(cand1)
+                path = cand1;
+            elseif isfile(cand2)
+                path = cand2;
+            elseif isfile(cand3)
+                path = cand3;
+            else
+                error('DatcomReader:resolveFilePath', 'Could not locate file: %s', name);
             end
         end
 
-        function mach = extractMach(window)
-            % The Mach number sits on the flight-conditions data line a
-            % few lines above the ALPHA table header, identified by its
-            % leading "0" carriage-control column and a scientific-
-            % notation Reynolds number later on the same line, e.g.:
-            %   0 0.600                                       4.2800E+06  8.850  2.480 ...
-            mach = [];
-            for j = 1:numel(window)
-                m = regexp(window{j}, '^0\s+(\d+\.\d+)\s+.*\d+\.\d+E[+-]\d+', 'tokens', 'once');
-                if ~isempty(m)
-                    mach = str2double(m{1});
-                    return;
-                end
+        function records = parseRawDatcom(filepath)
+            fid = fopen(filepath, 'r');
+            if fid == -1
+                error('DatcomReader:parseRawDatcom', 'Cannot open file: %s', filepath);
             end
+            raw_text = fread(fid, '*char')';
+            fclose(fid);
+
+            lines = regexp(raw_text, '\r?\n', 'split');
+            num_lines = length(lines);
+
+            all_fields = {'CN','CM','CA','CY','CLN','CLL','CL','CD','XCP', ...
+                          'CNA','CMA','CYB','CLNB','CLLB', ...
+                          'CNQ','CMQ','CAQ','CNAD','CMAD','CYR','CLNR','CLLR','CYP','CLNP','CLLP'};
+
+            dynamic_fields = {'CNQ','CMQ','CAQ','CNAD','CMAD','CYR','CLNR','CLLR','CYP','CLNP','CLLP'};
+
+            data_map = containers.Map();
+            current_mach = NaN;
+            rad_factor = 180 / pi;
+            i = 1;
+
+            while i <= num_lines
+                line_str = strtrim(lines{i});
+
+                % 1. Detect Mach Number
+                if contains(line_str, 'MACH NO') && contains(line_str, '=')
+                    tok = regexp(line_str, 'MACH\s+NO\s*=\s*([-+]?[0-9]*\.?[0-9]+(?:[eE][-+]?[0-9]+)?)', 'tokens');
+                    if ~isempty(tok)
+                        current_mach = str2double(tok{1}{1});
+                    end
+                    i = i + 1;
+                    continue;
+                end
+
+                % 2. Detect Table Headers containing ALPHA
+                if ~isnan(current_mach) && (startsWith(line_str, 'ALPHA') || contains(line_str, ' ALPHA '))
+                    clean_hdr = regexprep(line_str, 'X-C\.P\.', 'XCP');
+                    tokens = regexp(clean_hdr, '\S+', 'match');
+
+                    matched_cols = [];
+                    matched_names = {};
+                    for k = 2:length(tokens)
+                        c_name = tokens{k};
+                        if ismember(c_name, all_fields)
+                            matched_cols(end+1) = k; %#ok<AGROW>
+                            matched_names{end+1} = c_name; %#ok<AGROW>
+                        end
+                    end
+
+                    if ~isempty(matched_cols)
+                        i = i + 1;
+                        while i <= num_lines
+                            row_str = strtrim(lines{i});
+
+                            % Skip blank lines between header and numbers
+                            if isempty(row_str)
+                                i = i + 1;
+                                continue;
+                            end
+
+                            % Termination conditions for subtable
+                            if contains(row_str, '---') || contains(row_str, '*****') || ...
+                               contains(row_str, 'PAGE') || contains(row_str, 'PANEL') || ...
+                               contains(row_str, 'DERIVATIVE') || contains(row_str, 'FLIGHT CONDITIONS')
+                                break;
+                            end
+
+                            nums = sscanf(row_str, '%f');
+                            if length(nums) >= 2 && ~isnan(nums(1))
+                                a_val = nums(1);
+                                key = sprintf('%.4f_%.4f', current_mach, a_val);
+
+                                if ~isKey(data_map, key)
+                                    entry = struct('Mach', current_mach, 'Alpha', a_val);
+                                    for f = 1:length(all_fields)
+                                        entry.(all_fields{f}) = NaN;
+                                    end
+                                    data_map(key) = entry;
+                                end
+
+                                entry = data_map(key);
+                                for m = 1:length(matched_names)
+                                    col_idx = matched_cols(m);
+                                    if col_idx <= length(nums)
+                                        val = nums(col_idx);
+                                        % Convert dynamic damping terms to 1/rad
+                                        if ismember(matched_names{m}, dynamic_fields) && ~isnan(val)
+                                            val = val * rad_factor;
+                                        end
+                                        entry.(matched_names{m}) = val;
+                                    end
+                                end
+                                data_map(key) = entry;
+                            else
+                                break;
+                            end
+                            i = i + 1;
+                        end
+                        continue;
+                    end
+                end
+                i = i + 1;
+            end
+
+            keys_list = keys(data_map);
+            N = length(keys_list);
+            if N == 0
+                records = [];
+                return;
+            end
+
+            row_cells = cell(N, 1);
+            for k = 1:N
+                row_cells{k} = data_map(keys_list{k});
+            end
+            records = cell2mat(row_cells);
         end
 
         function cla = estimateCLAlpha(aero)
-            % Representative linear lift-curve slope for controllers that
-            % need a single gain (see AeroDatcom.CL_alpha) - the CL slope
-            % at the smallest nonzero alpha breakpoint, averaged across
-            % Mach.
             nonzero = find(aero.Alpha > 0, 1, 'first');
             if isempty(nonzero)
                 cla = 3.0;
