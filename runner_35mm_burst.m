@@ -8,7 +8,7 @@ env = Environment();
 % forward=1000, down=-120 (120m above launch), right=-200 (200m left);
 % vel forward=-12 (closing), down=0 (level), right=-8. Same physical
 % scenario as before (forward=1000,crossrange=200,altitude=120), just
-% re-authored directly in FDR (see TargetBase's constructor comment).
+% re-authored directly in FDR (see BaseTarget's constructor comment).
 target = TargetConstantVelocity([1000; -120; -200], [-12; 0; -8], 'FDR');
 
 % 3. Weapon Platform: 35mm twin AA mount (muzzle velocity dispersion,

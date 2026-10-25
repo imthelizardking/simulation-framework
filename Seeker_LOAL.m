@@ -1,12 +1,12 @@
-classdef SeekerLOAL < BaseSensor
+classdef Seeker_LOAL < BaseSensor
     properties
         MaxFOV      (1,1) double = deg2rad(20)
         T_SeekerOn  (1,1) double = 2.0
     end
     
     methods
-        function obj = SeekerLOAL(max_fov, t_seeker_on)
-            obj.Name = 'SeekerLOAL';
+        function obj = Seeker_LOAL(max_fov, t_seeker_on)
+            obj.Name = 'Seeker_LOAL';
             obj.MaxFOV = max_fov;
             obj.T_SeekerOn = t_seeker_on;
         end

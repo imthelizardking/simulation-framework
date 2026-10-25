@@ -1,6 +1,6 @@
 %% Scenario: M31 GMLRS Unitary - Direct Fire (Dynamics-Only, No Guidance)
 % Strips runner_m31_gmlrs_himars.m down to just the raw 6-DoF flight: no
-% target, no GNSS/IMU/SAL sensors, no GMLRSMidcourseGuidance, no
+% target, no GNSS/IMU/SAL sensors, no Guidance_GMLRSMidcourse, no
 % Autopilot6DoF - MunitionFactory.createM31GMLRSUnitary already leaves
 % Sensors/Guidance/Controller at {}/[]/[], so fin deflection stays 0 for
 % the whole flight (Munition.getDerivatives' own no-Controller default).

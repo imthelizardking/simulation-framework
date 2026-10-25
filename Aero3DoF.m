@@ -1,11 +1,11 @@
-classdef Aero3DoF_Longitudinal < BaseAero
+classdef Aero3DoF < BaseAero
     properties
         CL_alpha = 4.0 % scalar, or a Mach-dependent struct (see BaseAero.evalCoeff)
         BaseBleed = [] % optional Propulsion_DYU - reduces CD0 while burning
     end
 
     methods
-        function obj = Aero3DoF_Longitudinal(cd0, cl_alpha, ref_area)
+        function obj = Aero3DoF(cd0, cl_alpha, ref_area)
             obj.CD0 = cd0;
             obj.CL_alpha = cl_alpha;
             obj.RefArea = ref_area;

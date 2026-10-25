@@ -1,6 +1,6 @@
-classdef CourseCorrectionController < BaseController
+classdef Controller_CourseCorrection < BaseController
     % Course-correction fuze controller: waits for a valid muzzle-velocity
-    % reading (guid_bus.MVR - see MuzzleVelocityRadar/PassthroughGuidance),
+    % reading (guid_bus.MVR - see Sensor_MuzzleVelocityRadar/Guidance_Passthrough),
     % then runs FireControlComputer.solveDeployTimeForRange exactly once,
     % using the round's OWN real current state (nav_state/t) as the recon
     % starting point, and sets veh_cfg.Aero.airbrake_ADT to the result.
@@ -9,7 +9,7 @@ classdef CourseCorrectionController < BaseController
     %
     % guid_bus.MVR.MuzzleVelocity is used only for the printed report
     % below, not as an input to the solve itself: nav_state IS ground
-    % truth throughout this framework (see LongitudinalFinController,
+    % truth throughout this framework (see Controller_LongitudinalFin,
     % which reads nav_state the same way) - there's no separate state-
     % estimation layer to model here, so the solve already has the real
     % current state directly and doesn't need to be driven off a noisy
@@ -32,7 +32,7 @@ classdef CourseCorrectionController < BaseController
                 veh_cfg.Aero.airbrake_ADT = adt;
                 obj.SolveInfo = info;
                 obj.Solved = true;
-                fprintf(['[CourseCorrectionController] t=%.3f s: measured muzzle velocity %.2f m/s ' ...
+                fprintf(['[Controller_CourseCorrection] t=%.3f s: measured muzzle velocity %.2f m/s ' ...
                     '(noisy reading) -> solved airbrake_ADT = %.4f s (edge case: %s), ' ...
                     'recon-predicted range = %.1f m (desired %.1f m).\n'], ...
                     t, guid_bus.MVR.MuzzleVelocity, adt, info.EdgeCase, info.AchievedRange, obj.DesiredRange);

@@ -99,15 +99,15 @@ classdef LiveEngagementPlotter < BaseVisualizer
             % Seeker/FOV cone and PN-Angle-FOV command breakdown only apply
             % to a seeker-guided munition; an unguided direct-fire round
             % has neither, so both sections degrade gracefully instead of
-            % erroring on a missing field. NOTE: the SeekerLOAL branch's
+            % erroring on a missing field. NOTE: the Seeker_LOAL branch's
             % cone trig is only verified for 'Z-Up' - no Dynamics3Dof
             % guided/seeker scenario in this framework currently opts into
             % 'NED', so it hasn't been exercised or adapted for it. The
-            % Seeker3D branch below is frame-correct for 'Z-Up'/'NED'/'FDR'
+            % Seeker_3D branch below is frame-correct for 'Z-Up'/'NED'/'FDR'
             % (see its own comment) since a genuinely 6-DoF vehicle can
             % actually fly in 'NED'.
-            has_seeker_loal = isfield(gnc_bus, 'Sensors') && isfield(gnc_bus.Sensors, 'SeekerLOAL');
-            has_seeker_3d   = isfield(gnc_bus, 'Sensors') && isfield(gnc_bus.Sensors, 'Seeker3D');
+            has_seeker_loal = isfield(gnc_bus, 'Sensors') && isfield(gnc_bus.Sensors, 'Seeker_LOAL');
+            has_seeker_3d   = isfield(gnc_bus, 'Sensors') && isfield(gnc_bus.Sensors, 'Seeker_3D');
             has_seeker_sal  = isfield(gnc_bus, 'Sensors') && isfield(gnc_bus.Sensors, 'SAL');
             if has_seeker_3d && has_seeker_sal
                 % A vehicle carrying both (e.g. the GMLRS example) - show
@@ -121,7 +121,7 @@ classdef LiveEngagementPlotter < BaseVisualizer
                 end
             end
             if has_seeker_loal
-                seeker = gnc_bus.Sensors.SeekerLOAL;
+                seeker = gnc_bus.Sensors.Seeker_LOAL;
                 fov_len = seeker.Range + 100;
                 max_fov = deg2rad(20);
                 x_up = pos(1) + fov_len * cos(pitch + max_fov);
@@ -138,20 +138,20 @@ classdef LiveEngagementPlotter < BaseVisualizer
                 if has_seeker_sal
                     seeker = gnc_bus.Sensors.SAL;
                 else
-                    seeker = gnc_bus.Sensors.Seeker3D;
+                    seeker = gnc_bus.Sensors.Seeker_3D;
                 end
                 fov_len = seeker.Range + 100;
 
-                % Project the TRUE 3D nose direction (Seeker3D.NoseDir,
+                % Project the TRUE 3D nose direction (Seeker_3D.NoseDir,
                 % from Dynamics6DoF's real attitude DCM) onto this plot's
                 % (Range, Altitude) plane, via CoordinateFrame.altitude
                 % rather than a hand-derived per-frame sign - correct
-                % under 'Z-Up'/'NED'/'FDR' alike, unlike the SeekerLOAL
+                % under 'Z-Up'/'NED'/'FDR' alike, unlike the Seeker_LOAL
                 % branch above (which assumes 'Z-Up' pos(3) directly) or a
                 % hardcoded planar "pitch" (meaningless for a genuinely
                 % 3D-attitude vehicle - X(7) isn't even pitch for this
                 % class, see Dynamics6DoF). The LOCK/BLIND COLOR still
-                % comes from Seeker3D's own true 3D look angle (nose vs
+                % comes from Seeker_3D's own true 3D look angle (nose vs
                 % LOS dot product, computed in the sensor itself) - this
                 % projection only decides where the boundary LINES point
                 % on this 2D view, not whether the target counts as seen.

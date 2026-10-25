@@ -2,10 +2,10 @@
 % Engages a moving ground target (light armored vehicle, constant
 % velocity) that the round cannot track during midcourse - it flies a
 % lofted ballistic arc toward a FIXED aimpoint (the target's position at
-% launch time) using its own dead-reckoning INS (GnssSensor + Imu, fused
-% inside GMLRSMidcourseGuidance - see that class for the real strapdown
+% launch time) using its own dead-reckoning INS (GnssSensor + SensorIMU, fused
+% inside Guidance_GMLRSMidcourse - see that class for the real strapdown
 % mechanization and why its drift is a genuine, not simulated-for-show,
-% error mechanism), then a SALSeeker takes over once a ground/airborne
+% error mechanism), then a Seeker_SAL takes over once a ground/airborne
 % LaserDesignator lights the target within line-of-sight and the round is
 % close enough to uncage - correcting for however far the target has
 % moved since the aimpoint was set.
@@ -49,8 +49,8 @@ missile = MunitionFactory.createM31GMLRSUnitary();
 missile.Aero.Cm_delta = -3.0; % illustrative fin control-effectiveness placeholder - see this file's header comment
 missile.Aero.Cn_delta = -3.0;
 
-missile.Sensors  = { GnssSensor(), Imu(), SALSeeker(designator) };
-guidance = GMLRSMidcourseGuidance();
+missile.Sensors  = { GnssSensor(), SensorIMU(), Seeker_SAL(designator) };
+guidance = Guidance_GMLRSMidcourse();
 guidance.AimPoint = CoordinateFrame.rotateVector(aimpoint_zup, 'NED');
 missile.Guidance = guidance;
 

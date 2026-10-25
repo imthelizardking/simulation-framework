@@ -2,7 +2,7 @@
 classdef Simulation < handle
     properties
         Munition                  = []  % Munition container OR raw BaseDynamics object
-        Target                    = []  % TargetBase subclass OR struct
+        Target                    = []  % BaseTarget subclass OR struct
         Environment               = []  % Environment object
         Frame     (1,:) char      = 'Z-Up'  % 'Z-Up', 'NED', or 'FDR' (DynamicsMPMM/AeroMPMM only) - see CoordinateFrame; propagated to Munition.Dynamics/Aero/Visualizer/the burst swarm at run()
         Designator                = []  % BaseDesignator subclass (optional)
@@ -10,7 +10,7 @@ classdef Simulation < handle
         Visualizer                = []  % BaseVisualizer subclass (optional)
         Integrator                = RK4FixedStep()  % BaseIntegrator subclass
         TimeSpan  (1,2) double    = [0 25]
-        Dt        (1,1) double    = 0.001
+        Dt        (1,1) double    = 0.01
         Telemetry       struct    = struct()
         % Termination criteria; a field set to [] is disabled. Default is
         % ground-impact only (MinAltitude) - the one criterion that applies
@@ -210,6 +210,8 @@ classdef Simulation < handle
 
                 % Integrate
                 X = obj.Integrator.step(@(tt, XX) obj.evalDerivatives(tt, XX), t, X, dt);
+                disp(strcat('--- Time: ', num2str(t), ' ---'));
+                disp(strcat('--- Velo: ', num2str(norm(X(4:6))), ' ---'));
             end
 
             % Truncate telemetry
@@ -334,7 +336,7 @@ classdef Simulation < handle
         
         function tgt_bus = resolveTargetBus(obj)
             % Target objects are always built/stepped in plain "Z-Up"
-            % numbers (see TargetBase/TargetStatic/TargetConstantVelocity -
+            % numbers (see BaseTarget/TargetStatic/TargetConstantVelocity -
             % none of them know about Frame), so the bus handed to the
             % munition's physics - which DOES run in obj.Frame - is
             % rotated here, at the single point of consumption, rather

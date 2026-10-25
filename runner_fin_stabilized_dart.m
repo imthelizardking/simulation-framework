@@ -1,6 +1,6 @@
 %% Scenario: Basic Fin-Stabilized Dart Toss (Plain 3DoF Longitudinal Model)
 % The simplest possible scenario in this framework: no fire control
-% solver, no target, no spin - just Dynamics3Dof + Aero3DoF_Longitudinal
+% solver, no target, no spin - just Dynamics3Dof + Aero3DoF
 % acting on a hand-thrown fin-stabilized dart, to see the basic pitch-
 % plane lift/drag/pitch-follower model in isolation. Contrast with
 % runner_25mm.m and friends, which now use DynamicsMPMM/

@@ -1,7 +1,7 @@
 classdef Autopilot6DoF < BaseController
     % Multi-axis (pitch+yaw) autopilot for AeroMissile6DoF/Dynamics6DoF:
     % converts guidance's INERTIAL acceleration command into pitch/yaw fin
-    % deflections. Unlike LongitudinalFinController (which treats fin
+    % deflections. Unlike Controller_LongitudinalFin (which treats fin
     % deflection as an idealized DIRECT addition to angle of attack -
     % adequate for Dynamics3Dof's pitch-lag model), this class' aero
     % (AeroMissile6DoF) gives fins genuine MOMENT authority only
@@ -11,7 +11,7 @@ classdef Autopilot6DoF < BaseController
     % two-loop design: outer loop converts the desired lateral
     % acceleration into a desired alpha/beta (inverting CN_alpha/CY_beta,
     % same "required angle to produce this force" idea
-    % LongitudinalFinController already uses); inner loop is a
+    % Controller_LongitudinalFin already uses); inner loop is a
     % proportional-derivative law on angle-of-attack error and body rate,
     % converted to a required moment coefficient, then solved for the fin
     % deflection that produces it via Cm_delta/Cn_delta.

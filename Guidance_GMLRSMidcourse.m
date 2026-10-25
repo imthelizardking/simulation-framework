@@ -1,4 +1,4 @@
-classdef GMLRSMidcourseGuidance < BaseGuidance
+classdef Guidance_GMLRSMidcourse < BaseGuidance
     % Two-phase guidance for a GNSS/IMU midcourse + SAL terminal munition:
     %
     % MIDCOURSE (no SAL lock yet): a real GMLRS-class round has no way to
@@ -6,7 +6,7 @@ classdef GMLRSMidcourseGuidance < BaseGuidance
     % toward a FIXED aimpoint (the target's known/estimated position at
     % launch, i.e. the fire mission's grid coordinate), using its own
     % onboard dead-reckoning INS estimate, not ground truth. That INS
-    % estimate is maintained HERE (not in Imu/GnssSensor - see those
+    % estimate is maintained HERE (not in SensorIMU/GnssSensor - see those
     % classes' own comments on the "sensor measures, guidance fuses"
     % split): every step, IMU gyro/accel propagate the estimate forward
     % (a real strapdown mechanization - attitude from gyro, velocity from
@@ -26,9 +26,9 @@ classdef GMLRSMidcourseGuidance < BaseGuidance
     % same Dynamics6DoF.quatMultiply/quatToDCM/eulerToQuat helpers.
     %
     % TERMINAL (SAL locked): a fixed aimpoint can't track a MOVING target
-    % - once SALSeeker reports a lock, this switches entirely to true 3D
+    % - once Seeker_SAL reports a lock, this switches entirely to true 3D
     % proportional navigation driven directly by the seeker's own LOS-rate
-    % measurement (same formula as ProportionalNav3D, reusing nav_state's
+    % measurement (same formula as Guidance_ProportionalNav3D, reusing nav_state's
     % true velocity for the PN geometry the same way that class does - see
     % its own comment on why nav_state is ground truth throughout this
     % framework and that's fine once a seeker is providing the actual
@@ -48,7 +48,7 @@ classdef GMLRSMidcourseGuidance < BaseGuidance
     end
 
     methods
-        function obj = GMLRSMidcourseGuidance()
+        function obj = Guidance_GMLRSMidcourse()
             obj.MaxAccel = 25 * 9.81; % illustrative - a large guided rocket, less agile than a small interceptor
         end
 
@@ -109,7 +109,7 @@ classdef GMLRSMidcourseGuidance < BaseGuidance
                     v_hat   = obj.VelEst / v_mag;
                     los_hat = r_vec / dist;
                     % PN toward a STATIONARY aimpoint (target velocity 0),
-                    % same formula ProportionalNav3D uses for a moving
+                    % same formula Guidance_ProportionalNav3D uses for a moving
                     % one - the fixed point just makes v_rel = -VelEst.
                     omega_los = cross(r_vec, -obj.VelEst) / max(dist^2, 1e-3);
                     Vc = dot(obj.VelEst, los_hat);

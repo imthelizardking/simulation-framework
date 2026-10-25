@@ -16,7 +16,7 @@ classdef FireMission < handle
     properties
         Platform                       % WeaponPlatform
         MunitionBuilder                 % function handle, e.g. @() MunitionFactory.create35mmHE()
-        Target                          % TargetBase subclass, advanced across the whole mission
+        Target                          % BaseTarget subclass, advanced across the whole mission
         Environment                    % Environment
         Frame           (1,:) char   = 'Z-Up' % 'Z-Up', 'NED', or 'FDR' - see CoordinateFrame; passed to each round's Simulation
         LauncherPos     (3,1) double = [0;0;0]

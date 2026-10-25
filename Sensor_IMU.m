@@ -1,4 +1,4 @@
-classdef Imu < BaseSensor
+classdef SensorIMU < BaseSensor
     % Strapdown IMU: gyro (body rates) + accelerometer (specific force),
     % each corrupted by a slowly-drifting bias (a random walk - "bias
     % instability", the real mechanism behind long-term IMU drift) plus
@@ -8,9 +8,9 @@ classdef Imu < BaseSensor
     % measurements; integrating them into a drifting position/attitude
     % estimate (where the drift actually becomes visible/consequential) is
     % done by the guidance that consumes this sensor (see
-    % GMLRSMidcourseGuidance's dead-reckoning INS mechanization) - the
+    % Guidance_GMLRSMidcourse's dead-reckoning INS mechanization) - the
     % same "sensor measures, something else fuses" split GnssSensor/this
-    % class have from GMLRSMidcourseGuidance.
+    % class have from Guidance_GMLRSMidcourse.
     %
     % Accelerometer physics: an accelerometer measures SPECIFIC FORCE
     % (non-gravitational force per unit mass - a free-falling body reads
@@ -38,7 +38,7 @@ classdef Imu < BaseSensor
     end
 
     methods
-        function obj = Imu()
+        function obj = SensorIMU()
             obj.Name = 'IMU';
         end
 

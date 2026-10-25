@@ -18,7 +18,7 @@
 clear; clc;
 here = fileparts(mfilename('fullpath'));
 
-%% Hydra_70_M151 - MunitionFactory.createHydra70 (Aero3DoF_Longitudinal: CD0/CL_alpha only)
+%% Hydra_70_M151 - MunitionFactory.createHydra70 (Aero3DoF: CD0/CL_alpha only)
 S = struct();
 S.aero.phase.CD0      = 0.38;
 S.aero.phase.CL_alpha = 3.2;
@@ -129,7 +129,7 @@ S = struct();
 S.inertial.mass = 15.0;
 write_mat(here, 'APKWS_Guided_Rocket', S);
 
-%% GuidedRocket_DATCOM - MunitionFactory.createGuidedRocketDatcom (Mass/Inertia only - Aero from DatcomReader)
+%% GuidedRocket_DATCOM - MunitionFactory.createGuidedRocketDatcom (Mass/Inertia only - Aero from ParserDatcom)
 S = struct();
 S.inertial.mass                = 15.0;
 S.inertial.inertial_axial      = 0.008;

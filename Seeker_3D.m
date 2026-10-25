@@ -1,5 +1,5 @@
-classdef Seeker3D < BaseSensor
-    % Full 3D seeker for a genuine 6-DoF vehicle - unlike SeekerLOAL (which
+classdef Seeker_3D < BaseSensor
+    % Full 3D seeker for a genuine 6-DoF vehicle - unlike Seeker_LOAL (which
     % hardcodes a single-plane LOS via atan2(r_vec(3),r_vec(1)) and reads
     % truth_state(7) as "pitch", both specific to Dynamics3Dof's 8-state
     % planar layout), this computes a real 3D line-of-sight rotation-rate
@@ -7,20 +7,20 @@ classdef Seeker3D < BaseSensor
     % navigation quantity), so engagement geometry with lateral offset/
     % motion works correctly, not just same-vertical-plane intercepts.
     %
-    % FOV/lock tracking mirrors SeekerLOAL's own T_SeekerOn/MaxFOV pattern,
+    % FOV/lock tracking mirrors Seeker_LOAL's own T_SeekerOn/MaxFOV pattern,
     % but the look angle is the TRUE 3D angle between the vehicle's actual
     % nose direction (from Dynamics6DoF's own DCM - real attitude, not a
     % planar pitch proxy) and the line of sight, via dot(nose,LOS) - exact
     % for any 3D engagement geometry, including lateral offset/motion
-    % SeekerLOAL's planar angle difference could never represent correctly.
+    % Seeker_LOAL's planar angle difference could never represent correctly.
     properties
         MaxFOV     (1,1) double = deg2rad(30)
         T_SeekerOn (1,1) double = 0.0 % 0 = active from launch; set >0 for a LOAL-style uncage delay
     end
 
     methods
-        function obj = Seeker3D(max_fov, t_seeker_on)
-            obj.Name = 'Seeker3D';
+        function obj = Seeker_3D(max_fov, t_seeker_on)
+            obj.Name = 'Seeker_3D';
             if nargin > 0, obj.MaxFOV = max_fov; end
             if nargin > 1, obj.T_SeekerOn = t_seeker_on; end
         end
@@ -44,7 +44,7 @@ classdef Seeker3D < BaseSensor
             look_angle = acos(max(-1, min(1, dot(nose_hat, los_hat))));
 
             if t < obj.T_SeekerOn
-                is_blind = false; is_locked = false; % virtual/INS phase, same convention as SeekerLOAL
+                is_blind = false; is_locked = false; % virtual/INS phase, same convention as Seeker_LOAL
             elseif look_angle > obj.MaxFOV
                 is_blind = true;  is_locked = false;
             else

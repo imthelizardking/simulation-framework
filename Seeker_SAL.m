@@ -1,5 +1,5 @@
-classdef SALSeeker < BaseSensor
-    % Semi-Active Laser seeker: unlike Seeker3D (always "sees" the target
+classdef Seeker_SAL < BaseSensor
+    % Semi-Active Laser seeker: unlike Seeker_3D (always "sees" the target
     % geometrically, gated only by its own FOV), this seeker detects
     % NOTHING unless a LaserDesignator is actively illuminating the target
     % with line-of-sight (see that class) AND its own PRF_Code matches
@@ -11,7 +11,7 @@ classdef SALSeeker < BaseSensor
     % hook.
     %
     % Field names (IsBlind/IsLocked/LookAngle/NoseDir/MaxFOV) deliberately
-    % match Seeker3D's own measurement shape so LiveEngagementPlotter's
+    % match Seeker_3D's own measurement shape so LiveEngagementPlotter's
     % existing 3D-seeker FOV-line drawing branch can recognize either
     % sensor by name without a third near-duplicate branch.
     properties
@@ -22,7 +22,7 @@ classdef SALSeeker < BaseSensor
     end
 
     methods
-        function obj = SALSeeker(designator)
+        function obj = Seeker_SAL(designator)
             obj.Name = 'SAL';
             if nargin > 0, obj.Designator = designator; end
         end

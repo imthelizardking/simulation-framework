@@ -87,7 +87,7 @@ classdef Dynamics6DoF < BaseDynamics
             % Inertial acceleration: a = (R_bi * F_b) / m + g_ned
             g_vec = CoordinateFrame.gravityVector(9.80665, obj.Frame);
             accel = (R_bi * F_body_total) / m + g_vec;
-
+            disp(strcat('aero: ', num2str(forces.Aero)));
             % 3. Rotational Kinematics (Quaternion Derivatives)
             % Standard kinematic equation: q_dot = 0.5 * q (x) [0; p; q; r]
             % Baumgarte stabilization: + lambda * (1 - ||q||^2) * q (lambda = 1.0)

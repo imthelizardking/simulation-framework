@@ -1,8 +1,8 @@
-classdef DatcomReader
+classdef ParserDatcom
     % DATCOMREADER Reads USAF Automated Missile DATCOM (REV 03/11) formatted
     % output listings (e.g. for006.dat, data/<name>.txt, data/<name>.dat)
     % and normalizes static forces, moments, stability derivatives, and dynamic
-    % rate damping derivatives into an AeroDatcom object or a struct.
+    % rate damping derivatives into an Aero6DoF object or a struct.
     %
     % Angular derivatives (CNA, CMA, CYB, CLNB, CLLB) and dynamic rate
     % derivatives (CNQ, CMQ, CAQ, CNAD, CMAD, CYR, CLNR, CLLR, CYP, CLNP, CLLP)
@@ -11,12 +11,12 @@ classdef DatcomReader
     methods (Static)
         function aero = load(name, ref_area, ref_length)
             % Resolve input file path
-            path = DatcomReader.resolveFilePath(name);
+            path = ParserDatcom.resolveFilePath(name);
 
             % Parse raw data into unified record struct
-            records = DatcomReader.parseRawDatcom(path);
+            records = ParserDatcom.parseRawDatcom(path);
             if isempty(records)
-                error('DatcomReader:load', 'No valid aerodynamic records found in %s', path);
+                error('ParserDatcom:load', 'No valid aerodynamic records found in %s', path);
             end
 
             % Extract canonical Alpha and Mach schedules
@@ -28,7 +28,7 @@ classdef DatcomReader
             n_mach  = numel(mach_unique);
             n_alpha = numel(alpha_unique);
 
-            % Allocate 2D matrices [n_alpha x n_mach] to match AeroDatcom layout
+            % Allocate 2D matrices [n_alpha x n_mach] to match Aero6DoF layout
             CD   = zeros(n_alpha, n_mach);
             CL   = zeros(n_alpha, n_mach);
             CM   = zeros(n_alpha, n_mach);
@@ -96,8 +96,8 @@ classdef DatcomReader
                 CYP(i_a, i_m)  = r.CYP;
             end
 
-            % Instantiate AeroDatcom object
-            aero = AeroDatcom();
+            % Instantiate Aero6DoF object
+            aero = Aero6DoF();
             if nargin > 1 && ~isempty(ref_area),   aero.RefArea   = ref_area;   end
             if nargin > 2 && ~isempty(ref_length), aero.RefLength = ref_length; end
 
@@ -131,7 +131,7 @@ classdef DatcomReader
             if isprop(aero, 'CLLR'), aero.CLLR = CLLR; end
 
             if isprop(aero, 'CL_alpha')
-                aero.CL_alpha = DatcomReader.estimateCLAlpha(aero);
+                aero.CL_alpha = ParserDatcom.estimateCLAlpha(aero);
             end
         end
 
@@ -141,8 +141,8 @@ classdef DatcomReader
             if nargin < 1
                 filename = 'for006.dat';
             end
-            path = DatcomReader.resolveFilePath(filename);
-            records = DatcomReader.parseRawDatcom(path);
+            path = ParserDatcom.resolveFilePath(filename);
+            records = ParserDatcom.parseRawDatcom(path);
 
             all_fields = {'CN','CM','CA','CY','CLN','CLL','CL','CD','XCP', ...
                           'CNA','CMA','CYB','CLNB','CLLB', ...
@@ -183,14 +183,14 @@ classdef DatcomReader
             elseif isfile(cand3)
                 path = cand3;
             else
-                error('DatcomReader:resolveFilePath', 'Could not locate file: %s', name);
+                error('ParserDatcom:resolveFilePath', 'Could not locate file: %s', name);
             end
         end
 
         function records = parseRawDatcom(filepath)
             fid = fopen(filepath, 'r');
             if fid == -1
-                error('DatcomReader:parseRawDatcom', 'Cannot open file: %s', filepath);
+                error('ParserDatcom:parseRawDatcom', 'Cannot open file: %s', filepath);
             end
             raw_text = fread(fid, '*char')';
             fclose(fid);

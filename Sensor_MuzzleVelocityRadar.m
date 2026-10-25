@@ -1,4 +1,4 @@
-classdef MuzzleVelocityRadar < BaseSensor
+classdef Sensor_MuzzleVelocityRadar < BaseSensor
     % Course-correction fuze sensor: reports the round's true muzzle
     % (launch) velocity, once, after AcquisitionDelay seconds of flight -
     % not a continuous readout. Deliberately simplified: a real muzzle-

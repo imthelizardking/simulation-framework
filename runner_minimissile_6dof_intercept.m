@@ -2,9 +2,9 @@
 % Same shape as runner_sam_engagement.m (constant-velocity inbound target,
 % LiveEngagementPlotter for live animation), but flown by the new 6-DoF
 % pipeline (Dynamics6DoF + AeroMissile6DoF) with a genuinely 3D seeker/
-% guidance/autopilot chain (Seeker3D + ProportionalNav3D + Autopilot6DoF)
-% instead of runner_sam_engagement's planar SeekerLOAL/
-% OptimalAngleFOVGuidance/LongitudinalFinController trio, which hardcodes
+% guidance/autopilot chain (Seeker_3D + Guidance_ProportionalNav3D + Autopilot6DoF)
+% instead of runner_sam_engagement's planar Seeker_LOAL/
+% Guidance_OptimalAngleFOV/Controller_LongitudinalFin trio, which hardcodes
 % Dynamics3Dof's 8-state layout (truth_state(7) as "pitch") and a single
 % vertical plane - both wrong for this vehicle. Target carries a lateral
 % (Y) offset specifically to exercise real 3D engagement geometry the old
@@ -39,8 +39,8 @@ missile = MunitionFactory.createMiniMissile6DoF();
 missile.Aero.Cm_delta = -0.8;
 missile.Aero.Cn_delta = -0.8;
 
-missile.Sensors    = { Seeker3D() };
-missile.Guidance   = ProportionalNav3D();
+missile.Sensors    = { Seeker_3D() };
+missile.Guidance   = Guidance_ProportionalNav3D();
 missile.Controller = Autopilot6DoF();
 
 % 4. Initial Launch State: simple direct-aim at the target's current

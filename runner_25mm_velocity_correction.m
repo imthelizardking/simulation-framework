@@ -24,7 +24,7 @@ env = Environment();
 % forward=700, down=-100 (100m above launch), right=-150 (150m left);
 % vel forward=-10 (closing), down=0 (level), right=-6. Same physical
 % scenario as before (forward=700,crossrange=150,altitude=100), just
-% re-authored directly in FDR (see TargetBase's constructor comment).
+% re-authored directly in FDR (see BaseTarget's constructor comment).
 target = TargetConstantVelocity([700; -100; -150], [-10; 0; -6], 'FDR');
 
 % 3. Instantiate Munition via MunitionFactory, attach the fragmentation model

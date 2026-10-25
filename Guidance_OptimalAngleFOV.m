@@ -1,4 +1,4 @@
-classdef OptimalAngleFOVGuidance < BaseGuidance
+classdef Guidance_OptimalAngleFOV < BaseGuidance
     properties
         UseTerminalAngle (1,1) logical = false
         UseFOV           (1,1) logical = true
@@ -12,12 +12,12 @@ classdef OptimalAngleFOVGuidance < BaseGuidance
     end
     
     methods
-        function obj = OptimalAngleFOVGuidance()
+        function obj = Guidance_OptimalAngleFOV()
             obj.MaxAccel = 40 * 9.81;
         end
         
         function guid_bus = step(obj, t, nav_state, ~, sensor_bus)
-            seeker = sensor_bus.SeekerLOAL;
+            seeker = sensor_bus.Seeker_LOAL;
             vel    = nav_state(4:6);
             pitch  = nav_state(7);
             

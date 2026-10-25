@@ -2,14 +2,14 @@
 classdef GroundStation < handle
     properties
         Position         (3,1) double = [0; 0; 0]
-        Radar            OffboardRadar
+        Radar            Sensor_OffboardRadar
         GuidanceMode     (1,:) char = 'CLOS' % Command Line-of-Sight
     end
     
     methods
         function obj = GroundStation(site_pos)
             if nargin > 0, obj.Position = site_pos; end
-            obj.Radar = OffboardRadar(obj.Position);
+            obj.Radar = Sensor_OffboardRadar(obj.Position);
         end
         
         function uplink_bus = step(obj, t, dt, msl_pos, tgt_pos)

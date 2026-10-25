@@ -1,13 +1,13 @@
 %% Scenario: Guided Rocket with Missile DATCOM Aero Tables vs. Inbound Target
 % Same engagement shape as runner_sam_engagement.m, but the interceptor's
-% Aero comes from AeroDatcom (via DatcomReader), reading Missile DATCOM's
+% Aero comes from Aero6DoF (via ParserDatcom), reading Missile DATCOM's
 % own printed CD/CL-vs-alpha tables directly instead of the CD0/CL_alpha
 % buildup APKWS uses. Defaults to data/ex1_in.txt, a real Digital DATCOM
 % run (the DATCOM Users Manual's "Example Problem 1" body) - swap in your
 % own rocket's DATCOM run once you have one:
 %   MunitionFactory.createGuidedRocketDatcom('your_datcom_output_name')
 % (data/<name>.txt must be DATCOM's own printed output listing, not a
-% MATLAB script - see DatcomReader.)
+% MATLAB script - see ParserDatcom.)
 clear; clc; clf;
 
 % 1. Setup Environment
@@ -17,7 +17,7 @@ env = Environment(); % No wind, standard atmosphere
 target = TargetConstantVelocity([8000; 0; 3000], [-250; 0; 0]);
 
 % 3. Instantiate Guided Interceptor via MunitionFactory
-missile = MunitionFactory.createGuidedRocketDatcom();
+missile = MunitionFactory.createHydra70mm();
 
 % 4. Initial Launch State: simple direct-aim at the target's current
 %    position (no fire-control lead solution). The seeker/guidance loop

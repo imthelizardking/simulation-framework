@@ -2,7 +2,7 @@
 % Full pipeline: fire control aims at Multiplier*Desired_Range (pure
 % phase-1 ballistics - airbrake_ADT defaults to Inf/never-deploy, so this
 % is just an ordinary overshoot shot), then launches. Once airborne, the
-% MuzzleVelocityRadar + PassthroughGuidance + CourseCorrectionController
+% Sensor_MuzzleVelocityRadar + Guidance_Passthrough + Controller_CourseCorrection
 % chain takes over automatically (see Munition.updateGNC): the moment the
 % radar's one-shot reading goes valid (after AcquisitionDelay seconds),
 % the controller solves for the airbrake_ADT that brings the round's OWN
@@ -44,19 +44,19 @@ v0_nominal = shell.Charge.MuzzleVelocity;
 % recon pattern already has to guard against.
 recon_builder = @() build_m107_recon(shell, latitude_deg);
 
-% 4. Sensor + Guidance + Controller pipeline (see MuzzleVelocityRadar,
-% PassthroughGuidance, CourseCorrectionController)
-mvr = MuzzleVelocityRadar();
+% 4. Sensor + Guidance + Controller pipeline (see Sensor_MuzzleVelocityRadar,
+% Guidance_Passthrough, Controller_CourseCorrection)
+mvr = Sensor_MuzzleVelocityRadar();
 mvr.Name             = 'MVR';
 mvr.AcquisitionDelay = 1.0;
 mvr.NoiseStdDev      = 3.0;
 
-ctrl = CourseCorrectionController();
+ctrl = Controller_CourseCorrection();
 ctrl.ReconBuilder = recon_builder;
 ctrl.DesiredRange = Desired_Range;
 
 shell.Sensors    = {mvr};
-shell.Guidance   = PassthroughGuidance();
+shell.Guidance   = Guidance_Passthrough();
 shell.Controller = ctrl;
 
 % 5. Fire Control Computer - aim at Multiplier*Desired_Range using the
@@ -93,7 +93,7 @@ fprintf('Pre-Calculated Airbrake ADT (nominal v0=%.2f m/s) : %.4f s (edge case: 
     v0_nominal, adt_precalculated, info_precalculated.EdgeCase, info_precalculated.AchievedRange);
 
 % 7. Actual (dispersed) muzzle velocity for THIS shot - the true value the
-% radar's single perturbed reading is based on (see MuzzleVelocityRadar's
+% radar's single perturbed reading is based on (see Sensor_MuzzleVelocityRadar's
 % own comment on why it reads this directly rather than back-solving it).
 v0_actual = v0_nominal + shell.Charge.MuzzleVelocityStdDev * randn();
 mvr.TrueMuzzleVelocity = v0_actual;

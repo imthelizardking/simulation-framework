@@ -1,4 +1,4 @@
-classdef AeroDatcom < BaseAero
+classdef Aero6DoF < BaseAero
     % Aero model driven directly by Missile DATCOM's output tables.
     % Provides static forces (CD, CL, CY, CN, CA), moments (CM, CLN, CLL),
     % static stability derivatives, and dynamic rate damping derivatives.
@@ -6,7 +6,7 @@ classdef AeroDatcom < BaseAero
     properties
         % Grid Breakpoints
         Mach  (1,:) double = []  % Mach breakpoints
-        Alpha (1,:) double = []  % Alpha breakpoints, RADIANS (DatcomReader converts from DATCOM's native degrees)
+        Alpha (1,:) double = []  % Alpha breakpoints, RADIANS (ParserDatcom converts from DATCOM's native degrees)
 
         % Wind & Body Static Coefficients: numel(Alpha)-by-numel(Mach)
         CD    double = []        % Drag coefficient (wind axis)
@@ -19,7 +19,7 @@ classdef AeroDatcom < BaseAero
         CLL   double = []        % Rolling moment coefficient
         XCP   double = []        % Center of pressure location (calibers from moment center)
 
-        % Static Angle Derivatives (PER RADIAN, converted by DatcomReader)
+        % Static Angle Derivatives (PER RADIAN, converted by ParserDatcom)
         CLA   double = []        % dCL/dalpha
         CMA   double = []        % dCM/dalpha (pitch stiffness)
         CYB   double = []        % dCY/dbeta (side force due to sideslip)
@@ -62,8 +62,8 @@ classdef AeroDatcom < BaseAero
             end
 
             if isempty(obj.Mach) || isempty(obj.Alpha)
-                error('AeroDatcom:NoData', ...
-                    '%s has no DATCOM table loaded - see DatcomReader.load.', class(obj));
+                error('Aero6DoF:NoData', ...
+                    '%s has no DATCOM table loaded - see ParserDatcom.load.', class(obj));
             end
 
             % 1. Extract quaternion and compute Body-to-Inertial DCM
@@ -154,6 +154,7 @@ classdef AeroDatcom < BaseAero
             coeffs.CM  = obj.interpField(obj.CM,  mach_c, alpha_c, 0.0);
             coeffs.CN  = obj.interpField(obj.CN,  mach_c, alpha_c, 0.0);
             coeffs.CA  = obj.interpField(obj.CA,  mach_c, alpha_c, 0.0);
+            % disp(strcat('CA: ', num2str(coeffs.CA)));
             coeffs.CLN = obj.interpField(obj.CLN, mach_c, alpha_c, 0.0);
             coeffs.CLL = obj.interpField(obj.CLL, mach_c, alpha_c, 0.0);
 

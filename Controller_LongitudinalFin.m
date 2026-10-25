@@ -1,4 +1,4 @@
-classdef LongitudinalFinController < BaseController
+classdef Controller_LongitudinalFin < BaseController
     methods
         function ctrl_bus = step(obj, ~, guid_bus, nav_state, veh_cfg, env)
             vel   = nav_state(4:6);

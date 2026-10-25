@@ -2,7 +2,7 @@ classdef LaserDesignator < handle
     % An independent scenario entity (ground observer on a mast, or an
     % airborne platform/drone - Position is whatever the runner sets it
     % to) that illuminates a target for a SAL seeker to home on - see
-    % SALSeeker, which holds a direct reference to one of these, same
+    % Seeker_SAL, which holds a direct reference to one of these, same
     % "direct object reference" pattern GnssSensor.Jammer uses, rather
     % than routing through Simulation's own (currently unwired -
     % des_bus is built in Simulation.run() but never actually reaches

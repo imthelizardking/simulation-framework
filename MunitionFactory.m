@@ -93,7 +93,7 @@ classdef MunitionFactory
 
             m.Dynamics   = Dynamics3Dof();
             % d = 0.070 m -> S_ref = 0.00385 m^2, CD0 ~ 0.38
-            m.Aero       = Aero3DoF_Longitudinal( ...
+            m.Aero       = Aero3DoF( ...
                 FactoryData.getOr(aero_over, 'CD0', 0.38), ...
                 FactoryData.getOr(aero_over, 'CL_alpha', 3.2), ...
                 FactoryData.getOr(data, 'RefArea', 0.00385));
@@ -109,7 +109,7 @@ classdef MunitionFactory
         %% Fin-Stabilized Practice Dart (Basic Plain 3DoF Longitudinal Demo)
         function m = createFinStabilizedDart()
             % Deliberately the simplest munition in this factory: plain
-            % Dynamics3Dof + Aero3DoF_Longitudinal, no spin, no charge
+            % Dynamics3Dof + Aero3DoF, no spin, no charge
             % zones, no guidance - a clean baseline for the basic
             % pitch-plane lift/drag/pitch-follower model on its own,
             % unclouded by any of the spin-stabilized machinery the other
@@ -132,7 +132,7 @@ classdef MunitionFactory
             % S_ref = pi*(0.02/2)^2 = 3.14e-4 m^2. CL_alpha is high relative
             % to the gun-fired shells above - tail fins give a strong,
             % genuinely-stabilizing lift-curve slope with no spin needed.
-            m.Aero = Aero3DoF_Longitudinal( ...
+            m.Aero = Aero3DoF( ...
                 FactoryData.getOr(aero_over, 'CD0', 0.3), ...
                 FactoryData.getOr(aero_over, 'CL_alpha', 5.0), ...
                 FactoryData.getOr(data, 'RefArea', 3.14e-4));
@@ -408,19 +408,19 @@ classdef MunitionFactory
             m.Propulsion = Propulsion_SolidMotor.fromData(data, Propulsion_SolidMotor.MK66Mod4());
 
             % Attach LOAL Seeker and Guidance (LaserSeeker referenced here
-            % previously does not exist anywhere in the codebase; SeekerLOAL
-            % is the sensor OptimalAngleFOVGuidance/LiveEngagementPlotter
-            % actually expect via sensor_bus.SeekerLOAL). prf_code is kept
+            % previously does not exist anywhere in the codebase; Seeker_LOAL
+            % is the sensor Guidance_OptimalAngleFOV/LiveEngagementPlotter
+            % actually expect via sensor_bus.Seeker_LOAL). prf_code is kept
             % as an input for future laser-designator integration but is
             % not consumed yet.
             % seeker_fov_deg = FactoryData.getOr(data, 'SeekerFOV_deg', 20);
             % t_seeker_on    = FactoryData.getOr(data, 'T_SeekerOn', 1.2); % Seeker uncages after motor burnout
-            % m.Sensors    = { SeekerLOAL(deg2rad(seeker_fov_deg), t_seeker_on) };
-            % guid = OptimalAngleFOVGuidance();
+            % m.Sensors    = { Seeker_LOAL(deg2rad(seeker_fov_deg), t_seeker_on) };
+            % guid = Guidance_OptimalAngleFOV();
             % guid.UseFOV = true;
             % guid.T_SeekerOn = t_seeker_on;
             % m.Guidance   = guid;
-            % m.Controller = LongitudinalFinController();
+            % m.Controller = Controller_LongitudinalFin();
         end
 
         %% Guided Rocket with Missile DATCOM Aero Tables (70mm-class)
@@ -430,7 +430,7 @@ classdef MunitionFactory
             % mass/motor/seeker parameters below if present (see
             % FactoryData); the aero table itself is a SEPARATE Missile
             % DATCOM printed-output file (data/<datcom_name>.txt, see
-            % DatcomReader) rather than a FactoryData override, since it's
+            % ParserDatcom) rather than a FactoryData override, since it's
             % a 2D Mach/Alpha grid, not the scalar/Mach-table coefficient
             % shape FactoryData.getOr(...) is built for. Defaults to
             % data/ex1_in.txt - a real Digital DATCOM run (the manual's
@@ -439,8 +439,8 @@ classdef MunitionFactory
             % against genuine DATCOM output. Swap in your own rocket's
             % DATCOM run once you have one; its reference dimensions will
             % differ from the defaults below.
-            data = FactoryData.load('createAPKWS');
-            m = Munition(FactoryData.getOr(data, 'Name', 'createAPKWS'));
+            data = FactoryData.load('MISSILEDATCOM_HYDRA70APKWS_motorburnout_canardsdeployed');
+            m = Munition(FactoryData.getOr(data, 'Name', 'MISSILEDATCOM_HYDRA70APKWS_motorburnout_canardsdeployed'));
             m.Type = FactoryData.getOr(data, 'Type', 'Guided');
             mdata = MunitionData.load(m.Name);
 
@@ -457,21 +457,67 @@ classdef MunitionFactory
             % card), converted to SI: the CD/CL table is only physically
             % meaningful with the reference dimensions DATCOM normalized
             % it against.
-            m.Aero = DatcomReader.load(datcom_name, ...
+            m.Aero = ParserDatcom.load(datcom_name, ...
                 FactoryData.getOr(data, 'RefArea', 0.003848451), ...   % 8.85 ft^2
                 FactoryData.getOr(data, 'RefLength', 0.07));    % 2.48 ft
             m.Propulsion = Propulsion_SolidMotor.MK66Mod4(7);
             
             % seeker_fov_deg = FactoryData.getOr(data, 'SeekerFOV_deg', 20);
             % t_seeker_on    = FactoryData.getOr(data, 'T_SeekerOn', 1.2); % Seeker uncages after motor burnout
-            % m.Sensors    = { SeekerLOAL(deg2rad(seeker_fov_deg), t_seeker_on) };
-            % guid = OptimalAngleFOVGuidance();
+            % m.Sensors    = { Seeker_LOAL(deg2rad(seeker_fov_deg), t_seeker_on) };
+            % guid = Guidance_OptimalAngleFOV();
             % guid.UseFOV = true;
             % guid.T_SeekerOn = t_seeker_on;
             % m.Guidance   = guid;
-            % m.Controller = LongitudinalFinController();
+            % m.Controller = Controller_LongitudinalFin();
         end
+        %% Guided Rocket with Missile DATCOM Aero Tables (70mm-class)
+        function m = createHydra70mm(datcom_name)
+            if nargin < 1, datcom_name = 'MISSILEDATCOM_HYDRA70'; end
+            % A data/createGuidedRocketDatcom.<ext> file overrides the
+            % mass/motor/seeker parameters below if present (see
+            % FactoryData); the aero table itself is a SEPARATE Missile
+            % DATCOM printed-output file (data/<datcom_name>.txt, see
+            % ParserDatcom) rather than a FactoryData override, since it's
+            % a 2D Mach/Alpha grid, not the scalar/Mach-table coefficient
+            % shape FactoryData.getOr(...) is built for. Defaults to
+            % data/ex1_in.txt - a real Digital DATCOM run (the manual's
+            % "Example Problem 1"; data/EX1_inout.txt is its input deck)
+            % - rather than fabricated data, so the pipeline is exercised
+            % against genuine DATCOM output. Swap in your own rocket's
+            % DATCOM run once you have one; its reference dimensions will
+            % differ from the defaults below.
+            data = FactoryData.load('MISSILEDATCOM_HYDRA70');
+            m = Munition(FactoryData.getOr(data, 'Name', 'MISSILEDATCOM_HYDRA70'));
+            m.Type = FactoryData.getOr(data, 'Type', 'Unguided');
+            mdata = MunitionData.load(m.Name);
 
+            % Illustrative mass properties (not from the DATCOM run, which
+            % only reports aero) - adjust to your actual rocket's real
+            % mass/inertia, or supply data/<Name>.mat (see MunitionData).
+            m.MassProperties.Mass = MunitionData.mass(mdata, 15.0);
+            m.MassProperties.Inertia = MunitionData.inertia(mdata, diag([0.008, 0.45, 0.45]));
+
+            m.Dynamics = Dynamics6DoF();
+            % RefArea/RefLength default to Example Problem 1's own SREF/
+            % CBARR (8.85 ft^2, 2.48 ft - see data/EX1_inout.txt's $OPTINS
+            % card), converted to SI: the CD/CL table is only physically
+            % meaningful with the reference dimensions DATCOM normalized
+            % it against.
+            m.Aero = ParserDatcom.load(datcom_name, ...
+                FactoryData.getOr(data, 'RefArea', 0.003848451), ...   % 8.85 ft^2
+                FactoryData.getOr(data, 'RefLength', 0.07));    % 2.48 ft
+            m.Propulsion = Propulsion_SolidMotor.MK66Mod4(7);
+            
+            % seeker_fov_deg = FactoryData.getOr(data, 'SeekerFOV_deg', 20);
+            % t_seeker_on    = FactoryData.getOr(data, 'T_SeekerOn', 1.2); % Seeker uncages after motor burnout
+            % m.Sensors    = { Seeker_LOAL(deg2rad(seeker_fov_deg), t_seeker_on) };
+            % guid = Guidance_OptimalAngleFOV();
+            % guid.UseFOV = true;
+            % guid.T_SeekerOn = t_seeker_on;
+            % m.Guidance   = guid;
+            % m.Controller = Controller_LongitudinalFin();
+        end
         %% Mini Missile - Genuine 6-DoF Rigid Body (Free-Flight Physics Core)
         function m = createMiniMissile6DoF()
             % A data/createMiniMissile6DoF.mat file overrides Name/Type/
@@ -552,7 +598,7 @@ classdef MunitionFactory
             % AeroMissile6DoF pipeline underneath.
             %
             % No Sensors/Guidance/Controller wired up here - GNSS/IMU/
-            % SALSeeker/GMLRSMidcourseGuidance/Autopilot6DoF all need
+            % Seeker_SAL/Guidance_GMLRSMidcourse/Autopilot6DoF all need
             % scenario-specific configuration (a LaserDesignator instance,
             % an AimPoint, etc.) that only the runner can know - see
             % runner_m31_gmlrs_himars.m.

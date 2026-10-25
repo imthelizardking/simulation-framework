@@ -1,5 +1,5 @@
-%% File: OffboardRadar.m
-classdef OffboardRadar < handle
+%% File: Sensor_OffboardRadar.m
+classdef Sensor_OffboardRadar < handle
     properties
         Position          (3,1) double = [0; 0; 0]   % Radar site location (NED)
         MaxRange          (1,1) double = 25000.0     % Radar instrumented range (m)
@@ -9,7 +9,7 @@ classdef OffboardRadar < handle
     end
     
     methods
-        function obj = OffboardRadar(site_pos)
+        function obj = Sensor_OffboardRadar(site_pos)
             if nargin > 0, obj.Position = site_pos; end
         end
         

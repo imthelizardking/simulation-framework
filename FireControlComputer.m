@@ -204,7 +204,7 @@ classdef FireControlComputer < handle
             % the real Simulation then reproduces exactly - provided the
             % runner flies it with the same dt/frame passed in here.
             %
-            % target is a TargetBase (its current Position/Velocity are
+            % target is a BaseTarget (its current Position/Velocity are
             % copied into a TargetConstantVelocity for each flight) or a
             % target bus struct (.pos/.vel). timespan bounds each flight.
             % The analytic direct-lead solve is only the initial guess.
@@ -581,7 +581,7 @@ classdef FireControlComputer < handle
             %
             % current_state/current_t are the REAL round's own state and
             % absolute time-since-launch at the moment this is called
-            % (e.g. nav_state/t from CourseCorrectionController.step) -
+            % (e.g. nav_state/t from Controller_CourseCorrection.step) -
             % every recon flight below starts from there, under exact,
             % unmodified physics, not a fresh from-zero launch.
             %
@@ -659,7 +659,7 @@ classdef FireControlComputer < handle
             % round's uncontrolled flight, used by solveNumericalShooting.
             % GNC is detached BEFORE copying, both because it isn't flown and
             % because it can hold closures over the prototype itself (e.g.
-            % CourseCorrectionController.ReconBuilder) that shouldn't be
+            % Controller_CourseCorrection.ReconBuilder) that shouldn't be
             % serialized; it's reattached to the prototype straight after.
             gnc = {prototype.Sensors, prototype.Guidance, prototype.Controller};
             prototype.Sensors = {}; prototype.Guidance = []; prototype.Controller = [];

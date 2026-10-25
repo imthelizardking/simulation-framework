@@ -1,5 +1,5 @@
-%% File: TargetBase.m
-classdef (Abstract) TargetBase < handle
+%% File: BaseTarget.m
+classdef (Abstract) BaseTarget < handle
     properties
         Name              (1,:) char   = 'Target'
         Position          (3,1) double = [0; 0; 0]
@@ -11,7 +11,7 @@ classdef (Abstract) TargetBase < handle
     end
     
     methods
-        function obj = TargetBase(name, pos, vel, frame)
+        function obj = BaseTarget(name, pos, vel, frame)
             % pos/vel are always stored in the framework's Z-Up-sense
             % convention (downrange, crossrange, altitude/climb-rate) -
             % the same "author once, auto-rotated at the point of

@@ -1,9 +1,9 @@
-classdef ProportionalNav3D < BaseGuidance
+classdef Guidance_ProportionalNav3D < BaseGuidance
     % True Proportional Navigation, full 3D vector form: a_cmd = N * Vc *
     % (omega_LOS x v_hat) - the standard vector generalization of the
     % classic scalar/planar PN law (Zarchan, "Tactical and Strategic
-    % Missile Guidance"), unlike OptimalAngleFOVGuidance's own AccelCmd
-    % (a single scalar meant for LongitudinalFinController's one fin
+    % Missile Guidance"), unlike Guidance_OptimalAngleFOV's own AccelCmd
+    % (a single scalar meant for Controller_LongitudinalFin's one fin
     % channel). The cross product with the missile's own velocity unit
     % vector guarantees the commanded acceleration is always perpendicular
     % to the flight path - no along-track component, which wouldn't be
@@ -14,12 +14,12 @@ classdef ProportionalNav3D < BaseGuidance
     end
 
     methods
-        function obj = ProportionalNav3D()
+        function obj = Guidance_ProportionalNav3D()
             obj.MaxAccel = 40 * 9.81;
         end
 
         function guid_bus = step(obj, ~, nav_state, ~, sensor_bus)
-            seeker = sensor_bus.Seeker3D;
+            seeker = sensor_bus.Seeker_3D;
             vel = nav_state(BaseDynamics.IDX_VEL);
             v_mag = norm(vel);
 
@@ -30,7 +30,7 @@ classdef ProportionalNav3D < BaseGuidance
             % guidance cuts to zero right when correction is most needed,
             % the nose drifts further behind, and it never recovers.
             % IsBlind/LookAngle are still computed and reported by
-            % Seeker3D for display (LiveEngagementPlotter's FOV lines) -
+            % Seeker_3D for display (LiveEngagementPlotter's FOV lines) -
             % just not used to gate control here. Revisit if a scenario
             % genuinely needs "go ballistic while blind" behavior, with a
             % more generous MaxFOV so ordinary tracking lag doesn't trip it.

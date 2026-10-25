@@ -2,7 +2,7 @@ classdef AeroMissile6DoF < BaseAero
     % Body-axis 6-DoF missile aero: real alpha/beta computed from the
     % vehicle's TRUE attitude vs. its velocity vector (via Dynamics6DoF's
     % own DCM), unlike AeroMPMM's yaw-of-repose (an algebraic stand-in for
-    % attitude a point-mass model doesn't track) or AeroDatcom's planar
+    % attitude a point-mass model doesn't track) or Aero6DoF's planar
     % alpha-only, wind-axis CD/CL, force-only model (paired with
     % Dynamics3Dof, which has no real rotational state to feed moments
     % into). Designed to be fed by Missile DATCOM-derived coefficients

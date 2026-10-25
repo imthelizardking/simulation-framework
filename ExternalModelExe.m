@@ -11,7 +11,7 @@ classdef ExternalModelExe < BaseExternalModel
     % parseOutputs once a real target tool's exact CLI/IO contract is
     % available. Guessing that shape now, without a real sample to check
     % it against, is exactly the mistake this project already made once
-    % (see DatcomReader's history - it had to be rebuilt once a genuine
+    % (see ParserDatcom's history - it had to be rebuilt once a genuine
     % sample file arrived) - not repeating it here.
     %
     % inputs (into run(), see Simulation.runExternalModel) is
