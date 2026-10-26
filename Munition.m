@@ -22,7 +22,10 @@ classdef Munition < handle
         Guidance                  = []  % Holds instance of BaseGuidance subclass
         Controller                = []  % Holds instance of BaseController subclass
         Charge                    = []  % Holds a ChargeZone (gun-fired munitions only; empty for rocket motors)
-        MassProperties struct     = struct('Mass', 3.0, 'Inertia', eye(3))
+        MassProperties struct = struct('Mass', 3.0, 'Inertia', eye(3), ...
+            'MassEmpty', 3.0, 'CGEmpty', [0;0;0], ...
+            'CGFull', [0;0;0], 'CGRef', [0;0;0], ...
+            'InertiaFull', eye(3), 'InertiaEmpty', eye(3))
         TwistRate      (1,1) double = 0.0 % rifling twist, calibers/turn; 0 = not applicable (fin-stabilized/no spin)
         LastGNCBus     struct     = struct()
         BurstTime                 = []  % s since launch at which fragmentation triggers; [] = never bursts
@@ -36,7 +39,7 @@ classdef Munition < handle
             if nargin > 0, obj.Name = name; end
         end
 
-        function X0 = buildLaunchState(obj, launcher_pos, v0, elevation, azimuth)
+        function X0 = buildLaunchState(obj, launcher_pos, v0, elevation, azimuth, spin_init, inertiaMatrix)
             % Assembles the Dynamics-specific launch state, adding the
             % muzzle spin rate (from TwistRate + the round's bore
             % diameter) on top for a Dynamics3DofSpin or DynamicsMPMM
@@ -45,6 +48,8 @@ classdef Munition < handle
             if (isa(obj.Dynamics, 'Dynamics3DofSpin') || isa(obj.Dynamics, 'DynamicsMPMM')) && obj.TwistRate > 0
                 spin0 = Dynamics3DofSpin.spinRateFromTwist(v0, obj.TwistRate, obj.Aero.RefLength);
                 X0 = obj.Dynamics.buildLaunchState(launcher_pos, v0, elevation, azimuth, obj.MassProperties.Mass, spin0);
+            elseif (isa(obj.Dynamics, 'Dynamics6DoF'))
+                X0 = obj.Dynamics.buildLaunchState(launcher_pos, v0, elevation, azimuth, obj.MassProperties.Mass);
             else
                 X0 = obj.Dynamics.buildLaunchState(launcher_pos, v0, elevation, azimuth, obj.MassProperties.Mass);
             end
@@ -100,62 +105,82 @@ classdef Munition < handle
                 s = obj.Sensors{i};
                 sensor_bus.(s.Name) = s.step(t, obj.Dynamics.CurrentState, target, env);
             end
-            
+
             nav_bus = obj.Dynamics.CurrentState;
-            
+
             if ~isempty(obj.Guidance)
                 guid_bus = obj.Guidance.step(t, nav_bus, target, sensor_bus);
             else
                 guid_bus = struct('AccelCmd', 0.0);
             end
-            
+
             if ~isempty(obj.Controller)
                 ctrl_bus = obj.Controller.step(t, guid_bus, nav_bus, obj, env);
             else
                 ctrl_bus = struct('FinDeflection', 0.0);
             end
-            
+
             obj.LastGNCBus.Sensors    = sensor_bus;
             obj.LastGNCBus.Nav        = nav_bus;
             obj.LastGNCBus.Guidance   = guid_bus;
             obj.LastGNCBus.Controller = ctrl_bus;
         end
-        
+
         function dX = getDerivatives(obj, t, X, env)
             obj.Dynamics.CurrentState = X;
-            
+
             if ~isempty(obj.Propulsion)
                 [F_prop, M_prop, m_dot] = obj.Propulsion.getThrust(t, env);
             else
                 F_prop = [0;0;0]; M_prop = [0;0;0]; m_dot = 0;
             end
-            
+
             if isfield(obj.LastGNCBus, 'Controller') && isfield(obj.LastGNCBus.Controller, 'FinDeflection')
                 fin_deflection = obj.LastGNCBus.Controller.FinDeflection;
             else
                 fin_deflection = 0.0;
             end
-            
+
             if ~isempty(obj.Aero)
                 [F_aero, M_aero] = obj.Aero.getForcesAndMoments(t, X, env, fin_deflection);
-                % IForm/FL: AeroMPMM applies them itself, internally,
-                % against its own true alpha_e-relative terms - applying
-                % them again here would square the effect. AeroMissile6DoF
-                % is excluded for a different reason: it builds F_aero in
-                % BODY axes (CA/CN/CY-style), not as drag-along-velocity +
-                % lift-perpendicular-to-velocity - applyFormFactors' split
-                % (from the INERTIAL velocity direction, X(4:6)) would be
-                % meaningless against a body-axis vector. Every other Aero
-                % class gets IForm/FL applied generically instead, via the
-                % exact drag/lift decomposition BaseAero.applyFormFactors
-                % does from the velocity direction alone (see BaseAero.
-                % IForm's property comment for why that split is exact for
-                % those classes' force convention).
                 if ~isa(obj.Aero, 'AeroMPMM') && ~isa(obj.Aero, 'AeroMissile6DoF')
                     F_aero = BaseAero.applyFormFactors(F_aero, X(4:6), obj.Aero.IForm, obj.Aero.FL);
                 end
             else
                 F_aero = [0;0;0]; M_aero = [0;0;0];
+            end
+
+            % --- DYNAMIC CG AND INERTIA CALCULATION ---
+            m_current = X(BaseDynamics.IDX_MASS);
+
+            if isfield(obj.MassProperties, 'MassEmpty') && isfield(obj.MassProperties, 'CGEmpty') && ...
+                    isfield(obj.MassProperties, 'CGFull') && isfield(obj.MassProperties, 'CGRef')
+
+                m_empty  = obj.MassProperties.MassEmpty;
+                m_full   = obj.MassProperties.Mass;
+                cg_empty = obj.MassProperties.CGEmpty;
+                cg_full  = obj.MassProperties.CGFull;
+                cg_ref   = obj.MassProperties.CGRef;
+
+                if (m_full - m_empty) > 1e-4
+                    mass_frac = (m_current - m_empty) / (m_full - m_empty);
+                    cg_prop = (m_full * cg_full - m_empty * cg_empty) / (m_full - m_empty);
+                    cg_current = (m_empty * cg_empty + (m_current - m_empty) * cg_prop) / m_current;
+
+                    if isfield(obj.MassProperties, 'InertiaFull') && isfield(obj.MassProperties, 'InertiaEmpty')
+                        obj.MassProperties.Inertia = obj.MassProperties.InertiaEmpty + ...
+                            mass_frac * (obj.MassProperties.InertiaFull - obj.MassProperties.InertiaEmpty);
+                    end
+                else
+                    cg_current = cg_empty;
+                    if isfield(obj.MassProperties, 'InertiaEmpty')
+                        obj.MassProperties.Inertia = obj.MassProperties.InertiaEmpty;
+                    end
+                end
+
+                cg_shift = cg_current - cg_ref;
+                M_aero = M_aero + cross(cg_shift, F_aero);
+                M_prop = M_prop + cross(cg_shift, F_prop);
             end
 
             forces.Propulsion    = F_prop;

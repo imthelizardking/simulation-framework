@@ -22,7 +22,7 @@ classdef Dynamics6DoF < BaseDynamics
             obj.StateDimension = 21; % 17 base slots + 4 quaternion slots
         end
 
-        function X0 = buildLaunchState(obj, launcher_pos, v0, elevation, azimuth, mass, p0)
+        function X0 = buildLaunchState(obj, launcher_pos, v0, elevation, azimuth, mass, p0, inertiaMatrix)
             % BUILDLAUNCHSTATE Computes initial 6-DoF state vector
             %
             % Inputs:
@@ -33,7 +33,7 @@ classdef Dynamics6DoF < BaseDynamics
             %   mass         - Total vehicle launch mass (kg)
             %   p0           - (Optional) Initial roll spin rate (rad/s), default = 0
 
-            if nargin < 7 || isempty(p0)
+            if nargin < 8 || isempty(p0)
                 p0 = 0.0;
             end
 
@@ -57,7 +57,7 @@ classdef Dynamics6DoF < BaseDynamics
             X0(BaseDynamics.IDX_BODYRATE) = [p0; 0; 0]; % Initial roll spin (rad/s)
             X0(BaseDynamics.IDX_SPIN2)    = p0;
             X0(BaseDynamics.IDX_MASS)     = mass;
-            X0(BaseDynamics.IDX_INERTIA)  = [0; 0; 0];
+            X0(BaseDynamics.IDX_INERTIA) = [0; 0; 0];
             X0(obj.IDX_QUAT)              = q0;
         end
 
@@ -90,7 +90,7 @@ classdef Dynamics6DoF < BaseDynamics
             % disp(strcat('aero: ', num2str(forces.Aero)));
             % disp(strcat('prop: ', num2str(forces.Propulsion)));
             % disp(strcat('accel: ', num2str(accel)));
-            
+
             % 3. Rotational Kinematics (Quaternion Derivatives)
             % Standard kinematic equation: q_dot = 0.5 * q (x) [0; p; q; r]
             % Baumgarte stabilization: + lambda * (1 - ||q||^2) * q (lambda = 1.0)
@@ -152,53 +152,53 @@ classdef Dynamics6DoF < BaseDynamics
         function R_i2b = quatToDCM(q)
             % True Body -> Inertial Direction Cosine Matrix (scalar-first: [q0; q1; q2; q3])
             q0 = q(1); q1 = q(2); q2 = q(3); q3 = q(4);
-    R_i2b = [
-        1 - 2*(q2^2 + q3^2),  2*(q1*q2 - q0*q3),  2*(q1*q3 + q0*q2);
-        2*(q1*q2 + q0*q3),    1 - 2*(q1^2 + q3^2), 2*(q2*q3 - q0*q1);
-        2*(q1*q3 - q0*q2),    2*(q2*q3 + q0*q1),  1 - 2*(q1^2 + q2^2)
-    ];
+            R_i2b = [
+                1 - 2*(q2^2 + q3^2),  2*(q1*q2 - q0*q3),  2*(q1*q3 + q0*q2);
+                2*(q1*q2 + q0*q3),    1 - 2*(q1^2 + q3^2), 2*(q2*q3 - q0*q1);
+                2*(q1*q3 - q0*q2),    2*(q2*q3 + q0*q1),  1 - 2*(q1^2 + q2^2)
+                ];
         end
 
         function q = eulerToQuat(phi, theta, psi)
-%EULERTOQUAT_NED Convert Euler angles to body-to-NED quaternion.
-%
-% Inputs:
-%   phi   - Roll angle  [rad]
-%   theta - Pitch angle [rad]
-%   psi   - Yaw angle   [rad]
-%
-% Output:
-%   q     - 4x1 quaternion [q0; q1; q2; q3]
-%           Scalar-first, Hamilton convention
-%
-% Convention:
-%   - Aerospace 3-2-1 (ZYX) Euler rotation sequence
-%   - Body frame: X forward, Y right, Z down
-%   - NED frame:  X north, Y east, Z down
-%   - Quaternion transforms body-frame vectors into NED
+            %EULERTOQUAT_NED Convert Euler angles to body-to-NED quaternion.
+            %
+            % Inputs:
+            %   phi   - Roll angle  [rad]
+            %   theta - Pitch angle [rad]
+            %   psi   - Yaw angle   [rad]
+            %
+            % Output:
+            %   q     - 4x1 quaternion [q0; q1; q2; q3]
+            %           Scalar-first, Hamilton convention
+            %
+            % Convention:
+            %   - Aerospace 3-2-1 (ZYX) Euler rotation sequence
+            %   - Body frame: X forward, Y right, Z down
+            %   - NED frame:  X north, Y east, Z down
+            %   - Quaternion transforms body-frame vectors into NED
 
-    validateattributes(phi,   {'numeric'}, {'scalar', 'real', 'finite'});
-    validateattributes(theta, {'numeric'}, {'scalar', 'real', 'finite'});
-    validateattributes(psi,   {'numeric'}, {'scalar', 'real', 'finite'});
+            validateattributes(phi,   {'numeric'}, {'scalar', 'real', 'finite'});
+            validateattributes(theta, {'numeric'}, {'scalar', 'real', 'finite'});
+            validateattributes(psi,   {'numeric'}, {'scalar', 'real', 'finite'});
 
-    cr = cos(phi/2);
-    sr = sin(phi/2);
+            cr = cos(phi/2);
+            sr = sin(phi/2);
 
-    cp = cos(theta/2);
-    sp = sin(theta/2);
+            cp = cos(theta/2);
+            sp = sin(theta/2);
 
-    cy = cos(psi/2);
-    sy = sin(psi/2);
+            cy = cos(psi/2);
+            sy = sin(psi/2);
 
-    q0 = cr*cp*cy + sr*sp*sy;
-    q1 = sr*cp*cy - cr*sp*sy;
-    q2 = cr*sp*cy + sr*cp*sy;
-    q3 = cr*cp*sy - sr*sp*cy;
+            q0 = cr*cp*cy + sr*sp*sy;
+            q1 = sr*cp*cy - cr*sp*sy;
+            q2 = cr*sp*cy + sr*cp*sy;
+            q3 = cr*cp*sy - sr*sp*cy;
 
-    q = [q0; q1; q2; q3];
+            q = [q0; q1; q2; q3];
 
-    % Normalize to protect against numerical roundoff
-    q = q / norm(q);
+            % Normalize to protect against numerical roundoff
+            q = q / norm(q);
         end
 
         function euler = quatToEuler(q)

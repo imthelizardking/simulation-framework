@@ -86,7 +86,7 @@ classdef Aero6DoF < BaseAero
             % alpha = atan2(w, u) + fin_deflection;
             alpha = atan2(w, u);            
             % alpha = 0.0;
-            disp(strcat('pitch: ', num2str(pitch*180/pi)));
+            % disp(strcat('pitch: ', num2str(pitch*180/pi)));
             % disp(strcat('phi: ', num2str(psi*180/pi)));
             % disp(strcat('psi: ', num2str(psi*180/pi)));
             % disp(strcat('alpha: ', num2str(alpha*180/pi)));

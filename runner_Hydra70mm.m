@@ -18,16 +18,21 @@ env = Atmosphere(); % No wind, standard atmosphere
 
 % 3. Instantiate Guided Interceptor via MunitionFactory
 missile = MunitionFactory.createHydra70mm('MISSILEDATCOM_HYDRA70');
-
+missile.MassProperties.MassEmpty    = 8.0;
+missile.MassProperties.CGFull       = [1.2; 0; 0];
+missile.MassProperties.CGEmpty      = [1.0; 0; 0];
+missile.MassProperties.CGRef        = [1.2; 0; 0];
+missile.MassProperties.InertiaFull  = diag([0.1, 2.0, 2.0]);
+missile.MassProperties.InertiaEmpty = diag([0.08, 1.5, 1.5]);
 % 4. Initial Launch State: simple direct-aim at the target's current
 %    position (no fire-control lead solution). The seeker/guidance loop
 %    is what actually closes the intercept once it uncages at T_SeekerOn.
 launcher_pos = [0; 0; 0];
 launch_elev = pi/4; % positive pitch-up
 v0_rail = 45.0; % m/s, rail-launch speed before motor ignition, magnitude
+spin_init = 0;
 
 missile.Dynamics.InitialState = missile.buildLaunchState(launcher_pos, v0_rail, launch_elev, 0);
-
 fprintf('Launch elevation: %.1f mils\n', FireControlComputer.rad2mil(launch_elev));
 
 % 5. Assemble Simulation & Execute

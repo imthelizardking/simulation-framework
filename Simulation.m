@@ -211,8 +211,9 @@ classdef Simulation < handle
 
                 % Integrate
                 X = obj.Integrator.step(@(tt, XX) obj.evalDerivatives(tt, XX), t, X, dt);
-                % disp(strcat('--- Time: ', num2str(t), ' ---'));
-                % disp(strcat('--- Velo: ', num2str(norm(X(4:6))), ' ---'));
+                disp(strcat('--- Time: ', num2str(t), ' ---'));
+                disp(strcat('--- Inertia: ', num2str(X(15), '%.6f'), ' ---'));
+                disp(strcat('--- Mass: ', num2str((X(14))), ' ---'));
             end
 
             % Truncate telemetry
