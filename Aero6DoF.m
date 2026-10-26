@@ -51,11 +51,11 @@ classdef Aero6DoF < BaseAero
                 fin_deflection = 0.0;
             end
 
-            % pitch = X(8);
+            pitch = X(8);
             flow = BaseAero.computeFlowState(X, env, obj.Frame);
             % 2. Full inertial relative velocity vector [m/s]
             v_rel_inertial = flow.v_mag * flow.vel_dir;
-            pitch = atan2(v_rel_inertial(3), v_rel_inertial(1));
+            % pitch = atan2(v_rel_inertial(3), v_rel_inertial(1));
             % disp(flow.gamma);
             if flow.v_mag < 1e-3
                 F_aero = [0; 0; 0];
@@ -70,13 +70,13 @@ classdef Aero6DoF < BaseAero
 
             % 1. Extract quaternion and compute Body-to-Inertial DCM
             quat = X(18:21);
-            R_bi = Dynamics6DoF.quatToDCM(quat);
+            R_i2b = Dynamics6DoF.quatToDCM(quat);
 
             % % 2. Full inertial relative velocity vector [m/s]
             % v_rel_inertial = flow.v_mag * flow.vel_dir;
 
             % 3. Rotate inertial wind into body axes: v_body = R_ib * v_inertial = R_bi' * v_inertial
-            v_body = R_bi' * v_rel_inertial;
+            v_body = R_i2b * v_rel_inertial;
 
             u = v_body(1); % Forward (out the nose)
             v = v_body(2); % Right (starboard)
@@ -85,23 +85,20 @@ classdef Aero6DoF < BaseAero
             % 4. Aerodynamic angles
             % alpha = atan2(w, u) + fin_deflection;
             alpha = atan2(w, u);            
-            % alpha = (pitch - flow.gamma) + fin_deflection;             % Aerodynamic angle of attack including fin deflection / control bias % --- OLD (Breaks as gamma drops): ---
             % alpha = 0.0;
-            disp(strcat('v_rel_inertial(1): ', num2str(v_rel_inertial(1))));
-            disp(strcat('v_rel_inertial(3): ', num2str(v_rel_inertial(3))));
-            % disp(strcat('u: ', num2str(u)));
-            % disp(strcat('w: ', num2str(w)));
-            % disp(strcat('alpha: ', num2str(alpha)));
+            disp(strcat('pitch: ', num2str(pitch*180/pi)));
+            % disp(strcat('phi: ', num2str(psi*180/pi)));
+            % disp(strcat('psi: ', num2str(psi*180/pi)));
+            % disp(strcat('alpha: ', num2str(alpha*180/pi)));
             % Extract sideslip angle (beta) and angular rates if available in state vector X
             % beta  = asin(v / max(flow.v_mag, 1e-3));
-            beta = 0.0;
             if isfield(flow, 'beta')
                 beta = flow.beta;
             elseif numel(X) >= 8 && isfield(flow, 'psi')
                 % Estimate lateral sideslip if yaw/heading is present in state
                 beta = X(8) - flow.psi;
             end
-
+            beta = 0;
             % Angular rates P, Q, R (rad/s)
             p_rate = 0.0; q_rate = 0.0; r_rate = 0.0;
             if numel(X) >= 12

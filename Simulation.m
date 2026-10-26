@@ -117,7 +117,7 @@ classdef Simulation < handle
             tel.target_pos = zeros(N_steps, 3);
             tel.accel_cmd  = zeros(N_steps, 1);
             tel.range      = zeros(N_steps, 1);
-
+            tel.mach        = zeros(N_steps, 1);
             % 3. Resolve Target Bus
             tgt_bus = obj.resolveTargetBus();
 
@@ -192,7 +192,8 @@ classdef Simulation < handle
                     tel.accel_cmd(k) = obj.Munition.LastGNCBus.Guidance.AccelCmd;
                 end
                 tel.range(k) = norm(tgt_bus.pos - X(1:3));
-                
+                flow = BaseAero.computeFlowState(X, obj.Atmosphere, obj.Frame);
+                tel.mach(k) = flow.mach;
                 % Step Visualizer
                 if ~isempty(obj.Visualizer)
                     gnc_bus = struct();

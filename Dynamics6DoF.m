@@ -66,7 +66,7 @@ classdef Dynamics6DoF < BaseDynamics
             vel  = X(BaseDynamics.IDX_VEL);
             quat = X(obj.IDX_QUAT);
             p    = X(BaseDynamics.IDX_BODYRATE(1));
-            q    = X(BaseDynamics.IDX_BODYRATE(2));
+            q    = -X(BaseDynamics.IDX_BODYRATE(2)); % making neg somehow solves it!
             r    = X(BaseDynamics.IDX_BODYRATE(3));
             m    = X(BaseDynamics.IDX_MASS);
 
@@ -80,13 +80,13 @@ classdef Dynamics6DoF < BaseDynamics
 
             % 2. Translational Dynamics (Inertial Frame)
             % Body -> Inertial Direction Cosine Matrix
-            R_bi = Dynamics6DoF.quatToDCM(q_unit);
+            R_i2b = Dynamics6DoF.quatToDCM(q_unit);
 
             % Total forces in body frame (Aerodynamic + Propulsion)
             F_body_total = forces.Aero + forces.Propulsion;
             % Inertial acceleration: a = (R_bi * F_b) / m + g_ned
             g_vec = CoordinateFrame.gravityVector(9.80665, obj.Frame);
-            accel = (R_bi' * F_body_total) / m + g_vec;
+            accel = (R_i2b' * F_body_total) / m + g_vec;
             % disp(strcat('aero: ', num2str(forces.Aero)));
             % disp(strcat('prop: ', num2str(forces.Propulsion)));
             % disp(strcat('accel: ', num2str(accel)));
@@ -149,25 +149,56 @@ classdef Dynamics6DoF < BaseDynamics
     end
 
     methods (Static)
-        function R_bi = quatToDCM(q)
+        function R_i2b = quatToDCM(q)
             % True Body -> Inertial Direction Cosine Matrix (scalar-first: [q0; q1; q2; q3])
             q0 = q(1); q1 = q(2); q2 = q(3); q3 = q(4);
-            R_bi = [1 - 2*(q2^2 + q3^2),     2*(q1*q2 - q0*q3),     2*(q1*q3 + q0*q2);
-                2*(q1*q2 + q0*q3), 1 - 2*(q1^2 + q3^2),     2*(q2*q3 - q0*q1);
-                2*(q1*q3 - q0*q2),     2*(q2*q3 + q0*q1), 1 - 2*(q1^2 + q2^2)];
-            % Note the transpose (.') to make it truly Body-to-Inertial
+    R_i2b = [
+        1 - 2*(q2^2 + q3^2),  2*(q1*q2 - q0*q3),  2*(q1*q3 + q0*q2);
+        2*(q1*q2 + q0*q3),    1 - 2*(q1^2 + q3^2), 2*(q2*q3 - q0*q1);
+        2*(q1*q3 - q0*q2),    2*(q2*q3 + q0*q1),  1 - 2*(q1^2 + q2^2)
+    ];
         end
 
         function q = eulerToQuat(phi, theta, psi)
-            % 3-2-1 (Yaw-Pitch-Roll) Euler to scalar-first quaternion
-            cr = cos(phi/2);   sr = sin(phi/2);
-            cp = cos(theta/2); sp = sin(theta/2);
-            cy = cos(psi/2);   sy = sin(psi/2);
-            q = [cr*cp*cy + sr*sp*sy; ...
-                sr*cp*cy - cr*sp*sy; ...
-                cr*sp*cy + sr*cp*sy; ...
-                cr*cp*sy - sr*sp*cy];
-            q = q / norm(q);
+%EULERTOQUAT_NED Convert Euler angles to body-to-NED quaternion.
+%
+% Inputs:
+%   phi   - Roll angle  [rad]
+%   theta - Pitch angle [rad]
+%   psi   - Yaw angle   [rad]
+%
+% Output:
+%   q     - 4x1 quaternion [q0; q1; q2; q3]
+%           Scalar-first, Hamilton convention
+%
+% Convention:
+%   - Aerospace 3-2-1 (ZYX) Euler rotation sequence
+%   - Body frame: X forward, Y right, Z down
+%   - NED frame:  X north, Y east, Z down
+%   - Quaternion transforms body-frame vectors into NED
+
+    validateattributes(phi,   {'numeric'}, {'scalar', 'real', 'finite'});
+    validateattributes(theta, {'numeric'}, {'scalar', 'real', 'finite'});
+    validateattributes(psi,   {'numeric'}, {'scalar', 'real', 'finite'});
+
+    cr = cos(phi/2);
+    sr = sin(phi/2);
+
+    cp = cos(theta/2);
+    sp = sin(theta/2);
+
+    cy = cos(psi/2);
+    sy = sin(psi/2);
+
+    q0 = cr*cp*cy + sr*sp*sy;
+    q1 = sr*cp*cy - cr*sp*sy;
+    q2 = cr*sp*cy + sr*cp*sy;
+    q3 = cr*cp*sy - sr*sp*cy;
+
+    q = [q0; q1; q2; q3];
+
+    % Normalize to protect against numerical roundoff
+    q = q / norm(q);
         end
 
         function euler = quatToEuler(q)
