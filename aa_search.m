@@ -3,7 +3,7 @@
 
 % --- Configuration ---
 folderPath = pwd; 
-searchWord = 'Atmosphere';
+searchWord = 'quatToDCM';
 
 % --- Control Variables ---
 matchWholeWord = true;  % true = exact word only, false = includes (partial match)

@@ -89,9 +89,9 @@ classdef Aero6DoF < BaseAero
             % alpha = 0.0;
             disp(strcat('v_rel_inertial(1): ', num2str(v_rel_inertial(1))));
             disp(strcat('v_rel_inertial(3): ', num2str(v_rel_inertial(3))));
-            disp(strcat('u: ', num2str(u)));
-            disp(strcat('w: ', num2str(w)));
-            disp(strcat('alpha: ', num2str(alpha)));
+            % disp(strcat('u: ', num2str(u)));
+            % disp(strcat('w: ', num2str(w)));
+            % disp(strcat('alpha: ', num2str(alpha)));
             % Extract sideslip angle (beta) and angular rates if available in state vector X
             % beta  = asin(v / max(flow.v_mag, 1e-3));
             beta = 0.0;

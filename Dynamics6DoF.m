@@ -86,7 +86,7 @@ classdef Dynamics6DoF < BaseDynamics
             F_body_total = forces.Aero + forces.Propulsion;
             % Inertial acceleration: a = (R_bi * F_b) / m + g_ned
             g_vec = CoordinateFrame.gravityVector(9.80665, obj.Frame);
-            accel = (R_bi * F_body_total) / m + g_vec;
+            accel = (R_bi' * F_body_total) / m + g_vec;
             % disp(strcat('aero: ', num2str(forces.Aero)));
             % disp(strcat('prop: ', num2str(forces.Propulsion)));
             % disp(strcat('accel: ', num2str(accel)));
@@ -154,7 +154,7 @@ classdef Dynamics6DoF < BaseDynamics
             q0 = q(1); q1 = q(2); q2 = q(3); q3 = q(4);
             R_bi = [1 - 2*(q2^2 + q3^2),     2*(q1*q2 - q0*q3),     2*(q1*q3 + q0*q2);
                 2*(q1*q2 + q0*q3), 1 - 2*(q1^2 + q3^2),     2*(q2*q3 - q0*q1);
-                2*(q1*q3 - q0*q2),     2*(q2*q3 + q0*q1), 1 - 2*(q1^2 + q2^2)].';
+                2*(q1*q3 - q0*q2),     2*(q2*q3 + q0*q1), 1 - 2*(q1^2 + q2^2)];
             % Note the transpose (.') to make it truly Body-to-Inertial
         end
 
