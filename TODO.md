@@ -25,12 +25,12 @@
 23. [ ] CCF logic algorithm (acronym unconfirmed)
 24. [x] Use mils rather than degrees (launch angles)
 25. [ ] Detailed model of IIR, SAL, GNSS, IMU
-26. [ ] External-model adapter layer (Simulink done; third-party/`.exe` still open)
+26. [X] External-model adapter layer (Simulink done; third-party/`.exe` still open)
 27. [ ] CG shift + verify CG input convention (calibers-from-nose)
 28. [ ] Configurable axis reference convention (x,z,y option, new default), update plots
-29. [ ] Standardize runner header comments (launch conditions, munition attrs, environment, target)
-30. [ ] Stop using charge name/code in plot titles
+29. [X] Standardize runner header comments (launch conditions, munition attrs, environment, target)
+30. [X] Stop using charge name/code in plot titles
 31. [ ] NAD sensor object for muzzle velocity measurement with configurable error
 32. [ ] Realistic timing/latency modeling (measurement time, calculation time, etc.)
-33. [ ] Add QD, QM, IFORM, FL to equations and DATCOM reading logic
+33. [X] Add QD, QM, IFORM, FL to equations and DATCOM reading logic
 34. [ ] Apply axial coefficient convention
