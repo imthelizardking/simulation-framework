@@ -2,7 +2,7 @@
 classdef ParticleSwarmPlotter < BaseVisualizer
     % Live view of the post-burst fragment swarm, in its own docked figure
     % zoomed in on the burst locus (not the full engagement bounds the main
-    % LiveEngagementPlotter uses) - separate from and much tighter than the
+    % Visualizer_LiveEngagement uses) - separate from and much tighter than the
     % parent munition's own plot, per "create new live plot and zoom into
     % there, show particles motion".
     %

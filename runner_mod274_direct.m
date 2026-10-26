@@ -10,8 +10,8 @@ charge_name   = '6M';  % edit: '3M' | '4M' | '5M' | '6M'
 elevation_mil = 711.1; % edit: quadrant elevation (NATO mils, near max-range for 6M)
 azimuth_mil   = 0.0;   % edit: aim bearing
 
-% 1. Setup Environment
-env = Environment();
+% 1. Setup Atmosphere
+env = Atmosphere();
 
 % 2. Instantiate Vehicle via MunitionFactory
 shell = MunitionFactory.createMOD274(charge_name);

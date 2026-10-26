@@ -10,8 +10,8 @@
 % MATLAB script - see ParserDatcom.)
 clear; clc; clf;
 
-% 1. Setup Environment
-env = Environment(); % No wind, standard atmosphere
+% 1. Setup Atmosphere
+env = Atmosphere(); % No wind, standard atmosphere
 
 % 2. Setup Inbound Target (same as runner_sam_engagement.m)
 % target = TargetConstantVelocity([8000; 0; 3000], [-250; 0; 0]);
@@ -27,7 +27,7 @@ launcher_pos = [0; 0; 0];
 los_vec      = target.Position - launcher_pos;
 % launch_elev  = atan2(los_vec(3), los_vec(1));
 launch_elev = pi/4; % positive makes sense
-v0_rail = 60.0; % m/s, rail-launch speed before motor ignition, magnitude
+v0_rail = 45.0; % m/s, rail-launch speed before motor ignition, magnitude
 
 missile.Dynamics.InitialState = missile.buildLaunchState(launcher_pos, v0_rail, launch_elev, 0);
 
@@ -40,7 +40,7 @@ sim = Simulation(missile, target, env, [0 60], 0.005);
 sim.Termination.MinAltitude = 0;
 % sim.Termination.MaxTime = 20;
 sim.Termination.MaxTime = 2;
-sim.Visualizer = LiveEngagementPlotter(20);
+sim.Visualizer = Visualizer_LiveEngagement(20);
 sim.Frame = 'NED';
 sim.Visualizer.Frame = 'NED';
 sim.TimeSpan = [0 100];

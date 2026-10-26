@@ -1,8 +1,8 @@
 %% Scenario: 35mm Anti-Drone Burst Engagement (Multiple Rounds, Realistic Timing)
 clear; clc; clf;
 
-% 1. Setup Environment
-env = Environment();
+% 1. Setup Atmosphere
+env = Atmosphere();
 
 % 2. Setup Target: same DJI-class drone as runner_35mm_antidrone.m
 % forward=1000, down=-120 (120m above launch), right=-200 (200m left);

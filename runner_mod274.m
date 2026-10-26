@@ -1,8 +1,8 @@
 %% Scenario: MOD274 155mm Base-Bleed HE Artillery via MunitionFactory
 clear; clc; clf;
 
-% 1. Setup Environment
-env = Environment(); % No wind - isolate the base-bleed effect
+% 1. Setup Atmosphere
+env = Atmosphere(); % No wind - isolate the base-bleed effect
 
 % 2. Setup Target: 25 km downrange - well beyond M107's ~21 km max range
 %    at comparable charge energy, which is exactly the point of base bleed.

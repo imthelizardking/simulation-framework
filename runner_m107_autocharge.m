@@ -9,8 +9,8 @@
 % charge actually gets selected here - compare the two.
 clear; clc; clf;
 
-% 1. Setup Environment
-env = Environment();
+% 1. Setup Atmosphere
+env = Atmosphere();
 
 % 2. Setup Target - within CH5W's own max range, so a lower-than-max
 %    zone should be the one selected.

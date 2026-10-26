@@ -3,8 +3,8 @@
 clear; clc;
 % --- Configuration ---
 folderPath = pwd; 
-oldWord = 'Guidance_Passthrough';
-newWord = 'Guidance_Passthrough';
+oldWord = 'Visualizer_LiveEngagement';
+newWord = 'Visualizer_LiveEngagement';
 % ---------------------
 
 % Create the regex pattern for exact word boundary match

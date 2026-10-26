@@ -3,7 +3,7 @@ classdef Simulation < handle
     properties
         Munition                  = []  % Munition container OR raw BaseDynamics object
         Target                    = []  % BaseTarget subclass OR struct
-        Environment               = []  % Environment object
+        Atmosphere               = []  % Atmosphere object
         Frame     (1,:) char      = 'Z-Up'  % 'Z-Up', 'NED', or 'FDR' (DynamicsMPMM/AeroMPMM only) - see CoordinateFrame; propagated to Munition.Dynamics/Aero/Visualizer/the burst swarm at run()
         Designator                = []  % BaseDesignator subclass (optional)
         GroundStation             = []  % GroundStation object (optional)
@@ -55,7 +55,7 @@ classdef Simulation < handle
             set(0, 'DefaultFigureWindowStyle', 'docked');
             if nargin > 0, obj.Munition = munition; end
             if nargin > 1, obj.Target = target; end
-            if nargin > 2, obj.Environment = env; end
+            if nargin > 2, obj.Atmosphere = env; end
             if nargin > 3, obj.TimeSpan = timespan; end
             if nargin > 4, obj.Dt = dt; end
         end
@@ -158,7 +158,7 @@ classdef Simulation < handle
                 % Step GNC ONLY if Munition supports it
                 world_truth = struct(...
                     'Target',       tgt_bus, ...
-                    'Environment',  obj.Environment, ...
+                    'Atmosphere',  obj.Atmosphere, ...
                     'Designator',   des_bus, ...
                     'GroundUplink', uplink_data);
 
@@ -178,7 +178,7 @@ classdef Simulation < handle
                 end
 
                 if ismethod(obj.Munition, 'updateGNC')
-                    obj.Munition.updateGNC(t, obj.Environment, tgt_bus);
+                    obj.Munition.updateGNC(t, obj.Atmosphere, tgt_bus);
                 end
                 
                 % Telemetry Logging
@@ -210,8 +210,8 @@ classdef Simulation < handle
 
                 % Integrate
                 X = obj.Integrator.step(@(tt, XX) obj.evalDerivatives(tt, XX), t, X, dt);
-                disp(strcat('--- Time: ', num2str(t), ' ---'));
-                disp(strcat('--- Velo: ', num2str(norm(X(4:6))), ' ---'));
+                % disp(strcat('--- Time: ', num2str(t), ' ---'));
+                % disp(strcat('--- Velo: ', num2str(norm(X(4:6))), ' ---'));
             end
 
             % Truncate telemetry
@@ -257,7 +257,7 @@ classdef Simulation < handle
                 'InitialState', X0, ...
                 'TimeSpan',     obj.TimeSpan, ...
                 'Dt',           obj.Dt, ...
-                'Environment',  obj.Environment, ...
+                'Atmosphere',  obj.Atmosphere, ...
                 'Target',       obj.resolveTargetBus());
 
             outputs = obj.Munition.ExternalModel.run(inputs);
@@ -298,12 +298,12 @@ classdef Simulation < handle
             % lockstep multi-particle swarm phase (see spawnParticles for
             % the burst kinematics, ParticleSwarmSimulation for the
             % per-particle lockstep loop).
-            particles = obj.Munition.spawnParticles(obj.LastState, obj.Environment);
+            particles = obj.Munition.spawnParticles(obj.LastState, obj.Atmosphere);
 
             dt = obj.Dt;
             if ~isempty(obj.ParticleDt), dt = obj.ParticleDt; end
 
-            swarm = ParticleSwarmSimulation(particles, obj.Target, obj.Environment, obj.ParticleTimeSpan, dt);
+            swarm = ParticleSwarmSimulation(particles, obj.Target, obj.Atmosphere, obj.ParticleTimeSpan, dt);
             swarm.Frame = obj.Frame;
             if ~isempty(fieldnames(obj.ParticleTermination))
                 swarm.Termination = obj.ParticleTermination;
@@ -318,7 +318,7 @@ classdef Simulation < handle
 
         function dX = evalDerivatives(obj, t, X)
             if ismethod(obj.Munition, 'getDerivatives')
-                dX = obj.Munition.getDerivatives(t, X, obj.Environment);
+                dX = obj.Munition.getDerivatives(t, X, obj.Atmosphere);
             elseif ismethod(obj.Munition, 'computeDerivatives')
                 % Direct BaseDynamics object bypass
                 forces.Aero          = [0; 0; 0];

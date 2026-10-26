@@ -16,7 +16,7 @@ classdef ExternalModelExe < BaseExternalModel
     %
     % inputs (into run(), see Simulation.runExternalModel) is
     % struct('InitialState',X0,'TimeSpan',[t0 t1],'Dt',dt,
-    % 'Environment',env,'Target',target_bus); outputs must come back as
+    % 'Atmosphere',env,'Target',target_bus); outputs must come back as
     % struct('time',...,'pos',...,'vel',...) in the same shape
     % Simulation's own telemetry uses - that's the one part of the
     % contract fixed on this framework's side, independent of whatever

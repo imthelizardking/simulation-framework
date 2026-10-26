@@ -18,8 +18,8 @@ clear; clc; clf;
 
 launch_angle_mil = 800.0;
 
-% 1. Setup Environment
-env = Environment();
+% 1. Setup Atmosphere
+env = Atmosphere();
 
 % 2. Instantiate Vehicle
 missile = MunitionFactory.createMiniMissile6DoF();

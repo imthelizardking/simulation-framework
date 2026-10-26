@@ -9,8 +9,8 @@ clear; clc; clf;
 
 launch_angle_mil = 622.2; % edit this to try other launch angles (NATO mils, 6400/circle)
 
-% 1. Setup Environment (no wind - isolate the effect of launch angle alone)
-env = Environment();
+% 1. Setup Atmosphere (no wind - isolate the effect of launch angle alone)
+env = Atmosphere();
 
 % 2. Instantiate Munition via MunitionFactory
 dart = MunitionFactory.createFinStabilizedDart();

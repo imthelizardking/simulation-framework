@@ -7,8 +7,8 @@ clear; clc; clf;
 
 airbrake_deploy_time = 12.0; % s since launch - edit this to see its effect on range
 
-% 1. Setup Environment (Standard atmosphere, optional crosswind)
-env = Environment(); % No wind
+% 1. Setup Atmosphere (Standard atmosphere, optional crosswind)
+env = Atmosphere(); % No wind
 launcher_pos = [0; 0; 0];
 latitude_deg = 39.0; % edit: launch latitude - feeds real gravity/Coriolis
 

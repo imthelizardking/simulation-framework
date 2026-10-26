@@ -405,11 +405,11 @@ classdef MunitionFactory
             % Hydra70's 5900 N x 1.1 s average step; a ThrustTable/Thrust/
             % BurnTime/PropellantMass field in data/createAPKWS.mat still
             % overrides it (see Propulsion_SolidMotor.fromData).
-            m.Propulsion = Propulsion_SolidMotor.fromData(data, Propulsion_SolidMotor.MK66Mod4());
+            m.Propulsion = Propulsion_SolidMotor.fromData(data, Propulsion_SolidMotor.MK66Mod4(3.2));
 
             % Attach LOAL Seeker and Guidance (LaserSeeker referenced here
             % previously does not exist anywhere in the codebase; Seeker_LOAL
-            % is the sensor Guidance_OptimalAngleFOV/LiveEngagementPlotter
+            % is the sensor Guidance_OptimalAngleFOV/Visualizer_LiveEngagement
             % actually expect via sensor_bus.Seeker_LOAL). prf_code is kept
             % as an input for future laser-designator integration but is
             % not consumed yet.
@@ -460,7 +460,7 @@ classdef MunitionFactory
             m.Aero = ParserDatcom.load(datcom_name, ...
                 FactoryData.getOr(data, 'RefArea', 0.003848451), ...   % 8.85 ft^2
                 FactoryData.getOr(data, 'RefLength', 0.07));    % 2.48 ft
-            m.Propulsion = Propulsion_SolidMotor.MK66Mod4(7);
+            m.Propulsion = Propulsion_SolidMotor.MK66Mod4(3.2);
             
             % seeker_fov_deg = FactoryData.getOr(data, 'SeekerFOV_deg', 20);
             % t_seeker_on    = FactoryData.getOr(data, 'T_SeekerOn', 1.2); % Seeker uncages after motor burnout
@@ -507,7 +507,7 @@ classdef MunitionFactory
             m.Aero = ParserDatcom.load(datcom_name, ...
                 FactoryData.getOr(data, 'RefArea', 0.003848451), ...   % 8.85 ft^2
                 FactoryData.getOr(data, 'RefLength', 0.07));    % 2.48 ft
-            m.Propulsion = Propulsion_SolidMotor.MK66Mod4(7);
+            m.Propulsion = Propulsion_SolidMotor.MK66Mod4(3.2);
             
             % seeker_fov_deg = FactoryData.getOr(data, 'SeekerFOV_deg', 20);
             % t_seeker_on    = FactoryData.getOr(data, 'T_SeekerOn', 1.2); % Seeker uncages after motor burnout

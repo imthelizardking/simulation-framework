@@ -10,8 +10,8 @@
 % range and flight time.
 clear; clc; clf;
 
-% 1. Setup Environment (standard atmosphere, no wind)
-env = Environment();
+% 1. Setup Atmosphere (standard atmosphere, no wind)
+env = Atmosphere();
 
 % 2. Setup Target: same inbound target as runner_76mm.m/runner_sam_engagement.m
 % forward=8000, down=-3000 (3000m above launch), right=0; vel forward=-250
@@ -95,7 +95,7 @@ sim = Simulation(round, target, env, timespan, dt);
 sim.Frame = 'FDR';
 sim.Termination.ImpactDistance = impact_dist;
 sim.Termination.MaxDownrange   = max_downrange;
-sim.Visualizer = LiveEngagementPlotter(20);
+sim.Visualizer = Visualizer_LiveEngagement(20);
 
 % Post-burst swarm phase settings - same shape as
 % runner_35mm_fragmentation.m, just a wider EngageRange/backstop for the

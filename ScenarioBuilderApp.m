@@ -38,7 +38,7 @@ classdef ScenarioBuilderApp < handle
             % run() changes the current folder to the SCRIPT's own
             % directory while it executes - since generated scripts live
             % in generated/ (a subfolder), that CD away from this project
-            % folder makes Environment/MunitionFactory/etc unresolvable
+            % folder makes Atmosphere/MunitionFactory/etc unresolvable
             % unless this folder is explicitly on the path (not just
             % reachable via CWD). addpath is additive/non-destructive, so
             % doing this once here is safe regardless of the user's own

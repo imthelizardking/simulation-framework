@@ -1,6 +1,6 @@
 %% Scenario: Mini Missile - Genuine 6-DoF Guided Intercept, Live Plotting
 % Same shape as runner_sam_engagement.m (constant-velocity inbound target,
-% LiveEngagementPlotter for live animation), but flown by the new 6-DoF
+% Visualizer_LiveEngagement for live animation), but flown by the new 6-DoF
 % pipeline (Dynamics6DoF + AeroMissile6DoF) with a genuinely 3D seeker/
 % guidance/autopilot chain (Seeker_3D + Guidance_ProportionalNav3D + Autopilot6DoF)
 % instead of runner_sam_engagement's planar Seeker_LOAL/
@@ -21,8 +21,8 @@
 % vehicle's actual control authority.
 clear; clc; clf;
 
-% 1. Setup Environment
-env = Environment();
+% 1. Setup Atmosphere
+env = Atmosphere();
 
 % 2. Setup Inbound Target (constant velocity, closing on the launch site,
 % WITH a lateral offset - Z-Up sense: X=downrange, Y=crossrange, Z=up)
@@ -64,7 +64,7 @@ sim = Simulation(missile, target, env, [0 30], 0.002);
 sim.Frame = 'NED'; % see Dynamics6DoF's class comment - do not change to 'Z-Up'
 sim.Termination.ImpactDistance = 5.0;
 sim.Termination.MaxDownrange   = 500.0;
-sim.Visualizer = LiveEngagementPlotter(20);
+sim.Visualizer = Visualizer_LiveEngagement(20);
 
 fprintf('Starting engagement simulation...\n');
 tic;

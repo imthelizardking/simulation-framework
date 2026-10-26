@@ -1,8 +1,8 @@
 %% Scenario: 35mm Anti-Drone Direct-Fire Engagement (Land-to-Air)
 clear; clc; clf;
 
-% 1. Setup Environment (standard atmosphere, no wind)
-env = Environment();
+% 1. Setup Atmosphere (standard atmosphere, no wind)
+env = Atmosphere();
 
 % 2. Setup Target: small commercial quadcopter (DJI-class), level flight
 %    at a typical cruise speed (~14 m/s here), crossing/closing on the gun
@@ -48,7 +48,7 @@ sim = Simulation(round, target, env, [0 5], 0.001);
 sim.Frame = 'FDR';
 sim.Termination.ImpactDistance = 3.0;
 sim.Termination.MaxDownrange   = 100.0;
-sim.Visualizer = LiveEngagementPlotter(5); % finer decimation - engagement lasts ~1s
+sim.Visualizer = Visualizer_LiveEngagement(5); % finer decimation - engagement lasts ~1s
 
 fprintf('Firing 35mm round...\n');
 tic;

@@ -1,6 +1,6 @@
 %% Scenario: 155mm M107 Direct Fire under METCM Atmospheric Data
-% Same direct-fire setup as runner_m107_direct.m, but the Environment's
-% atmosphere comes from data/metcm_std.txt (see Environment.loadMetcm)
+% Same direct-fire setup as runner_m107_direct.m, but the Atmosphere's
+% atmosphere comes from data/metcm_std.txt (see Atmosphere.loadMetcm)
 % instead of the built-in ISA formulas. metcm_std.txt represent
 % s "standard
 % conditions" (calm, near-ISA) - swap in a real (non-standard) METCM file
@@ -11,9 +11,9 @@ charge_name   = 'CH7W'; % edit: 'CH3W' | 'CH4W' | 'CH5W' | 'CH6W' | 'CH7W' | 'CH
 elevation_mil = 600;       % edit: quadrant elevation (NATO mils, 6400/circle)
 azimuth_mil   = 0.0;       % edit: aim bearing
 
-% 1. Setup Environment, METCM profile loaded in the same call (see
-%    Environment's constructor - equivalent to a separate loadMetcm call).
-env = Environment('MetcmName', 'metcm_std');
+% 1. Setup Atmosphere, METCM profile loaded in the same call (see
+%    Atmosphere's constructor - equivalent to a separate loadMetcm call).
+env = Atmosphere('MetcmName', 'metcm_std');
 
 % 2. Instantiate Vehicle via MunitionFactory
 shell = MunitionFactory.createM107Artillery(charge_name);

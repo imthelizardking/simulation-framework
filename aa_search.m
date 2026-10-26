@@ -3,7 +3,7 @@
 
 % --- Configuration ---
 folderPath = pwd; 
-searchWord = 'AeroMissile6DoF';
+searchWord = 'Atmosphere';
 
 % --- Control Variables ---
 matchWholeWord = true;  % true = exact word only, false = includes (partial match)

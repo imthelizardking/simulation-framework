@@ -13,7 +13,7 @@ classdef ParticleSwarmSimulation < handle
     properties
         Particles   cell         = {}
         Target                   = []
-        Environment              = []
+        Atmosphere              = []
         Frame       (1,:) char   = 'Z-Up'  % 'Z-Up', 'NED', or 'FDR' - see CoordinateFrame; set by Simulation.triggerFragmentation to match the parent flight
         Integrator               = RK4FixedStep()
         TimeSpan    (1,2) double = [0 15]
@@ -46,7 +46,7 @@ classdef ParticleSwarmSimulation < handle
         function obj = ParticleSwarmSimulation(particles, target, env, timespan, dt)
             if nargin > 0, obj.Particles = particles; end
             if nargin > 1, obj.Target = target; end
-            if nargin > 2, obj.Environment = env; end
+            if nargin > 2, obj.Atmosphere = env; end
             if nargin > 3, obj.TimeSpan = timespan; end
             if nargin > 4, obj.Dt = dt; end
         end
@@ -139,7 +139,7 @@ classdef ParticleSwarmSimulation < handle
 
                     obj.Particles{i}.Dynamics.CurrentState = X;
                     X_next = obj.Integrator.step(...
-                        @(tt, XX) obj.Particles{i}.getDerivatives(tt, XX, obj.Environment), t, X, dt);
+                        @(tt, XX) obj.Particles{i}.getDerivatives(tt, XX, obj.Atmosphere), t, X, dt);
                     obj.States{i} = X_next;
                 end
 

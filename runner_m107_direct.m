@@ -11,8 +11,8 @@ charge_name   = 'CH7W'; % edit: 'CH3W' | 'CH4W' | 'CH5W' | 'CH6W' | 'CH7W' | 'CH
 elevation_mil = 600;     % edit: quadrant elevation (NATO mils, 6400/circle)
 azimuth_mil   = 0.0;       % edit: aim bearing
 
-% 1. Setup Environment
-env = Environment();
+% 1. Setup Atmosphere
+env = Atmosphere();
 
 % 2. Instantiate Vehicle via MunitionFactory
 shell = MunitionFactory.createM107Artillery(charge_name);

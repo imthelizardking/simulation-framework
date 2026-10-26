@@ -17,7 +17,7 @@ classdef FireMission < handle
         Platform                       % WeaponPlatform
         MunitionBuilder                 % function handle, e.g. @() MunitionFactory.create35mmHE()
         Target                          % BaseTarget subclass, advanced across the whole mission
-        Environment                    % Environment
+        Atmosphere                    % Atmosphere
         Frame           (1,:) char   = 'Z-Up' % 'Z-Up', 'NED', or 'FDR' - see CoordinateFrame; passed to each round's Simulation
         LauncherPos     (3,1) double = [0;0;0]
         % 'Trajectory' = FireControlComputer.solveTrajectoryShooting (real
@@ -38,11 +38,11 @@ classdef FireMission < handle
             if nargin > 0, obj.Platform = platform; end
             if nargin > 1, obj.MunitionBuilder = munition_builder; end
             if nargin > 2, obj.Target = target; end
-            if nargin > 3, obj.Environment = env; end
+            if nargin > 3, obj.Atmosphere = env; end
         end
 
         function results = run(obj)
-            fcc = FireControlComputer(obj.Environment.Gravity, 'Z-Up');
+            fcc = FireControlComputer(obj.Atmosphere.Gravity, 'Z-Up');
             fcc.ElevationMin = obj.Platform.ElevationMin;
             fcc.ElevationMax = obj.Platform.ElevationMax;
             fcc.AzimuthMin   = obj.Platform.AzimuthMin;
@@ -92,7 +92,7 @@ classdef FireMission < handle
 
                 if strcmpi(obj.FireMode, 'Trajectory')
                     sol = fcc.solveTrajectoryShooting(obj.MunitionBuilder, obj.LauncherPos, v0_round, ...
-                        tgt_bus, obj.Environment, [0 obj.MaxFlightTime], obj.Dt, obj.Frame);
+                        tgt_bus, obj.Atmosphere, [0 obj.MaxFlightTime], obj.Dt, obj.Frame);
                 else
                     sol = fcc.solveFiringAngles(obj.LauncherPos, v0_round, tgt_bus, obj.FireMode);
                 end
@@ -121,7 +121,7 @@ classdef FireMission < handle
                     obj.LauncherPos, v0_round, ...
                     FireControlComputer.mil2rad(elev), FireControlComputer.mil2rad(azim));
 
-                sim = Simulation(munition, obj.Target, obj.Environment, ...
+                sim = Simulation(munition, obj.Target, obj.Atmosphere, ...
                     [0, sol.TimeOfFlight * obj.TimeOfFlightPad], obj.Dt);
                 sim.Frame = obj.Frame;
                 sim.Termination.ImpactDistance = obj.ImpactDistance;

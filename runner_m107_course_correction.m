@@ -17,8 +17,8 @@ clear; clc; clf;
 Desired_Range = 11500.0; % m - the range the airbrake correction should bring the round down to
 Multiplier    = 1.15;    % fire control aims at Multiplier*Desired_Range - the deliberate overshoot the airbrake then corrects away
 
-% 1. Setup Environment
-env = Environment();
+% 1. Setup Atmosphere
+env = Atmosphere();
 launcher_pos = [0; 0; 0];
 latitude_deg = 39.0; % launch latitude - feeds real gravity/Coriolis; also the setting build_m107_recon (below) must replicate
 

@@ -8,8 +8,8 @@
 % (only knowable after the fire-control solve below).
 clear; clc; clf;
 
-% 1. Setup Environment (Standard atmosphere, optional crosswind)
-env = Environment(); % No wind
+% 1. Setup Atmosphere (Standard atmosphere, optional crosswind)
+env = Atmosphere(); % No wind
 launcher_pos = [0; 0; 0];
 latitude_deg = 39.0; % edit: launch latitude - feeds real gravity/Coriolis
 
@@ -50,7 +50,7 @@ fprintf('Form Factors (at QE=%.1f mils, zone %s) : IForm=%.4f, FL=%.4f\n', ...
     sol.Elevation, shell.Charge.Name, shell.Aero.IForm, shell.Aero.FL);
 
 % 6. Assemble Simulation & Execute
-% NOTE: no Visualizer attached - LiveEngagementPlotter works fine against
+% NOTE: no Visualizer attached - Visualizer_LiveEngagement works fine against
 % an unguided ballistic shell too (it degrades its seeker/FOV and command-
 % breakdown panels gracefully when absent), but a post-flight static plot
 % is still the better fit for a pure trajectory-generation scenario like

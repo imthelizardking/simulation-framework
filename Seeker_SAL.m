@@ -11,7 +11,7 @@ classdef Seeker_SAL < BaseSensor
     % hook.
     %
     % Field names (IsBlind/IsLocked/LookAngle/NoseDir/MaxFOV) deliberately
-    % match Seeker_3D's own measurement shape so LiveEngagementPlotter's
+    % match Seeker_3D's own measurement shape so Visualizer_LiveEngagement's
     % existing 3D-seeker FOV-line drawing branch can recognize either
     % sensor by name without a third near-duplicate branch.
     properties

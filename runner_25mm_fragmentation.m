@@ -13,8 +13,8 @@
 % tighter burst standoff.
 clear; clc; clf;
 
-% 1. Setup Environment (standard atmosphere, no wind)
-env = Environment();
+% 1. Setup Atmosphere (standard atmosphere, no wind)
+env = Atmosphere();
 
 % 2. Setup Target: small drone at a shorter engagement range than the 35mm
 %    scenario, in keeping with 25mm's smaller HE-equivalent fragmentation
@@ -67,7 +67,7 @@ sim = Simulation(round, target, env, [0 5], 0.001);
 sim.Frame = 'FDR';
 sim.Termination.ImpactDistance = 2.0;
 sim.Termination.MaxDownrange   = 100.0;
-sim.Visualizer = LiveEngagementPlotter(5);
+sim.Visualizer = Visualizer_LiveEngagement(5);
 
 % Post-burst swarm phase settings. Left at ParticleSwarmSimulation's own
 % default (PassedTarget=true is the real stopping condition), just with a

@@ -15,8 +15,8 @@ elevation_mil = 800.0; % edit: quadrant elevation (NATO mils, 6400/circle)
 azimuth_mil   = 0.0;   % edit: aim bearing
 v0_rail       = 50.0;  % m/s - rail-launch speed (same illustrative value runner_m31_gmlrs_himars.m uses; the real boost comes from Propulsion_SolidMotor after this)
 
-% 1. Setup Environment
-env = Environment();
+% 1. Setup Atmosphere
+env = Atmosphere();
 launcher_pos = [0; 0; 0];
 
 % 2. Instantiate the round

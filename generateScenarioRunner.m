@@ -55,8 +55,8 @@ function filepath = generateScenarioRunner(params)
     lines{end+1} = '%% freely - regenerating from the GUI will not touch this file.';
     lines{end+1} = 'clear; clc; clf;';
     lines{end+1} = '';
-    lines{end+1} = '%% 1. Setup Environment';
-    lines{end+1} = 'env = Environment();';
+    lines{end+1} = '%% 1. Setup Atmosphere';
+    lines{end+1} = 'env = Atmosphere();';
     lines{end+1} = sprintf('launcher_pos = [%.3f; %.3f; %.3f];', lp(1), lp(2), lp(3));
     lines{end+1} = '';
     lines{end+1} = '%% 2. Instantiate Vehicle';

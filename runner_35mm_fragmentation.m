@@ -8,8 +8,8 @@
 % (ParticleSwarmPlotter) shows the swarm dispersing.
 clear; clc; clf;
 
-% 1. Setup Environment (standard atmosphere, no wind)
-env = Environment();
+% 1. Setup Atmosphere (standard atmosphere, no wind)
+env = Atmosphere();
 
 % 2. Setup Target: same DJI-class drone as runner_35mm_antidrone.m
 % forward=1000, down=-120 (120m above launch), right=-200 (200m left);
@@ -58,7 +58,7 @@ sim = Simulation(round, target, env, [0 5], 0.001);
 sim.Frame = 'FDR';
 sim.Termination.ImpactDistance = 3.0;
 sim.Termination.MaxDownrange   = 100.0;
-sim.Visualizer = LiveEngagementPlotter(5);
+sim.Visualizer = Visualizer_LiveEngagement(5);
 
 % Post-burst swarm phase settings. ParticleTermination is left at
 % ParticleSwarmSimulation's own default (PassedTarget=true is the real

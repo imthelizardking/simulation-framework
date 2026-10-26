@@ -1,8 +1,8 @@
 %% Scenario: Basic Surface-to-Air Missile Engagement (APKWS-class Interceptor)
 clear; clc; clf;
 
-% 1. Setup Environment
-env = Environment(); % No wind, standard atmosphere
+% 1. Setup Atmosphere
+env = Atmosphere(); % No wind, standard atmosphere
 
 % 2. Setup Inbound Target (constant velocity, closing on the launch site)
 target = TargetConstantVelocity([8000; 0; 3000], [-250; 0; 0]);
@@ -29,7 +29,7 @@ fprintf('Launch elevation: %.1f mils\n', FireControlComputer.rad2mil(launch_elev
 sim = Simulation(missile, target, env, [0 30], 0.005);
 sim.Termination.ImpactDistance = 3.0;
 sim.Termination.MaxDownrange   = 500.0;
-sim.Visualizer = LiveEngagementPlotter(20);
+sim.Visualizer = Visualizer_LiveEngagement(20);
 
 fprintf('Starting engagement simulation...\n');
 tic;

@@ -24,8 +24,8 @@
 % Expect to retune once you see actual behavior, same as that demo did.
 clear; clc; clf;
 
-% 1. Setup Environment
-env = Environment();
+% 1. Setup Atmosphere
+env = Atmosphere();
 launcher_pos = [0; 0; 0];
 
 % 2. Moving ground target - light armoured vehicle, constant velocity
@@ -92,7 +92,7 @@ sim = Simulation(missile, target, env, [0, sol.TimeOfFlight * 1.3], 0.005);
 sim.Frame = 'NED'; % see Dynamics6DoF's class comment - do not change to 'Z-Up'
 sim.Termination.ImpactDistance = 15.0;
 sim.Termination.MaxDownrange   = 3000.0;
-sim.Visualizer = LiveEngagementPlotter(20);
+sim.Visualizer = Visualizer_LiveEngagement(20);
 
 fprintf('Launching M31 GMLRS Unitary...\n');
 tic;

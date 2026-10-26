@@ -1,4 +1,4 @@
-classdef Environment < handle
+classdef Atmosphere < handle
     % ISA (International Standard Atmosphere) model, troposphere + lower
     % stratosphere (valid 0-20 km - comfortably covers every munition in
     % this framework), OR - if loadMetcm() has been called - a measured
@@ -14,8 +14,8 @@ classdef Environment < handle
     properties (Constant)
         % Standard defaults for Gravity/SeaLevelDensity below - these don't
         % change scenario to scenario, so they're named constants (one
-        % source of truth, referenceable as Environment.STANDARD_GRAVITY /
-        % Environment.STANDARD_SEA_LEVEL_DENSITY) rather than repeated
+        % source of truth, referenceable as Atmosphere.STANDARD_GRAVITY /
+        % Atmosphere.STANDARD_SEA_LEVEL_DENSITY) rather than repeated
         % numeric literals. Still per-instance overridable properties, not
         % hardcoded, for the rare scenario that actually needs a different
         % value (e.g. a non-Earth gravity or a non-standard air density).
@@ -24,8 +24,8 @@ classdef Environment < handle
     end
 
     properties
-        Gravity              (1,1) double = Environment.STANDARD_GRAVITY
-        SeaLevelDensity       (1,1) double = Environment.STANDARD_SEA_LEVEL_DENSITY
+        Gravity              (1,1) double = Atmosphere.STANDARD_GRAVITY
+        SeaLevelDensity       (1,1) double = Atmosphere.STANDARD_SEA_LEVEL_DENSITY
         SeaLevelSpeedOfSound  (1,1) double = 340.29  % m/s, ISA sea-level standard
         BaseWind_NED          (3,1) double = [0; 0; 0]
 
@@ -53,18 +53,18 @@ classdef Environment < handle
     end
 
     methods
-        function obj = Environment(nv)
+        function obj = Atmosphere(nv)
             % Name-value constructor - pass only the arguments you're
-            % actually overriding (e.g. Environment('MetcmName',
-            % 'metcm_std'), or Environment() alone for a full standard-
+            % actually overriding (e.g. Atmosphere('MetcmName',
+            % 'metcm_std'), or Atmosphere() alone for a full standard-
             % atmosphere, no-wind, no-METCM environment) instead of
             % positionally padding out skipped ones. MetcmName loads the
             % named METCM file in this same call - equivalent to calling
             % loadMetcm(name) right after construction (see loadMetcm for
             % the file format/lookup path).
             arguments
-                nv.SeaLevelDensity      (1,1) double = Environment.STANDARD_SEA_LEVEL_DENSITY
-                nv.Gravity              (1,1) double = Environment.STANDARD_GRAVITY
+                nv.SeaLevelDensity      (1,1) double = Atmosphere.STANDARD_SEA_LEVEL_DENSITY
+                nv.Gravity              (1,1) double = Atmosphere.STANDARD_GRAVITY
                 nv.BaseWind_NED         (3,1) double = [0; 0; 0]
                 nv.SeaLevelSpeedOfSound (1,1) double = 340.29
                 nv.MetcmName            (1,:) char   = ''
@@ -78,12 +78,12 @@ classdef Environment < handle
 
         function loadMetcm(obj, name)
             % Reads data/<name>.txt (METCM format) and switches this
-            % Environment from the ISA formulas to interpolating the
+            % Atmosphere from the ISA formulas to interpolating the
             % file's measured temperature/pressure/wind profile instead.
             % Density and speed of sound are then derived from that
             % measured T/P via the same ideal-gas-law relations used for
             % the ISA fallback - the file doesn't carry them directly.
-            % Optional: an Environment that never calls this keeps using
+            % Optional: an Atmosphere that never calls this keeps using
             % ISA. Revert to ISA by clearing MetcmAltitudes ([]).
             %
             % Layer altitudes are NOT encoded directly as values in the
@@ -94,7 +94,7 @@ classdef Environment < handle
             % 32 levels - it can be truncated (e.g. only 10 lines, for
             % just the lower levels) - so the number of data lines actually
             % present in the file, not a fixed 32, determines how many
-            % breakpoints this Environment ends up with.
+            % breakpoints this Atmosphere ends up with.
             %
             % Each data line is 16 fixed-width digits, no delimiters:
             %   [2 line index][4 wind dir, mils][2 wind speed, m/s]
@@ -118,7 +118,7 @@ classdef Environment < handle
             here = fileparts(mfilename('fullpath'));
             path = fullfile(here, 'data', [name '.txt']);
             if ~isfile(path)
-                error('Environment:loadMetcm', 'No METCM file found at data/%s.txt', name);
+                error('Atmosphere:loadMetcm', 'No METCM file found at data/%s.txt', name);
             end
 
             raw_lines = regexp(fileread(path), '\r\n|\r|\n', 'split');
@@ -127,7 +127,7 @@ classdef Environment < handle
             data_lines = raw_lines(3:end); % skip the 2-line message header
             n = numel(data_lines);
             if n == 0
-                error('Environment:loadMetcm', ...
+                error('Atmosphere:loadMetcm', ...
                     'data/%s.txt has no data lines after its 2-line header.', name);
             end
 
@@ -145,7 +145,7 @@ classdef Environment < handle
                 press_hPa      = str2double(line(13:16));
 
                 if isnan(idx0) || idx0 < 0 || idx0 >= n_levels
-                    error('Environment:loadMetcm', ...
+                    error('Atmosphere:loadMetcm', ...
                         'data/%s.txt data line %d has an out-of-range level index ("%s").', ...
                         name, i, line(1:2));
                 end

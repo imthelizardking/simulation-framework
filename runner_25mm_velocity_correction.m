@@ -17,8 +17,8 @@
 % convergence loop.
 clear; clc; clf;
 
-% 1. Setup Environment (standard atmosphere, no wind)
-env = Environment();
+% 1. Setup Atmosphere (standard atmosphere, no wind)
+env = Atmosphere();
 
 % 2. Setup Target: same DJI-class drone as runner_25mm_fragmentation.m
 % forward=700, down=-100 (100m above launch), right=-150 (150m left);
@@ -99,7 +99,7 @@ sim = Simulation(round, target, env, timespan, dt);
 sim.Frame = 'FDR';
 sim.Termination.ImpactDistance = impact_dist;
 sim.Termination.MaxDownrange   = max_downrange;
-sim.Visualizer = LiveEngagementPlotter(5);
+sim.Visualizer = Visualizer_LiveEngagement(5);
 
 % Post-burst swarm phase settings - see runner_25mm_fragmentation.m.
 sim.ParticleVisualizer = ParticleSwarmPlotter(5);

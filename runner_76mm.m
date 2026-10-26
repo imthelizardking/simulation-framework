@@ -1,8 +1,8 @@
 %% Scenario: 76mm HE Land-to-Air Engagement (Detailed Mach-Dependent Aero Table)
 clear; clc; clf;
 
-% 1. Setup Environment (standard atmosphere, no wind)
-env = Environment();
+% 1. Setup Atmosphere (standard atmosphere, no wind)
+env = Atmosphere();
 
 % 2. Setup Target: same inbound target as runner_sam_engagement.m (the
 %    "drone" used there), so the 76mm gun and the guided interceptor can

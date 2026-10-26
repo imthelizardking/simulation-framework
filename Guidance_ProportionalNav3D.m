@@ -30,7 +30,7 @@ classdef Guidance_ProportionalNav3D < BaseGuidance
             % guidance cuts to zero right when correction is most needed,
             % the nose drifts further behind, and it never recovers.
             % IsBlind/LookAngle are still computed and reported by
-            % Seeker_3D for display (LiveEngagementPlotter's FOV lines) -
+            % Seeker_3D for display (Visualizer_LiveEngagement's FOV lines) -
             % just not used to gate control here. Revisit if a scenario
             % genuinely needs "go ballistic while blind" behavior, with a
             % more generous MaxFOV so ordinary tracking lag doesn't trip it.

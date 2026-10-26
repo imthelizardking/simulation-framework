@@ -51,9 +51,11 @@ classdef Aero6DoF < BaseAero
                 fin_deflection = 0.0;
             end
 
-            pitch = X(8);
+            % pitch = X(8);
             flow = BaseAero.computeFlowState(X, env, obj.Frame);
-            % disp(pitch);
+            % 2. Full inertial relative velocity vector [m/s]
+            v_rel_inertial = flow.v_mag * flow.vel_dir;
+            pitch = atan2(v_rel_inertial(3), v_rel_inertial(1));
             % disp(flow.gamma);
             if flow.v_mag < 1e-3
                 F_aero = [0; 0; 0];
@@ -70,8 +72,8 @@ classdef Aero6DoF < BaseAero
             quat = X(18:21);
             R_bi = Dynamics6DoF.quatToDCM(quat);
 
-            % 2. Full inertial relative velocity vector [m/s]
-            v_rel_inertial = flow.v_mag * flow.vel_dir;
+            % % 2. Full inertial relative velocity vector [m/s]
+            % v_rel_inertial = flow.v_mag * flow.vel_dir;
 
             % 3. Rotate inertial wind into body axes: v_body = R_ib * v_inertial = R_bi' * v_inertial
             v_body = R_bi' * v_rel_inertial;
@@ -81,10 +83,15 @@ classdef Aero6DoF < BaseAero
             w = v_body(3); % Down (belly)
 
             % 4. Aerodynamic angles
-            alpha = atan2(w, u) + fin_deflection;
+            % alpha = atan2(w, u) + fin_deflection;
+            alpha = atan2(w, u);            
             % alpha = (pitch - flow.gamma) + fin_deflection;             % Aerodynamic angle of attack including fin deflection / control bias % --- OLD (Breaks as gamma drops): ---
             % alpha = 0.0;
-            % disp(alpha);
+            disp(strcat('v_rel_inertial(1): ', num2str(v_rel_inertial(1))));
+            disp(strcat('v_rel_inertial(3): ', num2str(v_rel_inertial(3))));
+            disp(strcat('u: ', num2str(u)));
+            disp(strcat('w: ', num2str(w)));
+            disp(strcat('alpha: ', num2str(alpha)));
             % Extract sideslip angle (beta) and angular rates if available in state vector X
             % beta  = asin(v / max(flow.v_mag, 1e-3));
             beta = 0.0;
