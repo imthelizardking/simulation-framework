@@ -6,6 +6,7 @@ classdef (Abstract) BaseAero < handle
         Tables          struct = struct()      % Named coefficient sets, e.g. Tables.Clean.CD0/.CDA2/.CDA4/.CLA/.CLA3
         ActiveTableKey  (1,:) char = 'Clean'
         DeploymentRatio (1,1) double = 0.0
+        MomentReference = [] % optional 3x1 body-datum position (m); [] uses legacy CGRef
         Frame           (1,:) char = 'Z-Up'    % 'Z-Up' or 'NED' - see CoordinateFrame; must match the attached Dynamics
 
         % STANAG 4355 fitting/form factors - generic drag/lift tuning

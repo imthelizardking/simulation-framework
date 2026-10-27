@@ -33,7 +33,7 @@ classdef Dynamics6DoF < BaseDynamics
             %   mass         - Total vehicle launch mass (kg)
             %   p0           - (Optional) Initial roll spin rate (rad/s), default = 0
 
-            if nargin < 8 || isempty(p0)
+            if nargin < 7 || isempty(p0)
                 p0 = 0.0;
             end
 
@@ -58,6 +58,13 @@ classdef Dynamics6DoF < BaseDynamics
             X0(BaseDynamics.IDX_SPIN2)    = p0;
             X0(BaseDynamics.IDX_MASS)     = mass;
             X0(BaseDynamics.IDX_INERTIA) = [0; 0; 0];
+            if nargin >= 8 && ~isempty(inertiaMatrix)
+                if isvector(inertiaMatrix) && numel(inertiaMatrix) == 3
+                    inertiaMatrix = diag(inertiaMatrix);
+                end
+                UAVMassModel.checkTensor(inertiaMatrix, false);
+                X0(BaseDynamics.IDX_INERTIA) = diag(inertiaMatrix);
+            end
             X0(obj.IDX_QUAT)              = q0;
         end
 
@@ -121,6 +128,13 @@ classdef Dynamics6DoF < BaseDynamics
             dp = (M_body(1) - (Izz - Iyy) * q * r) / Ixx;
             dq = (M_body(2) - (Ixx - Izz) * p * r) / Iyy;
             dr = (M_body(3) - (Iyy - Ixx) * p * q) / Izz;
+            if isequal(size(I_val), [3 3]) && any(any(I_val ~= diag(diag(I_val))))
+                omega = [p; q; r];
+                angularAcceleration = I_val \ (M_body - cross(omega, I_val * omega));
+                dp = angularAcceleration(1);
+                dq = angularAcceleration(2);
+                dr = angularAcceleration(3);
+            end
 
             % 5. Euler Angle Kinematics (Telemetry/Tracking output)
             curr_euler = Dynamics6DoF.quatToEuler(q_unit);

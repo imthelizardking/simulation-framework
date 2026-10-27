@@ -118,6 +118,13 @@ classdef Simulation < handle
             tel.accel_cmd  = zeros(N_steps, 1);
             tel.range      = zeros(N_steps, 1);
             tel.mach        = zeros(N_steps, 1);
+            hasMassModel = ismethod(obj.Munition, 'synchronizeMassState');
+            if hasMassModel
+                tel.mass = zeros(N_steps, 1);
+                tel.cg = zeros(N_steps, 3);
+                tel.inertia = zeros(N_steps, 9); % reshape(row,3,3) reconstructs the tensor
+                tel.payload_mass = zeros(N_steps, 1);
+            end
             % 3. Resolve Target Bus
             tgt_bus = obj.resolveTargetBus();
 
@@ -133,6 +140,9 @@ classdef Simulation < handle
             for k = 1:N_steps
                 t = time_array(k);
                 step_count = step_count + 1;
+                if hasMassModel
+                    [X, massSnapshot] = obj.Munition.synchronizeMassState(t, X);
+                end
                 
                 % Step Target Dynamics
                 if isobject(obj.Target) && ismethod(obj.Target, 'step')
@@ -185,6 +195,12 @@ classdef Simulation < handle
                 tel.time(k)          = t;
                 tel.pos(k, :)        = X(1:3)';
                 tel.vel(k, :)        = X(4:6)';
+                if hasMassModel
+                    tel.mass(k) = massSnapshot.Mass;
+                    tel.cg(k,:) = massSnapshot.CG';
+                    tel.inertia(k,:) = reshape(massSnapshot.Inertia, 1, 9);
+                    tel.payload_mass(k) = massSnapshot.PayloadMass;
+                end
                 if length(X) >= 7, tel.pitch(k) = X(7); end
                 tel.target_pos(k, :) = tgt_bus.pos';
                 
@@ -212,8 +228,12 @@ classdef Simulation < handle
                 % Integrate
                 X = obj.Integrator.step(@(tt, XX) obj.evalDerivatives(tt, XX), t, X, dt);
                 disp(strcat('--- Time: ', num2str(t), ' ---'));
-                disp(strcat('--- Inertia: ', num2str(X(15), '%.6f'), ' ---'));
-                disp(strcat('--- Mass: ', num2str((X(14))), ' ---'));
+                if numel(X) >= BaseDynamics.FULL_STATE_DIM
+                    disp(strcat('--- Inertia: ', num2str(X(15), '%.6f'), ' ---'));
+                end
+                if hasMassModel
+                    disp(strcat('--- Mass: ', num2str(obj.Munition.Dynamics.getMass(X)), ' ---'));
+                end
             end
 
             % Truncate telemetry

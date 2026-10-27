@@ -1,4 +1,4 @@
-function r = runScenario(name)
+function [r, telemetry, sim] = runScenario(name)
 %RUNSCENARIO Run an existing runner_<name>.m headless and return key metrics.
 %   Reads the runner source unchanged, strips the lines that clear the
 %   workspace, plot, or attach a live visualizer, evaluates the rest, and
@@ -20,7 +20,9 @@ function r = runScenario(name)
     r.reason = char(sim.TerminationReason); %#ok<NODEF>
     r.tof    = telemetry.time(end); %#ok<NODEF>
     r.finalPos = telemetry.pos(end, :);
-    r.apogee = max(CoordinateFrame.altitudeColumn(telemetry.pos(:,2), telemetry.Frame));
+    altitudeColumn = 3;
+    if strcmpi(telemetry.Frame, 'FDR'), altitudeColumn = 2; end
+    r.apogee = max(CoordinateFrame.altitudeColumn(telemetry.pos(:,altitudeColumn), telemetry.Frame));
     if isfield(telemetry, 'target_pos') && ~isempty(telemetry.target_pos)
         r.missDistance = norm(telemetry.pos(end,:) - telemetry.target_pos(end,:));
     end

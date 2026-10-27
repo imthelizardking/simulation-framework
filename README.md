@@ -236,6 +236,12 @@ Run `runner_uav_seed_planting` for a civilian example with an open-loop UAV
 glide, timed wing deployment, seed release, and a marked ground planting zone.
 It uses the synthetic test datasets and reports seed landing coverage.
 
+## Mass properties
+
+Mass, CG and inertia updates use a shared evaluator for existing runners and
+the single-container UAV model. See [mass properties](docs/mass-properties.md)
+for input conventions, assumptions, and comparison against existing scenarios.
+
 ## Requirements
 
 MATLAB. The core framework and the scenario builder GUI need no toolboxes beyond base

@@ -48,11 +48,17 @@ function result = runner_uav_seed_planting(makePlots)
     uav.Aero.DeployedTableKey = 'WingsOpen';
     uav.Aero.DeploymentTime = deploymentTime;
     uav.Aero.DeploymentDuration = deploymentDuration;
-    % Constant aircraft mass/inertia, common CG and moment reference.
-    inertia = diag([1 2 3]);
-    uav.MassProperties = struct('Mass', 12, 'MassEmpty', 12, ...
-        'Inertia', inertia, 'InertiaFull', inertia, 'InertiaEmpty', inertia, ...
-        'CGFull', zeros(3,1), 'CGEmpty', zeros(3,1), 'CGRef', zeros(3,1));
+    % Same shared mass-properties path used by legacy runners. The extra
+    % container description supplies a scheduled seed-mass change.
+    model = UAVMassModel();
+    model.DryMass = 12;
+    model.DryInertia = diag([1 2 3]);
+    model.InitialPayloadMass = seed.Count * seed.Mass;
+    model.PayloadCG = zeros(3,1); % central container, common aero reference
+    model.PayloadInertiaPerKg = diag([0.02 0.02 0.02]);
+    model.ReleaseTime = releaseTime;
+    model.ReleaseDuration = 0;
+    uav.MassModel = model;
     uav.Dynamics.InitialState = uav.buildLaunchState(initialPosition, initialSpeed, 0, 0);
 
     % 4. Flight uses the normal Simulation loop, explicitly ground=0.
@@ -102,7 +108,7 @@ end
 function seeds = flySeeds(position, velocity, releaseTime, env, cfg, dt)
     % Independent seed point masses, quadratic drag and gravity in Z-Up.
     % Ground-level density/wind are held constant over the short drop.
-    % Seed mass loss is negligible here and is not fed back into the UAV.
+    % Aircraft mass is updated independently by the shared mass model.
     stream = RandStream('mt19937ar', 'Seed', cfg.RandomSeed);
     X = [repmat(position, 1, cfg.Count); ...
          repmat(velocity, 1, cfg.Count) + cfg.VelocityStd * randn(stream, 3, cfg.Count)];

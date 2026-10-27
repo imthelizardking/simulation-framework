@@ -8,6 +8,8 @@ classdef TestUavSeedPlanting < matlab.unittest.TestCase
             tc.verifyGreaterThan(r.releasePosition(3), 0);
             tc.verifyGreaterThan(r.releasePosition(1), 0);
             tc.verifyTrue(all(isfinite(r.telemetry.pos(:))));
+            tc.verifyEqual(r.telemetry.mass(1)-r.telemetry.mass(end),40*2e-5,'AbsTol',1e-12);
+            tc.verifyEqual(r.telemetry.mass(end),12,'AbsTol',1e-12);
             tc.verifyEqual(size(r.seeds.landingPositions), [40 3]);
             tc.verifyTrue(all(r.seeds.landed), 'Default example must complete the seed drop.');
             tc.verifyTrue(all(isfinite(r.seeds.landingPositions(:))));

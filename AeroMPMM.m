@@ -42,13 +42,9 @@ classdef AeroMPMM < BaseAero
     % Frame property at all for the same reason (see that class' comment).
     properties
         % Yaw-of-repose axial inertia (kg*m^2). getForcesAndMoments has
-        % no access to mass_prop (unlike Dynamics.computeDerivatives), so
-        % this is kept in sync with the paired Munition's
-        % MassProperties.Inertia(1,1) manually - same "must match the
-        % paired class" contract CoordinateFrame's Frame property already
-        % has elsewhere in this framework. Ignored (recomputed
-        % internally) while BaseBleedOn drifts inertia over the flight -
-        % see BaseBleedOn below.
+        % direct callers can use this fallback. Munition supplies the
+        % shared current mass-properties snapshot, overriding this cached
+        % value (including the legacy base-bleed inertia calculation).
         Ix (1,1) double = 1.0
 
         % Launch latitude (degrees) - must match DynamicsMPMM's
@@ -145,7 +141,7 @@ classdef AeroMPMM < BaseAero
     end
 
     methods
-        function [F_aero, M_aero] = getForcesAndMoments(obj, t, X, env, ~)
+        function [F_aero, M_aero] = getForcesAndMoments(obj, t, X, env, ~, massProperties)
             % One-shot airbrake deploy switch (see airbrake_ADT/
             % Phase2Active/Phase2 property comments). Checked before the
             % early low-speed return below so a deploy time that happens
@@ -173,6 +169,9 @@ classdef AeroMPMM < BaseAero
 
             coeffs = obj.evaluateCoefficients(mach);
             [coeffs, Ix_now] = obj.applyBaseBleedShift(coeffs, m_now);
+            if nargin >= 6
+                Ix_now = massProperties.Inertia(1,1);
+            end
 
             alpha_e = obj.yawOfReposeEquation(X, va_b, p, Ix_now, coeffs, ro, Va);
             alpha_e_mag = norm(alpha_e);

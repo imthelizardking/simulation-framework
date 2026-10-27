@@ -119,8 +119,8 @@ are reported separately and have NaN landing coordinates.
 
 This is an open-loop software example, not a trimmed or validated agricultural
 aircraft model. Seed flight uses constant ground-level wind/density, quadratic
-drag, and gravity. The small released seed mass is not fed back into aircraft
-mass properties. Planting-zone placement and release time are user inputs;
+drag, and gravity. The single-container model updates aircraft mass, CG and
+inertia as seeds are released. Planting-zone placement and release time are user inputs;
 autonomous navigation and release scheduling are not modeled. The earlier
 shared state-layout and coordinate-convention concerns still need separate review.
 
