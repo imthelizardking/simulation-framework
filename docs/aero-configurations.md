@@ -92,6 +92,38 @@ simulation time grid and assess timestep sensitivity. Wing motion, deployment
 loads, changes to mass/CG/inertia, rotor thrust, and spray/seed release require
 separate models. No existing vehicle presets are changed.
 
+## UAV flight and seed-planting scenario
+
+For a complete illustrative flight/drop sequence in the style of the existing
+scenario runners:
+
+```matlab
+runner_uav_seed_planting              % flight, seed paths, planting zone
+result = runner_uav_seed_planting(false); % same run without plots
+```
+
+Edit the settings at the top of `runner_uav_seed_planting.m`: initial position
+and speed, planting center/radius, deployment time/duration, release time, and
+seed mass, area, drag, count, and dispenser velocity spread. The defaults use
+the two bundled synthetic aero datasets, an unpowered 6-DoF glide starting at
+40 m, wing deployment from 0.5 to 1 second, and a seed release at 1.5 seconds.
+`TargetStatic` represents the planting center; the radius defines a ground zone.
+
+The runner interpolates aircraft position/velocity at release, converts NED to
+Z-Up, and drops independent seed point masses using the shared RK4 integrator.
+Seeds inherit the UAV velocity with small repeatable dispenser variations.
+Ground crossings are interpolated to altitude zero. Returned results include
+flight telemetry, release state, seed paths, landing coordinates/times, and
+which seeds land inside the planting zone. Seeds not landed by the time limit
+are reported separately and have NaN landing coordinates.
+
+This is an open-loop software example, not a trimmed or validated agricultural
+aircraft model. Seed flight uses constant ground-level wind/density, quadratic
+drag, and gravity. The small released seed mass is not fed back into aircraft
+mass properties. Planting-zone placement and release time are user inputs;
+autonomous navigation and release scheduling are not modeled. The earlier
+shared state-layout and coordinate-convention concerns still need separate review.
+
 ## Verification
 
 From the repository root in MATLAB:

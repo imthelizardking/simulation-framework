@@ -232,6 +232,10 @@ supports named coefficient datasets, timed switching, and optional blending.
 See [aerodynamic configurations](docs/aero-configurations.md) for the data
 contract, usage, and limitations.
 
+Run `runner_uav_seed_planting` for a civilian example with an open-loop UAV
+glide, timed wing deployment, seed release, and a marked ground planting zone.
+It uses the synthetic test datasets and reports seed landing coverage.
+
 ## Requirements
 
 MATLAB. The core framework and the scenario builder GUI need no toolboxes beyond base
