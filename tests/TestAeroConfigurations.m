@@ -2,6 +2,15 @@ classdef TestAeroConfigurations < matlab.unittest.TestCase
     % Synthetic data only: checks configuration routing/interpolation,
     % not the physical aerodynamics of any particular vehicle.
     methods (Test)
+        function bundledUavDatasetsWork(tc)
+            samples = example_uav_wing_deployment(false);
+            alpha = deg2rad(5);
+            tc.verifyEqual(samples.stepCL(1), alpha, 'AbsTol', 1e-12);
+            tc.verifyEqual(samples.stepCL(3), 4 * alpha, 'AbsTol', 1e-12);
+            tc.verifyEqual(samples.blendCL(4), 2.5 * alpha, 'AbsTol', 1e-12);
+            tc.verifyEqual(samples.ratio, [0; 0; 0; 0.5; 1; 1]);
+        end
+
         function legacyPropertiesStillWork(tc)
             a = Aero6DoF();
             a.Mach = [0 1]; a.Alpha = [-1 1];

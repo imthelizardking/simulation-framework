@@ -6,6 +6,31 @@ loading continues to work.
 
 ## Register datasets
 
+Two ready-to-load **synthetic test datasets** are included:
+`data/UAV_Test_Stowed.mat` (3 alpha by 3 Mach points) and
+`data/UAV_Test_Deployed.mat` (5 alpha by 5 Mach points). They share reference
+dimensions and a moment reference, and include `CD`, `CL`, `CA`, `CN`, `CM`,
+and roll/pitch/yaw damping coefficients. Their numbers are arbitrary software
+fixtures, not flight data. No mass properties or complete vehicle model are supplied.
+
+Run this example from the repository root:
+
+```matlab
+example_uav_wing_deployment        % table and plots
+samples = example_uav_wing_deployment(false); % headless assertions
+```
+
+It compares an instantaneous switch at 5 seconds with a blend from 5 to 7
+seconds, at fixed Mach and alpha. To regenerate/edit the datasets, use
+`generate_uav_deployment_data`. For your own scenario, load the structs with:
+
+```matlab
+stowed_data = FactoryData.load('UAV_Test_Stowed');
+deployed_data = FactoryData.load('UAV_Test_Deployed');
+reference_area = stowed_data.RefArea;
+reference_length = stowed_data.RefLength;
+```
+
 Each dataset is a scalar struct with `Mach` and `Alpha` grids (`Alpha` in
 radians), and `CD` and `CL` matrices sized `numel(Alpha)` by `numel(Mach)`.
 Grids must be strictly increasing. Other coefficient fields use the same
