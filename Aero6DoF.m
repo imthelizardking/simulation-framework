@@ -2,6 +2,7 @@ classdef Aero6DoF < BaseAero
     % Aero model driven directly by Missile DATCOM's output tables.
     % Provides static forces (CD, CL, CY, CN, CA), moments (CM, CLN, CLL),
     % static stability derivatives, and dynamic rate damping derivatives.
+    % calculates aero coeff.s and aero force/moments
 
     properties
         % Grid Breakpoints

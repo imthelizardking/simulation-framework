@@ -495,8 +495,14 @@ classdef MunitionFactory
             % Illustrative mass properties (not from the DATCOM run, which
             % only reports aero) - adjust to your actual rocket's real
             % mass/inertia, or supply data/<Name>.mat (see MunitionData).
-            m.MassProperties.Mass = MunitionData.mass(mdata, 15.0);
+            m.MassProperties.Mass = MunitionData.mass(mdata, 11.2);
             m.MassProperties.Inertia = MunitionData.inertia(mdata, diag([0.008, 0.45, 0.45]));
+            m.MassProperties.MassEmpty    = 8.0;
+            m.MassProperties.CGFull       = [1.2; 0; 0];
+            m.MassProperties.CGEmpty      = [1.0; 0; 0];
+            m.MassProperties.CGRef        = [1.2; 0; 0];
+            m.MassProperties.InertiaFull  = diag([0.01, 0.5, 0.5]);
+            m.MassProperties.InertiaEmpty = diag([0.008, 0.45, 0.45]);
 
             m.Dynamics = Dynamics6DoF();
             % RefArea/RefLength default to Example Problem 1's own SREF/

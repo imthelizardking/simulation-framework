@@ -49,7 +49,7 @@ classdef Munition < handle
                 spin0 = Dynamics3DofSpin.spinRateFromTwist(v0, obj.TwistRate, obj.Aero.RefLength);
                 X0 = obj.Dynamics.buildLaunchState(launcher_pos, v0, elevation, azimuth, obj.MassProperties.Mass, spin0);
             elseif (isa(obj.Dynamics, 'Dynamics6DoF'))
-                X0 = obj.Dynamics.buildLaunchState(launcher_pos, v0, elevation, azimuth, obj.MassProperties.Mass);
+                X0 = obj.Dynamics.buildLaunchState(launcher_pos, v0, elevation, azimuth, obj.MassProperties.Mass, spin_init, inertiaMatrix);
             else
                 X0 = obj.Dynamics.buildLaunchState(launcher_pos, v0, elevation, azimuth, obj.MassProperties.Mass);
             end

@@ -22,7 +22,7 @@ classdef Dynamics6DoF < BaseDynamics
             obj.StateDimension = 21; % 17 base slots + 4 quaternion slots
         end
 
-        function X0 = buildLaunchState(obj, launcher_pos, v0, elevation, azimuth, mass, p0, inertiaMatrix)
+        function X0 = buildLaunchState(obj, launcher_pos, v0, elevation, azimuth, mass, p0, inertia)
             % BUILDLAUNCHSTATE Computes initial 6-DoF state vector
             %
             % Inputs:
@@ -57,7 +57,7 @@ classdef Dynamics6DoF < BaseDynamics
             X0(BaseDynamics.IDX_BODYRATE) = [p0; 0; 0]; % Initial roll spin (rad/s)
             X0(BaseDynamics.IDX_SPIN2)    = p0;
             X0(BaseDynamics.IDX_MASS)     = mass;
-            X0(BaseDynamics.IDX_INERTIA) = [0; 0; 0];
+            X0(BaseDynamics.IDX_INERTIA) = inertia;
             X0(obj.IDX_QUAT)              = q0;
         end
 

@@ -1,4 +1,5 @@
 classdef (Abstract) BaseAero < handle
+    % outputs dynamic pressure, aero velocity etc.
     properties
         RefArea         (1,1) double = 0.01966 % S_ref (m^2)
         CD0                           = 0.35    % Zero-lift drag: scalar, or a Mach-dependent struct (see evalCoeff)

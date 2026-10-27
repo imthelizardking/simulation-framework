@@ -3,8 +3,8 @@ classdef Simulation < handle
     properties
         Munition                  = []  % Munition container OR raw BaseDynamics object
         Target                    = []  % BaseTarget subclass OR struct
-        Atmosphere               = []  % Atmosphere object
-        Frame     (1,:) char      = 'Z-Up'  % 'Z-Up', 'NED', or 'FDR' (DynamicsMPMM/AeroMPMM only) - see CoordinateFrame; propagated to Munition.Dynamics/Aero/Visualizer/the burst swarm at run()
+        Atmosphere                = []  % Atmosphere object
+        Frame     (1,:) char      = 'NED'  % 'Z-Up', 'NED', or 'FDR' (DynamicsMPMM/AeroMPMM only) - see CoordinateFrame; propagated to Munition.Dynamics/Aero/Visualizer/the burst swarm at run()
         Designator                = []  % BaseDesignator subclass (optional)
         GroundStation             = []  % GroundStation object (optional)
         Visualizer                = []  % BaseVisualizer subclass (optional)
@@ -49,6 +49,7 @@ classdef Simulation < handle
     
     methods
         function obj = Simulation(munition, target, env, timespan, dt)
+            close all;
             % Dock every figure this MATLAB session creates from here on
             % (Visualizer live views, post-run plots, etc.) - set once here
             % so no runner script has to repeat it.
@@ -92,6 +93,7 @@ classdef Simulation < handle
             N_steps = length(time_array);
 
             % 1. Extract initial state X
+            % if no Dynamics attached, look for InitialState
             if isprop(obj.Munition, 'Dynamics') && ~isempty(obj.Munition.Dynamics)
                 X = obj.Munition.Dynamics.InitialState;
                 obj.Munition.Dynamics.CurrentState = X;
