@@ -225,6 +225,13 @@ Run any of them directly in MATLAB from the repo root, e.g.:
 runner_mod274
 ```
 
+## Aerodynamic configurations
+
+For civilian UAV configuration changes such as deployable wings, `Aero6DoF`
+supports named coefficient datasets, timed switching, and optional blending.
+See [aerodynamic configurations](docs/aero-configurations.md) for the data
+contract, usage, and limitations.
+
 ## Requirements
 
 MATLAB. The core framework and the scenario builder GUI need no toolboxes beyond base

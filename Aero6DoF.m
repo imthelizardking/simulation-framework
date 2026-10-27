@@ -43,6 +43,13 @@ classdef Aero6DoF < BaseAero
 
         % Linear lift-curve slope for simplified control design
         CL_alpha (1,1) double = 3.0
+
+        % Optional second configuration, stored in inherited Tables.
+        % ActiveTableKey selects the initial configuration. With no named
+        % tables, the original coefficient properties remain the default.
+        DeployedTableKey (1,:) char = ''
+        DeploymentTime (1,1) double {mustBeReal, mustBeNonnegative} = Inf
+        DeploymentDuration (1,1) double {mustBeReal, mustBeNonnegative, mustBeFinite} = 0
     end
 
     methods
@@ -61,11 +68,6 @@ classdef Aero6DoF < BaseAero
                 F_aero = [0; 0; 0];
                 M_aero = [0; 0; 0];
                 return;
-            end
-
-            if isempty(obj.Mach) || isempty(obj.Alpha)
-                error('Aero6DoF:NoData', ...
-                    '%s has no DATCOM table loaded - see ParserDatcom.load.', class(obj));
             end
 
             % 1. Extract quaternion and compute Body-to-Inertial DCM
@@ -108,7 +110,7 @@ classdef Aero6DoF < BaseAero
             end
 
             % Interpolate static and damping coefficients at (Mach, Alpha)
-            coeffs = obj.evaluateCoefficients(flow.mach, alpha);
+            coeffs = obj.evaluateCoefficients(flow.mach, alpha, t);
 
             % 1. Aerodynamic Forces NATIVELY IN MISSILE BODY AXES
             % Coordinate definition for DATCOM body axes:
@@ -146,34 +148,81 @@ classdef Aero6DoF < BaseAero
             M_aero = (q_bar * s_ref * d_ref) * [Cl_total; Cm_total; Cn_total];
         end
 
-        function coeffs = evaluateCoefficients(obj, mach, alpha)
-            % Clamped interpolation matching DATCOM table bounds
-            mach_c  = min(max(mach,  min(obj.Mach)),  max(obj.Mach));
-            alpha_c = min(max(alpha, min(obj.Alpha)), max(obj.Alpha));
+        function setConfiguration(obj, key, source)
+            % Register a snapshot of an Aero6DoF or a struct containing
+            % Mach/Alpha and alpha-by-Mach coefficient matrices. All sets
+            % must use this object's RefArea/RefLength and moment center.
+            key = char(key);
+            if ~isvarname(key)
+                error('Aero6DoF:ConfigurationKey', 'Configuration key must be a valid field name.');
+            end
+            if ~(isa(source, 'Aero6DoF') || (isstruct(source) && isscalar(source)))
+                error('Aero6DoF:ConfigurationData', 'Expected an Aero6DoF or scalar struct.');
+            end
+            for name = {'RefArea', 'RefLength'}
+                f = name{1};
+                if (isobject(source) || isfield(source, f)) && ~isequal(source.(f), obj.(f))
+                    error('Aero6DoF:ReferenceMismatch', 'Configurations must share %s.', f);
+                end
+            end
+            data = struct();
+            for name = [{'Mach', 'Alpha'}, obj.coefficientFields()]
+                f = name{1};
+                if isobject(source) || isfield(source, f)
+                    data.(f) = source.(f);
+                end
+            end
+            obj.validateConfiguration(data);
+            obj.Tables.(key) = data;
+        end
 
-            % 2D Bilinear Interpolation
-            coeffs.CD  = interp2(obj.Mach, obj.Alpha, obj.CD,  mach_c, alpha_c, 'linear');
-            coeffs.CL  = interp2(obj.Mach, obj.Alpha, obj.CL,  mach_c, alpha_c, 'linear');
-            coeffs.CY  = obj.interpField(obj.CY,  mach_c, alpha_c, 0.0);
-            coeffs.CM  = obj.interpField(obj.CM,  mach_c, alpha_c, 0.0);
-            coeffs.CN  = obj.interpField(obj.CN,  mach_c, alpha_c, 0.0);
-            coeffs.CA  = obj.interpField(obj.CA,  mach_c, alpha_c, 0.0);
-            % disp(strcat('CA: ', num2str(coeffs.CA)));
-            coeffs.CLN = obj.interpField(obj.CLN, mach_c, alpha_c, 0.0);
-            coeffs.CLL = obj.interpField(obj.CLL, mach_c, alpha_c, 0.0);
+        function ratio = deploymentRatioAt(obj, t)
+            % Pure time lookup: RK4 substeps must not mutate deployment
+            % state. Inf disables scheduling and uses DeploymentRatio.
+            if nargin > 1
+                validateattributes(t, {'double'}, {'scalar', 'real', 'finite'});
+            end
+            if nargin < 2 || isinf(obj.DeploymentTime)
+                if ~isreal(obj.DeploymentRatio) || ~isfinite(obj.DeploymentRatio) || ...
+                        obj.DeploymentRatio < 0 || obj.DeploymentRatio > 1
+                    error('Aero6DoF:DeploymentRatio', 'DeploymentRatio must be between 0 and 1.');
+                end
+                ratio = obj.DeploymentRatio;
+            elseif obj.DeploymentDuration == 0
+                ratio = double(t >= obj.DeploymentTime);
+            else
+                ratio = min(1, max(0, (t - obj.DeploymentTime) / obj.DeploymentDuration));
+            end
+        end
 
-            % Static angle derivatives
-            coeffs.CYB = obj.interpField(obj.CYB, mach_c, alpha_c, 0.0);
-            coeffs.CNB = obj.interpField(obj.CNB, mach_c, alpha_c, 0.0);
-            coeffs.CLB = obj.interpField(obj.CLB, mach_c, alpha_c, 0.0);
-
-            % Dynamic damping derivatives
-            coeffs.CMQ  = obj.interpField(obj.CMQ,  mach_c, alpha_c, 0.0);
-            coeffs.CNQ  = obj.interpField(obj.CNQ,  mach_c, alpha_c, 0.0);
-            coeffs.CLNR = obj.interpField(obj.CLNR, mach_c, alpha_c, 0.0);
-            coeffs.CLLP = obj.interpField(obj.CLLP, mach_c, alpha_c, 0.0);
-            coeffs.CLLR = obj.interpField(obj.CLLR, mach_c, alpha_c, 0.0);
-            coeffs.CLNP = obj.interpField(obj.CLNP, mach_c, alpha_c, 0.0);
+        function coeffs = evaluateCoefficients(obj, mach, alpha, t)
+            % Interpolate each configuration on its own grid, then blend
+            % scalar coefficients. Two-argument calls use DeploymentRatio;
+            % pass t for scheduled deployment (the force path does this).
+            if nargin < 4
+                ratio = obj.deploymentRatioAt();
+            else
+                ratio = obj.deploymentRatioAt(t);
+            end
+            if isempty(obj.DeployedTableKey)
+                ratio = 0;
+            end
+            if ratio < 1
+                initial = obj.configuration(obj.ActiveTableKey);
+                coeffs = obj.evaluateTable(initial, mach, alpha);
+            end
+            if ratio > 0
+                deployed = obj.configuration(obj.DeployedTableKey);
+                final = obj.evaluateTable(deployed, mach, alpha);
+                if ratio == 1
+                    coeffs = final;
+                else
+                    for name = obj.coefficientFields()
+                        f = name{1};
+                        coeffs.(f) = (1 - ratio) * coeffs.(f) + ratio * final.(f);
+                    end
+                end
+            end
         end
 
         function F_drag = dragEquation(obj, coeffs, flow)
@@ -201,11 +250,71 @@ classdef Aero6DoF < BaseAero
     end
 
     methods (Access = private)
-        function val = interpField(obj, mat, mach_c, alpha_c, default_val)
-            if isempty(mat) || all(mat(:) == 0)
-                val = default_val;
+        function data = configuration(obj, key)
+            if isfield(obj.Tables, key)
+                data = obj.Tables.(key);
+            elseif strcmp(key, 'Clean')
+                data = obj; % Legacy ParserDatcom-loaded properties.
             else
-                val = interp2(obj.Mach, obj.Alpha, mat, mach_c, alpha_c, 'linear');
+                error('Aero6DoF:MissingConfiguration', 'Unknown configuration: %s.', key);
+            end
+        end
+    end
+
+    methods (Static, Access = private)
+        function names = coefficientFields()
+            names = {'CD','CL','CY','CM','CN','CA','CLN','CLL','XCP', ...
+                'CLA','CMA','CYB','CNB','CLB','CMQ','CNQ','CAQ','CMAD', ...
+                'CNAD','CLNR','CYR','CLLR','CLLP','CLNP','CYP'};
+        end
+
+        function validateConfiguration(data)
+            for name = {'Mach', 'Alpha', 'CD', 'CL'}
+                if ~isfield(data, name{1}) || isempty(data.(name{1}))
+                    error('Aero6DoF:NoData', 'Configuration requires %s.', name{1});
+                end
+            end
+            for name = {'Mach', 'Alpha'}
+                grid = data.(name{1});
+                validateattributes(grid, {'double'}, {'vector', 'real', 'finite', 'nonempty'});
+                if any(diff(grid(:)) <= 0)
+                    error('Aero6DoF:Grid', '%s must be strictly increasing.', name{1});
+                end
+            end
+            expected = [numel(data.Alpha), numel(data.Mach)];
+            for name = Aero6DoF.coefficientFields()
+                f = name{1};
+                if isfield(data, f) && ~isempty(data.(f))
+                    if ~isequal(size(data.(f)), expected)
+                        error('Aero6DoF:CoefficientSize', ...
+                            '%s must have numel(Alpha) rows and numel(Mach) columns.', f);
+                    end
+                    validateattributes(data.(f), {'double'}, {'real', 'finite'});
+                end
+            end
+        end
+
+        function coeffs = evaluateTable(data, mach, alpha)
+            if isempty(data.Mach) || isempty(data.Alpha)
+                error('Aero6DoF:NoData', 'No aerodynamic configuration loaded.');
+            end
+            mc = min(max(mach, min(data.Mach)), max(data.Mach));
+            ac = min(max(alpha, min(data.Alpha)), max(data.Alpha));
+            for name = Aero6DoF.coefficientFields()
+                f = name{1};
+                coeffs.(f) = 0;
+                if isstruct(data) && ~isfield(data, f), continue; end
+                mat = data.(f);
+                if isempty(mat), continue; end
+                if isscalar(mat)
+                    coeffs.(f) = mat;
+                elseif numel(data.Mach) == 1
+                    coeffs.(f) = interp1(data.Alpha, mat(:,1), ac, 'linear');
+                elseif numel(data.Alpha) == 1
+                    coeffs.(f) = interp1(data.Mach, mat(1,:), mc, 'linear');
+                else
+                    coeffs.(f) = interp2(data.Mach, data.Alpha, mat, mc, ac, 'linear');
+                end
             end
         end
     end
