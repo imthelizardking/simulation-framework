@@ -236,6 +236,11 @@ Run `runner_uav_seed_planting` for a civilian example with an open-loop UAV
 glide, timed wing deployment, seed release, and a marked ground planting zone.
 It uses the synthetic test datasets and reports seed landing coverage.
 
+The civilian runner now uses the standalone `AeroCivilianUAV` coefficient model,
+with lift/drag/side force, three-axis moments, rate derivatives, and aircraft
+controls. See [civilian UAV aero](docs/civilian-uav-aero.md) for inputs,
+framework compatibility, and tests.
+
 ## Mass properties
 
 Mass, CG and inertia updates use a shared evaluator for existing runners and

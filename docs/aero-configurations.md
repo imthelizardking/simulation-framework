@@ -104,8 +104,9 @@ result = runner_uav_seed_planting(false); % same run without plots
 
 Edit the settings at the top of `runner_uav_seed_planting.m`: initial position
 and speed, planting center/radius, deployment time/duration, release time, and
-seed mass, area, drag, count, and dispenser velocity spread. The defaults use
-the two bundled synthetic aero datasets, an unpowered 6-DoF glide starting at
+seed mass, area, drag, count, and dispenser velocity spread. The defaults now use
+the standalone `AeroCivilianUAV` model from `createCivilianUAVExampleAero`,
+an unpowered 6-DoF glide starting at
 40 m, wing deployment from 0.5 to 1 second, and a seed release at 1.5 seconds.
 `TargetStatic` represents the planting center; the radius defines a ground zone.
 
@@ -123,6 +124,8 @@ drag, and gravity. The single-container model updates aircraft mass, CG and
 inertia as seeds are released. Planting-zone placement and release time are user inputs;
 autonomous navigation and release scheduling are not modeled. The earlier
 shared state-layout and coordinate-convention concerns still need separate review.
+See [civilian UAV aero](civilian-uav-aero.md) for its independent coefficient
+schema. The two `.mat` fixtures above remain for the original table example.
 
 ## Verification
 

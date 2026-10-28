@@ -29,23 +29,11 @@ function result = runner_uav_seed_planting(makePlots)
     plantingTarget = TargetStatic(plantingCenter);
     plantingTarget.Name = 'Seed planting zone';
 
-    % 3. Assemble the UAV with the shared 6-DoF model and test aero data.
-    stowed = FactoryData.load('UAV_Test_Stowed');
-    deployed = FactoryData.load('UAV_Test_Deployed');
-    if isempty(stowed) || isempty(deployed)
-        error('SeedRunner:MissingData', 'Run generate_uav_deployment_data first.');
-    end
+    % 3. Standalone civilian aero, using the framework's dynamics interface.
     uav = Munition('Civilian_UAV_Test'); % generic existing vehicle container
     uav.Type = 'Civilian UAV';
     uav.Dynamics = Dynamics6DoF();
-    uav.Aero = Aero6DoF();
-    uav.Aero.Frame = 'NED';
-    uav.Aero.RefArea = stowed.RefArea;
-    uav.Aero.RefLength = stowed.RefLength;
-    uav.Aero.setConfiguration('Stowed', stowed);
-    uav.Aero.setConfiguration('WingsOpen', deployed);
-    uav.Aero.ActiveTableKey = 'Stowed';
-    uav.Aero.DeployedTableKey = 'WingsOpen';
+    uav.Aero = createCivilianUAVExampleAero();
     uav.Aero.DeploymentTime = deploymentTime;
     uav.Aero.DeploymentDuration = deploymentDuration;
     % Same shared mass-properties path used by legacy runners. The extra
