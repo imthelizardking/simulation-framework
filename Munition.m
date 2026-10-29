@@ -22,9 +22,10 @@ classdef Munition < handle
         Guidance                  = []  % Holds instance of BaseGuidance subclass
         Controller                = []  % Holds instance of BaseController subclass
         Charge                    = []  % Holds a ChargeZone (gun-fired munitions only; empty for rocket motors)
-        MassProperties struct = struct('Mass', 3.0, 'Inertia', eye(3)) % configuration, never RK4 scratch storage
-        MassModel = [] % optional UAVMassModel; existing structs use the shared evaluator
-        CurrentMassProperties struct = struct() % accepted-state snapshot
+        MassProperties struct = struct('Mass', 3.0, 'Inertia', eye(3), ...
+            'MassEmpty', 3.0, 'CGEmpty', [0;0;0], ...
+            'CGFull', [0;0;0], 'CGRef', [0;0;0], ...
+            'InertiaFull', eye(3), 'InertiaEmpty', eye(3))
         TwistRate      (1,1) double = 0.0 % rifling twist, calibers/turn; 0 = not applicable (fin-stabilized/no spin)
         LastGNCBus     struct     = struct()
         BurstTime                 = []  % s since launch at which fragmentation triggers; [] = never bursts
@@ -44,18 +45,15 @@ classdef Munition < handle
             % diameter) on top for a Dynamics3DofSpin or DynamicsMPMM
             % munition - so callers get one call site regardless of
             % whether the munition spins or not.
-            launch = obj.massPropertiesAt(0, []);
-            if nargin < 6, spin_init = 0; end
             if (isa(obj.Dynamics, 'Dynamics3DofSpin') || isa(obj.Dynamics, 'DynamicsMPMM')) && obj.TwistRate > 0
-                spin0 = 2*pi*v0/(obj.TwistRate*obj.Aero.RefLength);
-                X0 = obj.Dynamics.buildLaunchState(launcher_pos, v0, elevation, azimuth, launch.Mass, spin0);
+                spin0 = Dynamics3DofSpin.spinRateFromTwist(v0, obj.TwistRate, obj.Aero.RefLength);
+                X0 = obj.Dynamics.buildLaunchState(launcher_pos, v0, elevation, azimuth, obj.MassProperties.Mass, spin0);
             elseif (isa(obj.Dynamics, 'Dynamics6DoF'))
-                X0 = obj.Dynamics.buildLaunchState(launcher_pos, v0, elevation, azimuth, launch.Mass, spin_init, launch.Inertia);
+                X0 = obj.Dynamics.buildLaunchState(launcher_pos, v0, elevation, azimuth, obj.MassProperties.Mass, spin_init, inertiaMatrix);
             else
-                X0 = obj.Dynamics.buildLaunchState(launcher_pos, v0, elevation, azimuth, launch.Mass);
+                X0 = obj.Dynamics.buildLaunchState(launcher_pos, v0, elevation, azimuth, obj.MassProperties.Mass);
             end
 
-            X0 = obj.Dynamics.setMassProperties(X0, launch);
             obj.applyFormFactors(elevation);
         end
 
@@ -129,20 +127,12 @@ classdef Munition < handle
         end
 
         function dX = getDerivatives(obj, t, X, env)
-            snapshot = obj.massPropertiesAt(t, X);
-            X = obj.Dynamics.setMassProperties(X, snapshot);
+            obj.Dynamics.CurrentState = X;
 
             if ~isempty(obj.Propulsion)
                 [F_prop, M_prop, m_dot] = obj.Propulsion.getThrust(t, env);
             else
                 F_prop = [0;0;0]; M_prop = [0;0;0]; m_dot = 0;
-            end
-
-            if ~isempty(obj.MassModel)
-                if m_dot ~= 0
-                    error('MassProperties:MultipleSources', 'Container and propulsion mass loss need a combined model.');
-                end
-                m_dot = snapshot.MassRate;
             end
 
             if isfield(obj.LastGNCBus, 'Controller') && isfield(obj.LastGNCBus.Controller, 'FinDeflection')
@@ -152,38 +142,48 @@ classdef Munition < handle
             end
 
             if ~isempty(obj.Aero)
-                if isa(obj.Aero, 'AeroMPMM')
-                    [F_aero, M_aero] = obj.Aero.getForcesAndMoments(t, X, env, fin_deflection, snapshot);
-                else
-                    [F_aero, M_aero] = obj.Aero.getForcesAndMoments(t, X, env, fin_deflection);
-                end
-                if isa(obj.Aero, 'Aero6DoF')
-                    flow = BaseAero.computeFlowState(X, env, obj.Aero.Frame);
-                    R = Dynamics6DoF.quatToDCM(X(Dynamics6DoF.IDX_QUAT));
-                    F_aero = BaseAero.applyFormFactors(F_aero, R*(flow.v_mag*flow.vel_dir), obj.Aero.IForm, obj.Aero.FL);
-                elseif ~isa(obj.Aero, 'AeroMPMM') && ~isa(obj.Aero, 'AeroMissile6DoF')
+                [F_aero, M_aero] = obj.Aero.getForcesAndMoments(t, X, env, fin_deflection);
+                if ~isa(obj.Aero, 'AeroMPMM') && ~isa(obj.Aero, 'AeroMissile6DoF')
                     F_aero = BaseAero.applyFormFactors(F_aero, X(4:6), obj.Aero.IForm, obj.Aero.FL);
                 end
             else
                 F_aero = [0;0;0]; M_aero = [0;0;0];
             end
 
-            % A reference-to-CG transfer is meaningful only when force,
-            % reference position and CG all use the same body axes.
-            if isa(obj.Dynamics, 'Dynamics6DoF')
-                reference = zeros(3,1);
-                if isfield(obj.MassProperties, 'CGRef'), reference = obj.MassProperties.CGRef; end
-                aeroReference = reference; propReference = reference;
-                if ~isempty(obj.Aero) && ~isempty(obj.Aero.MomentReference)
-                    aeroReference = obj.Aero.MomentReference;
+            % --- DYNAMIC CG AND INERTIA CALCULATION ---
+            m_current = X(BaseDynamics.IDX_MASS);
+
+            if isfield(obj.MassProperties, 'MassEmpty') && isfield(obj.MassProperties, 'CGEmpty') && ...
+                    isfield(obj.MassProperties, 'CGFull') && isfield(obj.MassProperties, 'CGRef')
+
+                m_empty  = obj.MassProperties.MassEmpty;
+                m_full   = obj.MassProperties.Mass;
+                cg_empty = obj.MassProperties.CGEmpty;
+                cg_full  = obj.MassProperties.CGFull;
+                cg_ref   = obj.MassProperties.CGRef;
+
+                if (m_full - m_empty) > 1e-4
+                    mass_frac = (m_current - m_empty) / (m_full - m_empty);
+                    cg_prop = (m_full * cg_full - m_empty * cg_empty) / (m_full - m_empty);
+                    cg_current = (m_empty * cg_empty + (m_current - m_empty) * cg_prop) / m_current;
+
+                    if isfield(obj.MassProperties, 'InertiaFull') && isfield(obj.MassProperties, 'InertiaEmpty')
+                        obj.MassProperties.Inertia = obj.MassProperties.InertiaEmpty + ...
+                            mass_frac * (obj.MassProperties.InertiaFull - obj.MassProperties.InertiaEmpty);
+                    end
+                else
+                    cg_current = cg_empty;
+                    if isfield(obj.MassProperties, 'InertiaEmpty')
+                        obj.MassProperties.Inertia = obj.MassProperties.InertiaEmpty;
+                    end
                 end
-                if ~isempty(obj.Propulsion) && ~isempty(obj.Propulsion.MomentReference)
-                    propReference = obj.Propulsion.MomentReference;
-                end
-                validateattributes(aeroReference, {'double'}, {'size',[3 1],'real','finite'});
-                validateattributes(propReference, {'double'}, {'size',[3 1],'real','finite'});
-                M_aero = M_aero + cross(aeroReference - snapshot.CG, F_aero);
-                M_prop = M_prop + cross(propReference - snapshot.CG, F_prop);
+
+                % 3. Calculate distance vector FROM the new CG TO the reference point
+                cg_shift = cg_ref - cg_current;
+
+                % 4. Shift Moments via cross product (M_true = M_ref + r x F)
+                M_aero = M_aero + cross(cg_shift, F_aero);
+                M_prop = M_prop + cross(cg_shift, F_prop);
             end
 
             forces.Propulsion    = F_prop;
@@ -191,30 +191,7 @@ classdef Munition < handle
             forces.FinDeflection = fin_deflection;
             moments.Propulsion   = M_prop;
             moments.Aero         = M_aero;
-            dX = obj.Dynamics.computeDerivatives(t, X, forces, moments, snapshot, m_dot);
-        end
-
-        function snapshot = massPropertiesAt(obj, t, X)
-            if ~isempty(obj.MassModel)
-                if ~isa(obj.MassModel, 'UAVMassModel')
-                    error('MassProperties:Model', 'MassModel must be a UAVMassModel.');
-                end
-                snapshot = obj.MassModel.evaluate(t);
-                return;
-            end
-            mass = obj.MassProperties.Mass;
-            if ~isempty(X), mass = obj.Dynamics.getMass(X); end
-            if isa(obj.Propulsion, 'Propulsion_SolidMotor') && obj.Propulsion.FuelMass > 0
-                mass = obj.MassProperties.Mass - obj.Propulsion.massConsumed(t);
-            end
-            snapshot = MassPropertiesEvaluator.evaluate(obj.MassProperties, mass);
-        end
-
-        function [X, snapshot] = synchronizeMassState(obj, t, X)
-            snapshot = obj.massPropertiesAt(t, X);
-            X = obj.Dynamics.setMassProperties(X, snapshot);
-            obj.CurrentMassProperties = snapshot;
-            obj.Dynamics.CurrentState = X;
+            dX = obj.Dynamics.computeDerivatives(t, X, forces, moments, obj.MassProperties, m_dot);
         end
 
         function particles = spawnParticles(obj, X, ~)

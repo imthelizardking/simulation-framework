@@ -3,11 +3,11 @@
 
 % --- Configuration ---
 folderPath = pwd; 
-searchWord = 'quatToDCM';
+searchWord = 'i2b';
 
 % --- Control Variables ---
-matchWholeWord = true;  % true = exact word only, false = includes (partial match)
-matchCase      = true;  % true = case-sensitive, false = case-insensitive
+matchWholeWord = false;  % true = exact word only, false = includes (partial match)
+matchCase      = false;  % true = case-sensitive, false = case-insensitive
 % -------------------------
 
 % Build the regex pattern based on the whole-word control variable

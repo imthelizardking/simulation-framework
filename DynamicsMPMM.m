@@ -83,7 +83,7 @@ classdef DynamicsMPMM < BaseDynamics
         end
 
         function dX = computeDerivatives(obj, t, X, forces, moments, mass_prop, m_dot)
-            m   = X(BaseDynamics.IDX_MASS);
+            m   = mass_prop.Mass;
             Ix  = mass_prop.Inertia(1,1);
             pos = X(BaseDynamics.IDX_POS);
             vel = X(BaseDynamics.IDX_VEL);

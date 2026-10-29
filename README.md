@@ -232,21 +232,6 @@ supports named coefficient datasets, timed switching, and optional blending.
 See [aerodynamic configurations](docs/aero-configurations.md) for the data
 contract, usage, and limitations.
 
-Run `runner_uav_seed_planting` for a civilian example with an open-loop UAV
-glide, timed wing deployment, seed release, and a marked ground planting zone.
-It uses the synthetic test datasets and reports seed landing coverage.
-
-The civilian runner now uses the standalone `AeroCivilianUAV` coefficient model,
-with lift/drag/side force, three-axis moments, rate derivatives, and aircraft
-controls. See [civilian UAV aero](docs/civilian-uav-aero.md) for inputs,
-framework compatibility, and tests.
-
-## Mass properties
-
-Mass, CG and inertia updates use a shared evaluator for existing runners and
-the single-container UAV model. See [mass properties](docs/mass-properties.md)
-for input conventions, assumptions, and comparison against existing scenarios.
-
 ## Requirements
 
 MATLAB. The core framework and the scenario builder GUI need no toolboxes beyond base

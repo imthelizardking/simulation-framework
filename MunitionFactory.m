@@ -1,7 +1,7 @@
 %% File: MunitionFactory.m
 classdef MunitionFactory
     methods (Static)
-        
+
         %% 155mm M107 HE Artillery Projectile (Unguided Ballistic)
         function m = createM107Artillery(charge_name)
             if nargin < 1, charge_name = 'CH7W'; end
@@ -74,7 +74,7 @@ classdef MunitionFactory
             m.Guidance   = [];
             m.Controller = [];
         end
-        
+
         %% 2.75-inch (70mm) Hydra-70 Unguided Rocket (Mk 66 Motor)
         function m = createHydra70()
             % A data/createHydra70.mat file
@@ -384,7 +384,7 @@ classdef MunitionFactory
         %% APKWS II (Laser-Guided 70mm Hydra variant)
         function m = createAPKWS(prf_code)
             if nargin < 1, prf_code = 1111; end
-            
+
             % Start from Hydra base and add GNC kit
             m = MunitionFactory.createHydra70();
 
@@ -461,7 +461,7 @@ classdef MunitionFactory
                 FactoryData.getOr(data, 'RefArea', 0.003848451), ...   % 8.85 ft^2
                 FactoryData.getOr(data, 'RefLength', 0.07));    % 2.48 ft
             m.Propulsion = Propulsion_SolidMotor.MK66Mod4(3.2);
-            
+
             % seeker_fov_deg = FactoryData.getOr(data, 'SeekerFOV_deg', 20);
             % t_seeker_on    = FactoryData.getOr(data, 'T_SeekerOn', 1.2); % Seeker uncages after motor burnout
             % m.Sensors    = { Seeker_LOAL(deg2rad(seeker_fov_deg), t_seeker_on) };
@@ -495,8 +495,15 @@ classdef MunitionFactory
             % Illustrative mass properties (not from the DATCOM run, which
             % only reports aero) - adjust to your actual rocket's real
             % mass/inertia, or supply data/<Name>.mat (see MunitionData).
-            m.MassProperties.Mass = MunitionData.mass(mdata, 15.0);
+            m.MassProperties.Mass = MunitionData.mass(mdata, 11.2);
             m.MassProperties.Inertia = MunitionData.inertia(mdata, diag([0.008, 0.45, 0.45]));
+            % --- DYNAMIC CG AND INERTIA BOUNDARIES ---
+            missile.MassProperties.MassEmpty    = 8.0;
+            missile.MassProperties.CGRef        = [-0.75; 0; 0]; % MUST match DATCOM XCG=0.75
+            missile.MassProperties.CGFull       = [-0.70; 0; 0]; % Stable: Forward of CP
+            missile.MassProperties.CGEmpty      = [-0.60; 0; 0]; % Stable: Forward of CP
+            missile.MassProperties.InertiaFull  = diag([0.1, 2.0, 2.0]);
+            missile.MassProperties.InertiaEmpty = diag([0.08, 1.5, 1.5]);
 
             m.Dynamics = Dynamics6DoF();
             % RefArea/RefLength default to Example Problem 1's own SREF/
@@ -508,7 +515,7 @@ classdef MunitionFactory
                 FactoryData.getOr(data, 'RefArea', 0.003848451), ...   % 8.85 ft^2
                 FactoryData.getOr(data, 'RefLength', 0.07));    % 2.48 ft
             m.Propulsion = Propulsion_SolidMotor.MK66Mod4(3.2);
-            
+
             % seeker_fov_deg = FactoryData.getOr(data, 'SeekerFOV_deg', 20);
             % t_seeker_on    = FactoryData.getOr(data, 'T_SeekerOn', 1.2); % Seeker uncages after motor burnout
             % m.Sensors    = { Seeker_LOAL(deg2rad(seeker_fov_deg), t_seeker_on) };

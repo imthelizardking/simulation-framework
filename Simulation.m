@@ -3,8 +3,8 @@ classdef Simulation < handle
     properties
         Munition                  = []  % Munition container OR raw BaseDynamics object
         Target                    = []  % BaseTarget subclass OR struct
-        Atmosphere               = []  % Atmosphere object
-        Frame     (1,:) char      = 'Z-Up'  % 'Z-Up', 'NED', or 'FDR' (DynamicsMPMM/AeroMPMM only) - see CoordinateFrame; propagated to Munition.Dynamics/Aero/Visualizer/the burst swarm at run()
+        Atmosphere                = []  % Atmosphere object
+        Frame     (1,:) char      = 'NED'  % 'Z-Up', 'NED', or 'FDR' (DynamicsMPMM/AeroMPMM only) - see CoordinateFrame; propagated to Munition.Dynamics/Aero/Visualizer/the burst swarm at run()
         Designator                = []  % BaseDesignator subclass (optional)
         GroundStation             = []  % GroundStation object (optional)
         Visualizer                = []  % BaseVisualizer subclass (optional)
@@ -49,6 +49,7 @@ classdef Simulation < handle
     
     methods
         function obj = Simulation(munition, target, env, timespan, dt)
+            close all;
             % Dock every figure this MATLAB session creates from here on
             % (Visualizer live views, post-run plots, etc.) - set once here
             % so no runner script has to repeat it.
@@ -92,6 +93,7 @@ classdef Simulation < handle
             N_steps = length(time_array);
 
             % 1. Extract initial state X
+            % if no Dynamics attached, look for InitialState
             if isprop(obj.Munition, 'Dynamics') && ~isempty(obj.Munition.Dynamics)
                 X = obj.Munition.Dynamics.InitialState;
                 obj.Munition.Dynamics.CurrentState = X;
@@ -118,13 +120,6 @@ classdef Simulation < handle
             tel.accel_cmd  = zeros(N_steps, 1);
             tel.range      = zeros(N_steps, 1);
             tel.mach        = zeros(N_steps, 1);
-            hasMassModel = ismethod(obj.Munition, 'synchronizeMassState');
-            if hasMassModel
-                tel.mass = zeros(N_steps, 1);
-                tel.cg = zeros(N_steps, 3);
-                tel.inertia = zeros(N_steps, 9); % reshape(row,3,3) reconstructs the tensor
-                tel.payload_mass = zeros(N_steps, 1);
-            end
             % 3. Resolve Target Bus
             tgt_bus = obj.resolveTargetBus();
 
@@ -140,9 +135,6 @@ classdef Simulation < handle
             for k = 1:N_steps
                 t = time_array(k);
                 step_count = step_count + 1;
-                if hasMassModel
-                    [X, massSnapshot] = obj.Munition.synchronizeMassState(t, X);
-                end
                 
                 % Step Target Dynamics
                 if isobject(obj.Target) && ismethod(obj.Target, 'step')
@@ -195,12 +187,6 @@ classdef Simulation < handle
                 tel.time(k)          = t;
                 tel.pos(k, :)        = X(1:3)';
                 tel.vel(k, :)        = X(4:6)';
-                if hasMassModel
-                    tel.mass(k) = massSnapshot.Mass;
-                    tel.cg(k,:) = massSnapshot.CG';
-                    tel.inertia(k,:) = reshape(massSnapshot.Inertia, 1, 9);
-                    tel.payload_mass(k) = massSnapshot.PayloadMass;
-                end
                 if length(X) >= 7, tel.pitch(k) = X(7); end
                 tel.target_pos(k, :) = tgt_bus.pos';
                 
@@ -228,12 +214,10 @@ classdef Simulation < handle
                 % Integrate
                 X = obj.Integrator.step(@(tt, XX) obj.evalDerivatives(tt, XX), t, X, dt);
                 disp(strcat('--- Time: ', num2str(t), ' ---'));
-                if numel(X) >= BaseDynamics.FULL_STATE_DIM
-                    disp(strcat('--- Inertia: ', num2str(X(15), '%.6f'), ' ---'));
-                end
-                if hasMassModel
-                    disp(strcat('--- Mass: ', num2str(obj.Munition.Dynamics.getMass(X)), ' ---'));
-                end
+                % disp(strcat('--- Inertia: ', num2str(X(15), '%.6f'), ' ---'));
+                disp(strcat('--- Mass: ', num2str((X(14))), ' ---'));
+                disp(strcat('--- Velo: ', num2str((norm(X(4:6)))), ' ---'));
+                disp(strcat('--- Roll rate: ', num2str((X(10))), ' ---'));
             end
 
             % Truncate telemetry

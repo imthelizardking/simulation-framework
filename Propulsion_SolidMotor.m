@@ -22,8 +22,8 @@ classdef Propulsion_SolidMotor < BasePropulsion
     % thrust curve (constant Isp assumption). Method 1 reduces to the
     % constant -Mp/t_b. With FuelMass = 0 (the default) m_dot stays 0, the
     % same constant-mass behavior this class had before propellant mass
-    % was supported. Munition's shared evaluator owns current mass/CG/inertia;
-    % massConsumed supplies exact cumulative consumption for state projection.
+    % was supported. Inertia/CG are NOT updated here - MassProperties.
+    % Inertia stays at its launch value for the whole flight.
     %
     % No ambient-pressure correction - the table/average thrust is used
     % as-is at every altitude.
@@ -131,26 +131,6 @@ classdef Propulsion_SolidMotor < BasePropulsion
                         F = 0.0;
                     end
             end
-        end
-
-        function consumed = massConsumed(obj, t)
-            % Exact cumulative table/constant flow; avoids RK4 drift across
-            % the burn boundary. Pure lookup, safe for repeated substeps.
-            consumed = 0;
-            if obj.FuelMass == 0 || obj.TotalImpulse <= 0, return; end
-            if strcmp(obj.Mode, 'average')
-                fraction = min(1, max(0, t / obj.BurnDuration));
-            elseif t <= obj.TimeTable(1)
-                fraction = 0;
-            elseif t >= obj.TimeTable(end)
-                fraction = 1;
-            else
-                before = obj.TimeTable < t;
-                times = [obj.TimeTable(before); t];
-                thrust = [obj.ThrustTable(before); interp1(obj.TimeTable, obj.ThrustTable, t)];
-                fraction = trapz(times, thrust) / obj.TotalImpulse;
-            end
-            consumed = obj.FuelMass * min(1, max(0, fraction));
         end
 
         function [F_thrust, M_torque, m_dot] = getThrust(obj, t, ~)

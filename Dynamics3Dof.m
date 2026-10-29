@@ -3,14 +3,6 @@ classdef Dynamics3Dof < BaseDynamics
         Frame (1,:) char = 'Z-Up' % 'Z-Up' or 'NED' - see CoordinateFrame; must match the paired Aero
     end
     methods
-        function mass = getMass(~, X)
-            mass = X(8);
-        end
-
-        function X = setMassProperties(~, X, s)
-            X(8) = s.Mass;
-        end
-
         function obj = Dynamics3Dof()
             obj.StateDimension = 8; % [x; y; z; vx; vy; vz; pitch; mass]
         end

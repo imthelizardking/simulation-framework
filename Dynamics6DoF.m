@@ -22,7 +22,7 @@ classdef Dynamics6DoF < BaseDynamics
             obj.StateDimension = 21; % 17 base slots + 4 quaternion slots
         end
 
-        function X0 = buildLaunchState(obj, launcher_pos, v0, elevation, azimuth, mass, p0, inertiaMatrix)
+        function X0 = buildLaunchState(obj, launcher_pos, v0, elevation, azimuth, mass, p0, inertia)
             % BUILDLAUNCHSTATE Computes initial 6-DoF state vector
             %
             % Inputs:
@@ -33,7 +33,7 @@ classdef Dynamics6DoF < BaseDynamics
             %   mass         - Total vehicle launch mass (kg)
             %   p0           - (Optional) Initial roll spin rate (rad/s), default = 0
 
-            if nargin < 7 || isempty(p0)
+            if nargin < 8 || isempty(p0)
                 p0 = 0.0;
             end
 
@@ -44,7 +44,7 @@ classdef Dynamics6DoF < BaseDynamics
 
             % Initial attitude aligned with launch rails
             psi0   = azimuth;
-            theta0 = -elevation; % NED pitch is negative upward
+            theta0 = elevation; % NED pitch is negative upward
             phi0   = 0.0;
 
             % Convert to scalar-first quaternion
@@ -57,14 +57,7 @@ classdef Dynamics6DoF < BaseDynamics
             X0(BaseDynamics.IDX_BODYRATE) = [p0; 0; 0]; % Initial roll spin (rad/s)
             X0(BaseDynamics.IDX_SPIN2)    = p0;
             X0(BaseDynamics.IDX_MASS)     = mass;
-            X0(BaseDynamics.IDX_INERTIA) = [0; 0; 0];
-            if nargin >= 8 && ~isempty(inertiaMatrix)
-                if isvector(inertiaMatrix) && numel(inertiaMatrix) == 3
-                    inertiaMatrix = diag(inertiaMatrix);
-                end
-                UAVMassModel.checkTensor(inertiaMatrix, false);
-                X0(BaseDynamics.IDX_INERTIA) = diag(inertiaMatrix);
-            end
+            X0(BaseDynamics.IDX_INERTIA) = inertia;
             X0(obj.IDX_QUAT)              = q0;
         end
 
@@ -73,7 +66,7 @@ classdef Dynamics6DoF < BaseDynamics
             vel  = X(BaseDynamics.IDX_VEL);
             quat = X(obj.IDX_QUAT);
             p    = X(BaseDynamics.IDX_BODYRATE(1));
-            q    = -X(BaseDynamics.IDX_BODYRATE(2)); % making neg somehow solves it!
+            q    = X(BaseDynamics.IDX_BODYRATE(2)); % making neg somehow solves it!
             r    = X(BaseDynamics.IDX_BODYRATE(3));
             m    = X(BaseDynamics.IDX_MASS);
 
@@ -87,13 +80,14 @@ classdef Dynamics6DoF < BaseDynamics
 
             % 2. Translational Dynamics (Inertial Frame)
             % Body -> Inertial Direction Cosine Matrix
-            R_i2b = Dynamics6DoF.quatToDCM(q_unit);
+            R_b2i = Dynamics6DoF.quatToDCM(q_unit);
 
             % Total forces in body frame (Aerodynamic + Propulsion)
             F_body_total = forces.Aero + forces.Propulsion;
+            % disp(strcat('Propulsion: ', num2str(forces.Propulsion(3))));
             % Inertial acceleration: a = (R_bi * F_b) / m + g_ned
             g_vec = CoordinateFrame.gravityVector(9.80665, obj.Frame);
-            accel = (R_i2b' * F_body_total) / m + g_vec;
+            accel = (R_b2i * F_body_total) / m + g_vec;
             % disp(strcat('aero: ', num2str(forces.Aero)));
             % disp(strcat('prop: ', num2str(forces.Propulsion)));
             % disp(strcat('accel: ', num2str(accel)));
@@ -128,13 +122,6 @@ classdef Dynamics6DoF < BaseDynamics
             dp = (M_body(1) - (Izz - Iyy) * q * r) / Ixx;
             dq = (M_body(2) - (Ixx - Izz) * p * r) / Iyy;
             dr = (M_body(3) - (Iyy - Ixx) * p * q) / Izz;
-            if isequal(size(I_val), [3 3]) && any(any(I_val ~= diag(diag(I_val))))
-                omega = [p; q; r];
-                angularAcceleration = I_val \ (M_body - cross(omega, I_val * omega));
-                dp = angularAcceleration(1);
-                dq = angularAcceleration(2);
-                dr = angularAcceleration(3);
-            end
 
             % 5. Euler Angle Kinematics (Telemetry/Tracking output)
             curr_euler = Dynamics6DoF.quatToEuler(q_unit);
@@ -163,10 +150,10 @@ classdef Dynamics6DoF < BaseDynamics
     end
 
     methods (Static)
-        function R_i2b = quatToDCM(q)
+        function R_b2i = quatToDCM(q)
             % True Body -> Inertial Direction Cosine Matrix (scalar-first: [q0; q1; q2; q3])
             q0 = q(1); q1 = q(2); q2 = q(3); q3 = q(4);
-            R_i2b = [
+            R_b2i = [
                 1 - 2*(q2^2 + q3^2),  2*(q1*q2 - q0*q3),  2*(q1*q3 + q0*q2);
                 2*(q1*q2 + q0*q3),    1 - 2*(q1^2 + q3^2), 2*(q2*q3 - q0*q1);
                 2*(q1*q3 - q0*q2),    2*(q2*q3 + q0*q1),  1 - 2*(q1^2 + q2^2)

@@ -31,15 +31,4 @@ classdef (Abstract) BaseDynamics < handle
     methods (Abstract)
         dX = computeDerivatives(obj, t, X, forces, moments, mass_prop, m_dot)
     end
-
-    methods
-        function mass = getMass(~, X)
-            mass = X(BaseDynamics.IDX_MASS);
-        end
-
-        function X = setMassProperties(~, X, s)
-            X(BaseDynamics.IDX_MASS) = s.Mass;
-            X(BaseDynamics.IDX_INERTIA) = diag(s.Inertia);
-        end
-    end
 end
