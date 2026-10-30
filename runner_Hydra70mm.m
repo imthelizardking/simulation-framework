@@ -25,13 +25,15 @@ missile = MunitionFactory.createHydra70mm('MISSILEDATCOM_HYDRA70');
 launcher_pos = [0; 0; 0];
 launch_elev = pi/4; % positive pitch-up
 v0_rail = 45.0; % m/s, rail-launch speed before motor ignition, magnitude
-spin_init = 0;
+spin_init = 10; %clokcwise spin
 
 missile.Dynamics.InitialState = missile.buildLaunchState(launcher_pos, v0_rail, launch_elev, 0, spin_init, diag(missile.MassProperties.InertiaFull));
+% Inject a 0.5 rad/s initial yaw rate (r) to induce sideslip
+missile.Dynamics.InitialState(12) = 0.00;
 fprintf('Launch elevation: %.1f mils\n', FireControlComputer.rad2mil(launch_elev));
 
 % 5. Assemble Simulation & Execute
-sim = Simulation(missile, [], env, [0 60], 0.1);
+sim = Simulation(missile, [], env, [0 60], 0.05);
 % sim.Termination.MaxTime = 1.5;
 sim.Termination.MinAltitude = 0;
 sim.Visualizer = Visualizer_Basic(20,[0, 20000, 0, 6000]);

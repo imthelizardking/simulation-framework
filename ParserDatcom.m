@@ -1,12 +1,11 @@
 classdef ParserDatcom
     % DATCOMREADER Reads USAF Automated Missile DATCOM (REV 03/11) formatted
     % output listings (e.g. for006.dat, data/<name>.txt, data/<name>.dat)
-    % and normalizes static forces, moments, stability derivatives, and dynamic
-    % rate damping derivatives into an Aero6DoF object or a struct.
+    % and normalizes static forces, moments, stability derivatives, dynamic
+    % rate damping derivatives, and control derivatives into an Aero6DoF object or a struct.
     %
-    % Angular derivatives (CNA, CMA, CYB, CLNB, CLLB) and dynamic rate
-    % derivatives (CNQ, CMQ, CAQ, CNAD, CMAD, CYR, CLNR, CLLR, CYP, CLNP, CLLP)
-    % are converted from DATCOM's native [1/deg] to standard [1/rad].
+    % Angular derivatives and dynamic/control derivatives are converted 
+    % from DATCOM's native [1/deg] to standard [1/rad].
 
     methods (Static)
         function aero = load(name, ref_area, ref_length)
@@ -54,6 +53,13 @@ classdef ParserDatcom
             CLLP = zeros(n_alpha, n_mach);
             CLNP = zeros(n_alpha, n_mach);
             CYP  = zeros(n_alpha, n_mach);
+            
+            % Control derivatives
+            CND  = zeros(n_alpha, n_mach);
+            CMD  = zeros(n_alpha, n_mach);
+            CYD  = zeros(n_alpha, n_mach);
+            CLND = zeros(n_alpha, n_mach);
+            CLLD = zeros(n_alpha, n_mach);
 
             rad_factor = 180 / pi;
 
@@ -82,7 +88,7 @@ classdef ParserDatcom
                 CNB(i_a, i_m)  = r.CLNB * rad_factor;
                 CLB(i_a, i_m)  = r.CLLB * rad_factor;
 
-                % Dynamic rate damping derivatives (already in 1/rad from parseRawDatcom)
+                % Dynamic rate & control damping derivatives (already in 1/rad from parseRawDatcom)
                 CMQ(i_a, i_m)  = r.CMQ;
                 CNQ(i_a, i_m)  = r.CNQ;
                 CAQ(i_a, i_m)  = r.CAQ;
@@ -94,6 +100,12 @@ classdef ParserDatcom
                 CLLP(i_a, i_m) = r.CLLP;
                 CLNP(i_a, i_m) = r.CLNP;
                 CYP(i_a, i_m)  = r.CYP;
+                
+                CND(i_a, i_m)  = r.CND;
+                CMD(i_a, i_m)  = r.CMD;
+                CYD(i_a, i_m)  = r.CYD;
+                CLND(i_a, i_m) = r.CLND;
+                CLLD(i_a, i_m) = r.CLLD;
             end
 
             % Instantiate Aero6DoF object
@@ -129,6 +141,13 @@ classdef ParserDatcom
             if isprop(aero, 'CYR'),  aero.CYR  = CYR;  end
             if isprop(aero, 'CLLP'), aero.CLLP = CLLP; end
             if isprop(aero, 'CLLR'), aero.CLLR = CLLR; end
+            
+            % Control derivative matrices
+            if isprop(aero, 'CND'),  aero.CND  = CND;  end
+            if isprop(aero, 'CMD'),  aero.CMD  = CMD;  end
+            if isprop(aero, 'CYD'),  aero.CYD  = CYD;  end
+            if isprop(aero, 'CLND'), aero.CLND = CLND; end
+            if isprop(aero, 'CLLD'), aero.CLLD = CLLD; end
 
             if isprop(aero, 'CL_alpha')
                 aero.CL_alpha = ParserDatcom.estimateCLAlpha(aero);
@@ -146,7 +165,8 @@ classdef ParserDatcom
 
             all_fields = {'CN','CM','CA','CY','CLN','CLL','CL','CD','XCP', ...
                           'CNA','CMA','CYB','CLNB','CLLB', ...
-                          'CNQ','CMQ','CAQ','CNAD','CMAD','CYR','CLNR','CLLR','CYP','CLNP','CLLP'};
+                          'CNQ','CMQ','CAQ','CNAD','CMAD','CYR','CLNR','CLLR','CYP','CLNP','CLLP', ...
+                          'CND','CMD','CYD','CLND','CLLD'};
 
             num_pts = numel(records);
             mach_vec  = [records.Mach]';
@@ -200,9 +220,12 @@ classdef ParserDatcom
 
             all_fields = {'CN','CM','CA','CY','CLN','CLL','CL','CD','XCP', ...
                           'CNA','CMA','CYB','CLNB','CLLB', ...
-                          'CNQ','CMQ','CAQ','CNAD','CMAD','CYR','CLNR','CLLR','CYP','CLNP','CLLP'};
+                          'CNQ','CMQ','CAQ','CNAD','CMAD','CYR','CLNR','CLLR','CYP','CLNP','CLLP', ...
+                          'CND','CMD','CYD','CLND','CLLD'};
 
-            dynamic_fields = {'CNQ','CMQ','CAQ','CNAD','CMAD','CYR','CLNR','CLLR','CYP','CLNP','CLLP'};
+            % Fields to be scaled by rad_factor (1/deg to 1/rad conversion)
+            dynamic_fields = {'CNQ','CMQ','CAQ','CNAD','CMAD','CYR','CLNR','CLLR','CYP','CLNP','CLLP', ...
+                              'CND','CMD','CYD','CLND','CLLD'};
 
             data_map = containers.Map();
             current_mach = NaN;
@@ -273,7 +296,7 @@ classdef ParserDatcom
                                     col_idx = matched_cols(m);
                                     if col_idx <= length(nums)
                                         val = nums(col_idx);
-                                        % Convert dynamic damping terms to 1/rad
+                                        % Convert dynamic/control damping terms to 1/rad
                                         if ismember(matched_names{m}, dynamic_fields) && ~isnan(val)
                                             val = val * rad_factor;
                                         end

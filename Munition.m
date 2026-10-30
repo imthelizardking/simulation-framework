@@ -178,7 +178,10 @@ classdef Munition < handle
                     end
                 end
 
-                cg_shift = cg_current - cg_ref;
+                % 3. Calculate distance vector FROM the new CG TO the reference point
+                cg_shift = cg_ref - cg_current;
+
+                % 4. Shift Moments via cross product (M_true = M_ref + r x F)
                 M_aero = M_aero + cross(cg_shift, F_aero);
                 M_prop = M_prop + cross(cg_shift, F_prop);
             end

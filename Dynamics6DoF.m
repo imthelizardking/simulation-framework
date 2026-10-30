@@ -44,7 +44,7 @@ classdef Dynamics6DoF < BaseDynamics
 
             % Initial attitude aligned with launch rails
             psi0   = azimuth;
-            theta0 = -elevation; % NED pitch is negative upward
+            theta0 = elevation; % NED pitch is negative upward
             phi0   = 0.0;
 
             % Convert to scalar-first quaternion
@@ -66,7 +66,7 @@ classdef Dynamics6DoF < BaseDynamics
             vel  = X(BaseDynamics.IDX_VEL);
             quat = X(obj.IDX_QUAT);
             p    = X(BaseDynamics.IDX_BODYRATE(1));
-            q    = -X(BaseDynamics.IDX_BODYRATE(2)); % making neg somehow solves it!
+            q    = X(BaseDynamics.IDX_BODYRATE(2)); % making neg somehow solves it!
             r    = X(BaseDynamics.IDX_BODYRATE(3));
             m    = X(BaseDynamics.IDX_MASS);
 
@@ -80,13 +80,14 @@ classdef Dynamics6DoF < BaseDynamics
 
             % 2. Translational Dynamics (Inertial Frame)
             % Body -> Inertial Direction Cosine Matrix
-            R_i2b = Dynamics6DoF.quatToDCM(q_unit);
+            R_b2i = Dynamics6DoF.quatToDCM(q_unit);
 
             % Total forces in body frame (Aerodynamic + Propulsion)
             F_body_total = forces.Aero + forces.Propulsion;
+            % disp(strcat('Propulsion: ', num2str(forces.Propulsion(3))));
             % Inertial acceleration: a = (R_bi * F_b) / m + g_ned
             g_vec = CoordinateFrame.gravityVector(9.80665, obj.Frame);
-            accel = (R_i2b' * F_body_total) / m + g_vec;
+            accel = (R_b2i * F_body_total) / m + g_vec;
             % disp(strcat('aero: ', num2str(forces.Aero)));
             % disp(strcat('prop: ', num2str(forces.Propulsion)));
             % disp(strcat('accel: ', num2str(accel)));
@@ -149,10 +150,10 @@ classdef Dynamics6DoF < BaseDynamics
     end
 
     methods (Static)
-        function R_i2b = quatToDCM(q)
+        function R_b2i = quatToDCM(q)
             % True Body -> Inertial Direction Cosine Matrix (scalar-first: [q0; q1; q2; q3])
             q0 = q(1); q1 = q(2); q2 = q(3); q3 = q(4);
-            R_i2b = [
+            R_b2i = [
                 1 - 2*(q2^2 + q3^2),  2*(q1*q2 - q0*q3),  2*(q1*q3 + q0*q2);
                 2*(q1*q2 + q0*q3),    1 - 2*(q1^2 + q3^2), 2*(q2*q3 - q0*q1);
                 2*(q1*q3 - q0*q2),    2*(q2*q3 + q0*q1),  1 - 2*(q1^2 + q2^2)
