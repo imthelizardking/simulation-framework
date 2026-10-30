@@ -498,12 +498,12 @@ classdef MunitionFactory
             m.MassProperties.Mass = MunitionData.mass(mdata, 11.2);
             m.MassProperties.Inertia = MunitionData.inertia(mdata, diag([0.008, 0.45, 0.45]));
             % --- DYNAMIC CG AND INERTIA BOUNDARIES ---
-            m.MassProperties.MassEmpty    = 8.0;
-            m.MassProperties.CGRef        = [-0.75; 0; 0]; % MUST match DATCOM XCG=0.75
-            m.MassProperties.CGFull       = [-0.70; 0; 0]; % Stable: Forward of CP
-            m.MassProperties.CGEmpty      = [-0.60; 0; 0]; % Stable: Forward of CP
-            m.MassProperties.InertiaFull  = diag([0.1, 2.0, 2.0]);
-            m.MassProperties.InertiaEmpty = diag([0.08, 1.5, 1.5]);
+            missile.MassProperties.MassEmpty    = 8.0;
+            missile.MassProperties.CGRef        = [-0.75; 0; 0]; % MUST match DATCOM XCG=0.75
+            missile.MassProperties.CGFull       = [-0.70; 0; 0]; % Stable: Forward of CP
+            missile.MassProperties.CGEmpty      = [-0.60; 0; 0]; % Stable: Forward of CP
+            missile.MassProperties.InertiaFull  = diag([0.1, 2.0, 2.0]);
+            missile.MassProperties.InertiaEmpty = diag([0.08, 1.5, 1.5]);
 
             m.Dynamics = Dynamics6DoF();
             % RefArea/RefLength default to Example Problem 1's own SREF/
