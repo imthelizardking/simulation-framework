@@ -16,36 +16,36 @@
    1 DIM M                                                                           
    2 DERIV DEG                                                                       
    3 DAMP                                                                            
-   4 - -----------------------------------------------------------                   
-        ** ERROR ** UNKNOWN CONTROL CARD - IGNORED
-   5 - HYDRA 70 / APKWS II - MOTOR IGNITION CONFIGURATION (CANARDS CLOSED)           
-        ** ERROR ** UNKNOWN CONTROL CARD - IGNORED
-   6 - -----------------------------------------------------------                   
-        ** ERROR ** UNKNOWN CONTROL CARD - IGNORED
-   7  $FLTCON                                                                        
-   8   NMACH=7.0, MACH(1)=0.5, 0.8, 1.2, 1.8, 2.5, 3.0, 3.5,                         
-   9   NALPHA=6.0, ALPHA(1)=0.0, 2.0, 5.0, 10.0, 15.0, 20.0,                         
-  10   ALT(1)=7*1000.0,                                                              
-  11  $END                                                                           
-  12  $REFQ                                                                          
-  13   SREF=0.003848, LREF=0.07, LATREF=0.07,                                        
-  14   XCG=0.8404, ZCG=0.0,                                                          
-  15  $END                                                                           
-  16  $AXIBOD                                                                        
-  17   TNOSE=OGIVE, LNOSE=0.206, DNOSE=0.07,                                         
+   4  $FLTCON                                                                        
+   5   NMACH=7.0, MACH(1)=0.5, 0.8, 1.2, 1.8, 2.5, 3.0, 3.5,                         
+   6   NALPHA=6.0, ALPHA(1)=0.0, 2.0, 5.0, 10.0, 15.0, 20.0,                         
+   7   ALT(1)=7*1000.0,                                                              
+   8  $END                                                                           
+   9  $REFQ                                                                          
+  10   SREF=0.003848, LREF=0.07, LATREF=0.07,                                        
+  11   XCG=0.88, ZCG=0.0,                                                            
+  12  $END                                                                           
+  13  $AXIBOD                                                                        
+  14   TNOSE=OGIVE, LNOSE=0.41, DNOSE=0.07,                                          
                ** SUBSTITUTING NUMERIC FOR NAME OGIVE
-  18   LCENTR=1.736, DCENTR=0.07,                                                    
-  19  $END                                                                           
-  20  $FINSET1                                                                       
-  21   SECTYP=HEX, NPANEL=3.0,                                                       
+  15   LCENTR=1.06, DCENTR=0.07,                                                     
+  16   DEXIT=0.0,                                                                    
+  17  $END                                                                           
+  18  $FINSET1                                                                       
+  19   SECTYP=HEX, NPANEL=3.0,                                                       
                ** SUBSTITUTING NUMERIC FOR NAME HEX
-  22   XLE=1.80,                                                                     
-  23   SSPAN(1)=0.035, 0.11,                                                         
-  24   CHORD(1)=0.15, 0.08,                                                          
+  20   XLE=1.33,                                                                     
+  21   SSPAN(1)=0.035, 0.11,                                                         
+  22   CHORD(1)=0.15, 0.08,                                                          
+  23   ZUPPER(1)=0.01, 0.01875,                                                      
+  24   LMAXU(1)=0.5, 0.5,                                                            
   25   STA=0.0, SWEEP=25.0,                                                          
   26   PHIF(1)=0.0, 120.0, 240.0,                                                    
   27  $END                                                                           
-  28 NEXT CASE                                                                       
+  28  $DEFLCT                                                                        
+  29   DELTA1=-1.72, DELTA2=-1.72, DELTA3=-1.72,                                     
+  30  $END                                                                           
+  31 NEXT CASE                                                                       
 1         ***** THE USAF AUTOMATED MISSILE DATCOM * REV 03/11 *****    CASE   1
                AERODYNAMIC METHODS FOR MISSILE CONFIGURATIONS          PAGE   1
     CASE INPUTS
@@ -61,19 +61,25 @@
   $END                                                                           
   $REFQ                                                                          
    SREF=0.003848, LREF=0.07, LATREF=0.07,                                        
-   XCG=0.8404, ZCG=0.0,                                                          
+   XCG=0.88, ZCG=0.0,                                                            
   $END                                                                           
   $AXIBOD                                                                        
-   TNOSE=1., LNOSE=0.206, DNOSE=0.07,                                            
-   LCENTR=1.736, DCENTR=0.07,                                                    
+   TNOSE=1., LNOSE=0.41, DNOSE=0.07,                                             
+   LCENTR=1.06, DCENTR=0.07,                                                     
+   DEXIT=0.0,                                                                    
   $END                                                                           
   $FINSET1                                                                       
    SECTYP=0., NPANEL=3.0,                                                        
-   XLE=1.80,                                                                     
+   XLE=1.33,                                                                     
    SSPAN(1)=0.035, 0.11,                                                         
    CHORD(1)=0.15, 0.08,                                                          
+   ZUPPER(1)=0.01, 0.01875,                                                      
+   LMAXU(1)=0.5, 0.5,                                                            
    STA=0.0, SWEEP=25.0,                                                          
    PHIF(1)=0.0, 120.0, 240.0,                                                    
+  $END                                                                           
+  $DEFLCT                                                                        
+   DELTA1=-1.72, DELTA2=-1.72, DELTA3=-1.72,                                     
   $END                                                                           
  NEXT CASE                                                                       
     THE BOUNDARY LAYER IS ASSUMED TO BE TURBULENT
@@ -86,27 +92,27 @@
      MACH NO  =       0.50                REYNOLDS NO = 1.059E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE =  15728.74 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                    ----- LONGITUDINAL -----     -- LATERAL DIRECTIONAL --
          ALPHA       CN        CM        CA        CY       CLN       CLL
 
-          0.00     0.000     0.000     0.365     0.000     0.000     0.000
-          2.00     0.476    -4.794     0.363     0.000     0.000     0.000
-          5.00     1.334   -12.964     0.349     0.000     0.000     0.000
-         10.00     3.097   -28.358     0.272     0.000     0.000     0.000
-         15.00     5.188   -44.655     0.097     0.000     0.000     0.000
-         20.00     7.398   -58.903    -0.184     0.000     0.000     0.000
+          0.00     0.000     0.003     0.422     0.161    -1.138     0.077
+          2.00     0.469    -1.996     0.421     0.163    -1.154     0.074
+          5.00     1.291    -5.344     0.413     0.167    -1.185     0.068
+         10.00     2.909   -11.311     0.368     0.173    -1.230     0.060
+         15.00     4.762   -17.228     0.270     0.174    -1.243     0.060
+         20.00     6.631   -21.580     0.117     0.169    -1.207     0.072
 
          ALPHA       CL        CD      CL/CD     X-C.P.
 
-          0.00     0.000     0.365     0.000   -10.485
-          2.00     0.463     0.379     1.220   -10.078
-          5.00     1.298     0.464     2.798    -9.720
-         10.00     3.003     0.805     3.729    -9.158
-         15.00     4.986     1.437     3.470    -8.608
-         20.00     7.015     2.357     2.976    -7.962
+          0.00     0.000     0.422     0.000**********
+          2.00     0.454     0.437     1.037    -4.260
+          5.00     1.250     0.524     2.388    -4.139
+         10.00     2.801     0.867     3.229    -3.888
+         15.00     4.529     1.494     3.033    -3.618
+         20.00     6.191     2.378     2.604    -3.255
 
     X-C.P. MEAS. FROM MOMENT CENTER IN REF. LENGTHS, NEG. AFT OF MOMENT CENTER
 1         ***** THE USAF AUTOMATED MISSILE DATCOM * REV 03/11 *****    CASE   1
@@ -117,21 +123,21 @@
      MACH NO  =       0.50                REYNOLDS NO = 1.059E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE =  15728.74 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                    ---------- DERIVATIVES (PER DEGREE) ----------
          ALPHA       CNA         CMA         CYB         CLNB        CLLB
-          0.00      0.2139     -2.2425     -0.2264      2.3247     -0.0008
-          2.00      0.2618     -2.5511     -0.2400      2.4085      0.0078
-          5.00      0.3190     -2.8914     -0.2267      2.0094      0.0485
-         10.00      0.3851     -3.1668     -0.1996      1.2609      0.1054
-         15.00      0.4301     -3.0421     -0.1365      0.0036      0.1604
-         20.00      0.4539     -2.6571     -0.0469     -1.6161      0.2051
+          0.00      0.2144     -0.9435     -0.2253      0.9787     -0.0014
+          2.00      0.2542     -1.0563     -0.2363      1.0048      0.0076
+          5.00      0.2987     -1.1539     -0.2287      0.8565      0.0411
+         10.00      0.3469     -1.1883     -0.1872      0.3992      0.1014
+         15.00      0.3722     -1.0148     -0.1369     -0.1168      0.1393
+         20.00      0.3755     -0.7262     -0.0894     -0.6020      0.1433
 
     PANEL DEFLECTION ANGLES (DEGREES)
     SET    FIN 1   FIN 2   FIN 3   FIN 4   FIN 5   FIN 6   FIN 7   FIN 8
-      1    0.00    0.00    0.00
+      1   -1.72    0.00    0.00
 1         ***** THE USAF AUTOMATED MISSILE DATCOM * REV 03/11 *****    CASE   1
                AERODYNAMIC METHODS FOR MISSILE CONFIGURATIONS          PAGE   4
                         BODY + 1 FIN SET DYNAMIC DERIVATIVES
@@ -140,17 +146,17 @@
      MACH NO  =       0.50                REYNOLDS NO = 1.059E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE =  15728.74 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                     ------------ DYNAMIC DERIVATIVES (PER DEGREE) -----------
          ALPHA       CNQ        CMQ        CAQ       CNAD       CMAD
-          0.00      5.795    -77.408      0.000      2.017     -6.853
-          2.00      5.417    -71.999      0.000      2.017     -6.853
-          5.00      4.815    -63.352      0.000      2.017     -6.853
-         10.00      3.789    -48.528      0.000      2.017     -6.853
-         15.00      2.818    -34.441      0.000      2.017     -6.853
-         20.00      2.078    -23.655      0.000      2.017     -6.853
+          0.00      4.210    -29.421     -0.001      1.496     -1.552
+          2.00      4.240    -29.742     -0.001      1.496     -1.552
+          5.00      4.119    -29.000     -0.001      1.496     -1.552
+         10.00      3.590    -25.331     -0.001      1.496     -1.552
+         15.00      2.782    -19.553      0.000      1.496     -1.552
+         20.00      2.006    -13.938      0.000      1.496     -1.552
 
     PITCH RATE DERIVATIVES NON-DIMENSIONALIZED BY Q*LREF/2*V
 1         ***** THE USAF AUTOMATED MISSILE DATCOM * REV 03/11 *****    CASE   1
@@ -161,17 +167,17 @@
      MACH NO  =       0.50                REYNOLDS NO = 1.059E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE =  15728.74 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                     ------------ DYNAMIC DERIVATIVES (PER DEGREE) -----------
          ALPHA       CYR       CLNR       CLLR        CYP       CLNP       CLLP
-          0.00      5.866    -74.693     -1.587      0.000     -0.003     -0.477
-          2.00      5.819    -74.005     -1.496      0.012     -0.178     -0.499
-          5.00      5.698    -72.245     -1.250      0.046     -0.672     -0.560
-         10.00      5.399    -67.905     -0.662      0.101     -1.497     -0.655
-         15.00      5.125    -63.962     -0.120      0.130     -1.933     -0.700
-         20.00      4.899    -60.725      0.314      0.126     -1.879     -0.682
+          0.00      3.874    -26.348     -0.014      0.006     -0.049     -0.474
+          2.00      3.821    -25.968      0.060      0.017     -0.128     -0.494
+          5.00      3.741    -25.404      0.158      0.051     -0.382     -0.556
+         10.00      3.615    -24.537      0.298      0.108     -0.806     -0.653
+         15.00      3.458    -23.454      0.500      0.136     -1.025     -0.696
+         20.00      3.232    -21.853      0.844      0.132     -1.012     -0.679
 
     YAW AND ROLL RATE DERIVATIVES NON-DIMENSIONALIZED BY R*LATREF/2*V
 1         ***** THE USAF AUTOMATED MISSILE DATCOM * REV 03/11 *****    CASE   1
@@ -182,27 +188,27 @@
      MACH NO  =       0.80                REYNOLDS NO = 1.694E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE =  40265.57 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                    ----- LONGITUDINAL -----     -- LATERAL DIRECTIONAL --
          ALPHA       CN        CM        CA        CY       CLN       CLL
 
-          0.00     0.000     0.000     0.340     0.000     0.000     0.000
-          2.00     0.482    -4.889     0.338     0.000     0.000     0.000
-          5.00     1.338   -12.988     0.325     0.000     0.000     0.000
-         10.00     3.082   -27.843     0.250     0.000     0.000     0.000
-         15.00     5.171   -43.282     0.076     0.000     0.000     0.000
-         20.00     7.607   -57.305    -0.238     0.000     0.000     0.000
+          0.00     0.000     0.003     0.398     0.164    -1.159     0.079
+          2.00     0.498    -2.222     0.397     0.165    -1.173     0.076
+          5.00     1.352    -5.810     0.387     0.169    -1.199     0.071
+         10.00     3.001   -11.921     0.338     0.174    -1.236     0.065
+         15.00     4.883   -17.689     0.233     0.174    -1.239     0.067
+         20.00     6.935   -21.723     0.056     0.170    -1.211     0.078
 
          ALPHA       CL        CD      CL/CD     X-C.P.
 
-          0.00     0.000     0.340     0.000   -10.590
-          2.00     0.470     0.355     1.326   -10.137
-          5.00     1.304     0.440     2.964    -9.710
-         10.00     2.991     0.781     3.830    -9.035
-         15.00     4.976     1.412     3.525    -8.369
-         20.00     7.230     2.378     3.041    -7.533
+          0.00     0.000     0.398     0.000**********
+          2.00     0.484     0.414     1.169    -4.465
+          5.00     1.313     0.503     2.609    -4.297
+         10.00     2.897     0.854     3.392    -3.972
+         15.00     4.656     1.489     3.126    -3.623
+         20.00     6.497     2.424     2.680    -3.132
 
     X-C.P. MEAS. FROM MOMENT CENTER IN REF. LENGTHS, NEG. AFT OF MOMENT CENTER
 1         ***** THE USAF AUTOMATED MISSILE DATCOM * REV 03/11 *****    CASE   1
@@ -213,21 +219,21 @@
      MACH NO  =       0.80                REYNOLDS NO = 1.694E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE =  40265.57 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                    ---------- DERIVATIVES (PER DEGREE) ----------
          ALPHA       CNA         CMA         CYB         CLNB        CLLB
-          0.00      0.2193     -2.3225     -0.2303      2.3827     -0.0007
-          2.00      0.2630     -2.5666     -0.2432      2.4535      0.0063
-          5.00      0.3167     -2.8295     -0.2269      2.0056      0.0446
-         10.00      0.3830     -3.0284     -0.1987      1.2173      0.0984
-         15.00      0.4521     -2.9401     -0.1352     -0.0931      0.1515
-         20.00      0.5222     -2.6688     -0.0588     -1.6695      0.2023
+          0.00      0.2310     -1.0724     -0.2403      1.0959     -0.0012
+          2.00      0.2668     -1.1535     -0.2507      1.1163      0.0066
+          5.00      0.3072     -1.2089     -0.2403      0.9452      0.0374
+         10.00      0.3529     -1.1874     -0.1967      0.4616      0.0945
+         15.00      0.3933     -0.9653     -0.1452     -0.0856      0.1295
+         20.00      0.4275     -0.6481     -0.1079     -0.5695      0.1381
 
     PANEL DEFLECTION ANGLES (DEGREES)
     SET    FIN 1   FIN 2   FIN 3   FIN 4   FIN 5   FIN 6   FIN 7   FIN 8
-      1    0.00    0.00    0.00
+      1   -1.72    0.00    0.00
 1         ***** THE USAF AUTOMATED MISSILE DATCOM * REV 03/11 *****    CASE   1
                AERODYNAMIC METHODS FOR MISSILE CONFIGURATIONS          PAGE   8
                         BODY + 1 FIN SET DYNAMIC DERIVATIVES
@@ -236,17 +242,17 @@
      MACH NO  =       0.80                REYNOLDS NO = 1.694E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE =  40265.57 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                     ------------ DYNAMIC DERIVATIVES (PER DEGREE) -----------
          ALPHA       CNQ        CMQ        CAQ       CNAD       CMAD
-          0.00      5.770    -79.725      0.000      2.007     -7.867
-          2.00      5.463    -75.363      0.000      2.007     -7.867
-          5.00      4.960    -68.153      0.000      2.007     -7.867
-         10.00      4.100    -55.751      0.000      2.007     -7.867
-         15.00      3.292    -44.037      0.000      2.007     -7.867
-         20.00      2.680    -35.128      0.000      2.007     -7.867
+          0.00      4.240    -29.500     -0.001      1.503     -1.502
+          2.00      4.241    -29.608     -0.001      1.503     -1.502
+          5.00      4.096    -28.694     -0.001      1.503     -1.502
+         10.00      3.576    -25.085     -0.001      1.503     -1.502
+         15.00      2.841    -19.830     -0.001      1.503     -1.502
+         20.00      2.273    -15.728      0.000      1.503     -1.502
 
     PITCH RATE DERIVATIVES NON-DIMENSIONALIZED BY Q*LREF/2*V
 1         ***** THE USAF AUTOMATED MISSILE DATCOM * REV 03/11 *****    CASE   1
@@ -257,17 +263,17 @@
      MACH NO  =       0.80                REYNOLDS NO = 1.694E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE =  40265.57 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                     ------------ DYNAMIC DERIVATIVES (PER DEGREE) -----------
          ALPHA       CYR       CLNR       CLLR        CYP       CLNP       CLLP
-          0.00      5.855    -77.113     -1.354      0.000     -0.003     -0.488
-          2.00      5.808    -76.422     -1.273      0.010     -0.148     -0.506
-          5.00      5.687    -74.651     -1.050      0.037     -0.556     -0.556
-         10.00      5.391    -70.358     -0.520      0.085     -1.257     -0.636
-         15.00      5.135    -66.680     -0.053      0.105     -1.569     -0.668
-         20.00      4.932    -63.779      0.318      0.104     -1.564     -0.657
+          0.00      3.929    -26.586     -0.059      0.006     -0.044     -0.484
+          2.00      3.879    -26.223      0.012      0.015     -0.112     -0.501
+          5.00      3.795    -25.632      0.118      0.043     -0.327     -0.552
+         10.00      3.659    -24.698      0.280      0.091     -0.691     -0.635
+         15.00      3.496    -23.572      0.499      0.111     -0.853     -0.666
+         20.00      3.275    -22.009      0.838      0.110     -0.855     -0.654
 
     YAW AND ROLL RATE DERIVATIVES NON-DIMENSIONALIZED BY R*LATREF/2*V
     FIN PRESSURE DIST. CANNOT BE CALCULATED DATCOM METHOD USED FOR WAVE DRAG
@@ -279,27 +285,27 @@
      MACH NO  =       1.20                REYNOLDS NO = 2.541E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE =  90597.54 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                    ----- LONGITUDINAL -----     -- LATERAL DIRECTIONAL --
          ALPHA       CN        CM        CA        CY       CLN       CLL
 
-          0.00     0.000     0.000     0.493     0.000     0.000     0.000
-          2.00     0.587    -6.452     0.492     0.000     0.000     0.000
-          5.00     1.590   -16.408     0.490     0.000     0.000     0.000
-         10.00     3.588   -33.108     0.482     0.000     0.000     0.000
-         15.00     6.200   -50.170     0.470     0.000     0.000     0.000
-         20.00     9.550   -67.515     0.452     0.000     0.000     0.000
+          0.00     0.000     0.004     0.476     0.202    -1.491     0.105
+          2.00     0.613    -3.414     0.476     0.203    -1.502     0.103
+          5.00     1.632    -8.525     0.475     0.206    -1.518     0.100
+         10.00     3.534   -16.273     0.468     0.209    -1.541     0.098
+         15.00     5.844   -22.805     0.458     0.210    -1.551     0.098
+         20.00     8.627   -27.656     0.443     0.209    -1.545     0.104
 
          ALPHA       CL        CD      CL/CD     X-C.P.
 
-          0.00     0.000     0.493     0.000   -11.655
-          2.00     0.569     0.513     1.110   -10.997
-          5.00     1.541     0.627     2.459   -10.318
-         10.00     3.450     1.098     3.141    -9.227
-         15.00     5.868     2.058     2.851    -8.091
-         20.00     8.819     3.691     2.389    -7.070
+          0.00     0.000     0.476     0.000**********
+          2.00     0.596     0.497     1.199    -5.568
+          5.00     1.584     0.615     2.576    -5.224
+         10.00     3.399     1.075     3.162    -4.605
+         15.00     5.527     1.955     2.827    -3.902
+         20.00     7.955     3.367     2.362    -3.206
 
     X-C.P. MEAS. FROM MOMENT CENTER IN REF. LENGTHS, NEG. AFT OF MOMENT CENTER
 1         ***** THE USAF AUTOMATED MISSILE DATCOM * REV 03/11 *****    CASE   1
@@ -310,21 +316,21 @@
      MACH NO  =       1.20                REYNOLDS NO = 2.541E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE =  90597.54 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                    ---------- DERIVATIVES (PER DEGREE) ----------
          ALPHA       CNA         CMA         CYB         CLNB        CLLB
-          0.00      0.2729     -3.1807     -0.2817      3.1825     -0.0005
-          2.00      0.3138     -3.2718     -0.2954      3.2286      0.0044
-          5.00      0.3667     -3.3292     -0.2721      2.5970      0.0415
-         10.00      0.4596     -3.3758     -0.2164      1.2329      0.1108
-         15.00      0.5938     -3.4406     -0.1505     -0.4578      0.1869
-         20.00      0.7461     -3.4976     -0.0760     -2.3762      0.2657
+          0.00      0.2903     -1.7124     -0.2973      1.7026     -0.0011
+          2.00      0.3230     -1.7064     -0.3083      1.7087      0.0056
+          5.00      0.3598     -1.6239     -0.2920      1.4464      0.0341
+         10.00      0.4207     -1.4211     -0.2178      0.6307      0.1070
+         15.00      0.5084     -1.1244     -0.1646     -0.1172      0.1591
+         20.00      0.6045     -0.8162     -0.1368     -0.7271      0.1839
 
     PANEL DEFLECTION ANGLES (DEGREES)
     SET    FIN 1   FIN 2   FIN 3   FIN 4   FIN 5   FIN 6   FIN 7   FIN 8
-      1    0.00    0.00    0.00
+      1   -1.72    0.00    0.00
 1         ***** THE USAF AUTOMATED MISSILE DATCOM * REV 03/11 *****    CASE   1
                AERODYNAMIC METHODS FOR MISSILE CONFIGURATIONS          PAGE  12
                         BODY + 1 FIN SET DYNAMIC DERIVATIVES
@@ -333,17 +339,17 @@
      MACH NO  =       1.20                REYNOLDS NO = 2.541E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE =  90597.54 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                     ------------ DYNAMIC DERIVATIVES (PER DEGREE) -----------
          ALPHA       CNQ        CMQ        CAQ       CNAD       CMAD
-          0.00      7.110   -107.005      0.000      1.966    -10.608
-          2.00      6.833   -102.958      0.000      1.966    -10.608
-          5.00      6.371    -96.217      0.000      1.966    -10.608
-         10.00      5.567    -84.428      0.000      1.966    -10.608
-         15.00      4.808    -73.271      0.000      1.966    -10.608
-         20.00      4.156    -63.687      0.000      1.966    -10.608
+          0.00      4.946    -38.200     -0.001      1.222     -1.334
+          2.00      4.908    -37.961     -0.001      1.222     -1.334
+          5.00      4.744    -36.793     -0.001      1.222     -1.334
+         10.00      4.322    -33.717     -0.001      1.222     -1.334
+         15.00      3.809    -29.942     -0.001      1.222     -1.334
+         20.00      3.316    -26.292     -0.001      1.222     -1.334
 
     PITCH RATE DERIVATIVES NON-DIMENSIONALIZED BY Q*LREF/2*V
 1         ***** THE USAF AUTOMATED MISSILE DATCOM * REV 03/11 *****    CASE   1
@@ -354,17 +360,17 @@
      MACH NO  =       1.20                REYNOLDS NO = 2.541E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE =  90597.54 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                     ------------ DYNAMIC DERIVATIVES (PER DEGREE) -----------
          ALPHA       CYR       CLNR       CLLR        CYP       CLNP       CLLP
-          0.00      7.064   -101.397     -1.182      0.000     -0.003     -0.601
-          2.00      7.008   -100.557     -1.091      0.007     -0.097     -0.614
-          5.00      6.877    -98.634     -0.882      0.024     -0.358     -0.649
-         10.00      6.592    -94.440     -0.422      0.056     -0.842     -0.709
-         15.00      6.317    -90.415      0.011      0.084     -1.256     -0.760
-         20.00      6.094    -87.159      0.374      0.106     -1.577     -0.786
+          0.00      4.635    -34.965     -0.118      0.005     -0.039     -0.595
+          2.00      4.570    -34.485     -0.034      0.012     -0.091     -0.609
+          5.00      4.452    -33.609      0.099      0.032     -0.240     -0.647
+         10.00      4.253    -32.155      0.306      0.065     -0.499     -0.711
+         15.00      4.057    -30.721      0.526      0.093     -0.710     -0.760
+         20.00      3.851    -29.211      0.816      0.114     -0.869     -0.785
 
     YAW AND ROLL RATE DERIVATIVES NON-DIMENSIONALIZED BY R*LATREF/2*V
     FIN PRESSURE DIST. CANNOT BE CALCULATED DATCOM METHOD USED FOR WAVE DRAG
@@ -376,27 +382,27 @@
      MACH NO  =       1.80                REYNOLDS NO = 3.811E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE = 203844.44 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                    ----- LONGITUDINAL -----     -- LATERAL DIRECTIONAL --
          ALPHA       CN        CM        CA        CY       CLN       CLL
 
-          0.00     0.000     0.000     0.389     0.000     0.000     0.000
-          2.00     0.502    -4.756     0.389     0.000     0.000     0.000
-          5.00     1.362   -11.834     0.386     0.000     0.000     0.000
-         10.00     3.240   -23.858     0.377     0.000     0.000     0.000
-         15.00     6.087   -37.486     0.364     0.000     0.000     0.000
-         20.00     9.994   -52.991     0.348     0.000     0.000     0.000
+          0.00     0.000     0.003     0.392     0.148    -1.100     0.104
+          2.00     0.480    -2.051     0.390     0.148    -1.102     0.104
+          5.00     1.272    -4.865     0.384     0.149    -1.109     0.104
+         10.00     2.880    -8.594     0.363     0.151    -1.127     0.102
+         15.00     5.205   -11.460     0.331     0.152    -1.136     0.103
+         20.00     8.243   -12.917     0.295     0.154    -1.146     0.103
 
          ALPHA       CL        CD      CL/CD     X-C.P.
 
-          0.00     0.000     0.389     0.000   -10.248
-          2.00     0.488     0.406     1.201    -9.481
-          5.00     1.323     0.503     2.628    -8.689
-         10.00     3.126     0.934     3.345    -7.363
-         15.00     5.785     1.927     3.002    -6.158
-         20.00     9.272     3.745     2.476    -5.302
+          0.00     0.000     0.392     0.000**********
+          2.00     0.466     0.407     1.145    -4.274
+          5.00     1.234     0.493     2.500    -3.824
+         10.00     2.773     0.857     3.235    -2.984
+         15.00     4.942     1.667     2.965    -2.202
+         20.00     7.645     3.096     2.469    -1.567
 
     X-C.P. MEAS. FROM MOMENT CENTER IN REF. LENGTHS, NEG. AFT OF MOMENT CENTER
 1         ***** THE USAF AUTOMATED MISSILE DATCOM * REV 03/11 *****    CASE   1
@@ -407,21 +413,21 @@
      MACH NO  =       1.80                REYNOLDS NO = 3.811E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE = 203844.44 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                    ---------- DERIVATIVES (PER DEGREE) ----------
          ALPHA       CNA         CMA         CYB         CLNB        CLLB
-          0.00      0.2330     -2.3875     -0.2404      2.3608      0.0000
-          2.00      0.2687     -2.3687     -0.2526      2.3760      0.0003
-          5.00      0.3306     -2.3818     -0.2447      1.9472      0.0213
-         10.00      0.4689     -2.5565     -0.1897      0.4242      0.1055
-         15.00      0.6701     -2.9025     -0.1634     -0.9960      0.1672
-         20.00      0.8925     -3.2996     -0.1422     -2.4257      0.2408
+          0.00      0.2280     -1.0733     -0.2327      1.0402      0.0000
+          2.00      0.2520     -0.9816     -0.2410      1.0212      0.0003
+          5.00      0.2926     -0.8372     -0.2349      0.8217      0.0153
+         10.00      0.3915     -0.6561     -0.1618     -0.0729      0.1012
+         15.00      0.5342     -0.4253     -0.1400     -0.7426      0.1440
+         20.00      0.6812     -0.1578     -0.1482     -1.2282      0.1734
 
     PANEL DEFLECTION ANGLES (DEGREES)
     SET    FIN 1   FIN 2   FIN 3   FIN 4   FIN 5   FIN 6   FIN 7   FIN 8
-      1    0.00    0.00    0.00
+      1   -1.72    0.00    0.00
 
     BODY ALONE LINEAR DATA GENERATED FROM VAN DYKE HYBRID THEORY
 
@@ -433,17 +439,17 @@
      MACH NO  =       1.80                REYNOLDS NO = 3.811E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE = 203844.44 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                     ------------ DYNAMIC DERIVATIVES (PER DEGREE) -----------
          ALPHA       CNQ        CMQ        CAQ       CNAD       CMAD
-          0.00      6.406    -90.278      0.000      2.413     -9.420
-          2.00      6.220    -87.577      0.000      2.413     -9.420
-          5.00      5.922    -83.214      0.000      2.413     -9.420
-         10.00      5.426    -75.946      0.000      2.413     -9.420
-         15.00      4.966    -69.189      0.000      2.413     -9.420
-         20.00      4.560    -63.217      0.000      2.413     -9.420
+          0.00      3.791    -29.868     -0.001      1.578     -1.056
+          2.00      3.780    -29.808     -0.001      1.578     -1.056
+          5.00      3.714    -29.346     -0.001      1.578     -1.056
+         10.00      3.529    -27.992     -0.001      1.578     -1.056
+         15.00      3.288    -26.217      0.000      1.578     -1.056
+         20.00      3.094    -24.786      0.000      1.578     -1.056
 
     PITCH RATE DERIVATIVES NON-DIMENSIONALIZED BY Q*LREF/2*V
 1         ***** THE USAF AUTOMATED MISSILE DATCOM * REV 03/11 *****    CASE   1
@@ -454,17 +460,17 @@
      MACH NO  =       1.80                REYNOLDS NO = 3.811E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE = 203844.44 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                     ------------ DYNAMIC DERIVATIVES (PER DEGREE) -----------
          ALPHA       CYR       CLNR       CLLR        CYP       CLNP       CLLP
-          0.00      6.332    -88.748     -0.679      0.000     -0.003     -0.470
-          2.00      6.280    -87.989     -0.606      0.002     -0.028     -0.473
-          5.00      6.169    -86.352     -0.459      0.011     -0.164     -0.489
-         10.00      5.953    -83.171     -0.181      0.043     -0.635     -0.544
-         15.00      5.755    -80.275      0.075      0.056     -0.841     -0.569
-         20.00      5.604    -78.070      0.294      0.084     -1.246     -0.615
+          0.00      3.607    -28.737     -0.034      0.002     -0.012     -0.464
+          2.00      3.551    -28.321      0.028      0.003     -0.025     -0.467
+          5.00      3.452    -27.589      0.111      0.012     -0.095     -0.483
+         10.00      3.290    -26.387      0.230      0.048     -0.366     -0.545
+         15.00      3.146    -25.328      0.349      0.069     -0.521     -0.581
+         20.00      3.026    -24.439      0.488      0.094     -0.716     -0.625
 
     YAW AND ROLL RATE DERIVATIVES NON-DIMENSIONALIZED BY R*LATREF/2*V
     FIN PRESSURE DIST. CANNOT BE CALCULATED DATCOM METHOD USED FOR WAVE DRAG
@@ -476,27 +482,27 @@
      MACH NO  =       2.50                REYNOLDS NO = 5.293E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE = 393218.47 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                    ----- LONGITUDINAL -----     -- LATERAL DIRECTIONAL --
          ALPHA       CN        CM        CA        CY       CLN       CLL
 
-          0.00     0.000     0.000     0.329     0.000     0.000     0.000
-          2.00     0.403    -2.971     0.329     0.000     0.000     0.000
-          5.00     1.134    -7.507     0.329     0.000     0.000     0.000
-         10.00     2.971   -15.805     0.326     0.000     0.000     0.000
-         15.00     5.929   -26.805     0.322     0.000     0.000     0.000
-         20.00     9.079   -39.008     0.316     0.000     0.000     0.000
+          0.00     0.000     0.003     0.312     0.101    -0.747     0.085
+          2.00     0.375    -1.150     0.311     0.101    -0.748     0.085
+          5.00     1.024    -2.647     0.307     0.101    -0.751     0.085
+         10.00     2.522    -4.111     0.293     0.102    -0.757     0.085
+         15.00     4.817    -4.742     0.274     0.103    -0.764     0.085
+         20.00     7.261    -5.720     0.258     0.103    -0.770     0.085
 
          ALPHA       CL        CD      CL/CD     X-C.P.
 
-          0.00     0.000     0.329     0.000    -8.164
-          2.00     0.391     0.343     1.140    -7.376
-          5.00     1.101     0.426     2.584    -6.621
-         10.00     2.870     0.837     3.429    -5.319
-         15.00     5.643     1.845     3.059    -4.521
-         20.00     8.424     3.403     2.476    -4.296
+          0.00     0.000     0.312     0.000**********
+          2.00     0.364     0.324     1.123    -3.067
+          5.00     0.994     0.395     2.517    -2.584
+         10.00     2.432     0.726     3.351    -1.630
+         15.00     4.582     1.512     3.031    -0.985
+         20.00     6.735     2.726     2.471    -0.788
 
     X-C.P. MEAS. FROM MOMENT CENTER IN REF. LENGTHS, NEG. AFT OF MOMENT CENTER
 1         ***** THE USAF AUTOMATED MISSILE DATCOM * REV 03/11 *****    CASE   1
@@ -507,21 +513,21 @@
      MACH NO  =       2.50                REYNOLDS NO = 5.293E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE = 393218.47 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                    ---------- DERIVATIVES (PER DEGREE) ----------
          ALPHA       CNA         CMA         CYB         CLNB        CLLB
-          0.00      0.1804     -1.4728     -0.1898      1.4628      0.0000
-          2.00      0.2224     -1.4986     -0.2035      1.4862      0.0004
-          5.00      0.3045     -1.5832     -0.2080      1.2095      0.0163
-         10.00      0.4746     -1.9001     -0.1948      0.0953      0.0822
-         15.00      0.6106     -2.3150     -0.2183     -0.7254      0.1416
-         20.00      0.6497     -2.5662     -0.1935     -1.6865      0.2052
+          0.00      0.1730     -0.6156     -0.1793      0.5888      0.0000
+          2.00      0.2019     -0.5371     -0.1888      0.5715      0.0004
+          5.00      0.2575     -0.3923     -0.1916      0.4235      0.0118
+         10.00      0.3772     -0.2081     -0.1554     -0.2996      0.0780
+         15.00      0.4739     -0.1607     -0.1707     -0.7594      0.1214
+         20.00      0.5039     -0.2303     -0.1713     -1.0452      0.1527
 
     PANEL DEFLECTION ANGLES (DEGREES)
     SET    FIN 1   FIN 2   FIN 3   FIN 4   FIN 5   FIN 6   FIN 7   FIN 8
-      1    0.00    0.00    0.00
+      1   -1.72    0.00    0.00
 
     BODY ALONE LINEAR DATA GENERATED FROM VAN DYKE HYBRID THEORY
 
@@ -533,17 +539,17 @@
      MACH NO  =       2.50                REYNOLDS NO = 5.293E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE = 393218.47 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                     ------------ DYNAMIC DERIVATIVES (PER DEGREE) -----------
          ALPHA       CNQ        CMQ        CAQ       CNAD       CMAD
-          0.00      6.029    -84.018      0.000      2.701    -10.152
-          2.00      5.969    -83.172      0.000      2.701    -10.152
-          5.00      5.841    -81.310      0.000      2.701    -10.152
-         10.00      5.601    -77.817      0.000      2.701    -10.152
-         15.00      5.351    -74.168      0.000      2.701    -10.152
-         20.00      5.082    -70.231      0.000      2.701    -10.152
+          0.00      3.050    -24.396      0.000      1.674     -0.984
+          2.00      3.144    -25.111      0.000      1.674     -0.984
+          5.00      3.278    -26.131      0.000      1.674     -0.984
+         10.00      3.275    -26.141      0.000      1.674     -0.984
+         15.00      3.225    -25.789      0.000      1.674     -0.984
+         20.00      3.133    -25.118      0.000      1.674     -0.984
 
     PITCH RATE DERIVATIVES NON-DIMENSIONALIZED BY Q*LREF/2*V
 1         ***** THE USAF AUTOMATED MISSILE DATCOM * REV 03/11 *****    CASE   1
@@ -554,17 +560,17 @@
      MACH NO  =       2.50                REYNOLDS NO = 5.293E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE = 393218.47 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                     ------------ DYNAMIC DERIVATIVES (PER DEGREE) -----------
          ALPHA       CYR       CLNR       CLLR        CYP       CLNP       CLLP
-          0.00      5.938    -82.230     -0.295      0.000     -0.002     -0.358
-          2.00      5.867    -81.183     -0.206      0.002     -0.024     -0.360
-          5.00      5.741    -79.326     -0.078      0.009     -0.131     -0.374
-         10.00      5.547    -76.471      0.083      0.031     -0.455     -0.414
-         15.00      5.397    -74.276      0.199      0.065     -0.958     -0.475
-         20.00      5.301    -72.876      0.295      0.110     -1.630     -0.556
+          0.00      3.034    -24.544      0.177      0.001     -0.009     -0.352
+          2.00      2.989    -24.208      0.210      0.003     -0.020     -0.355
+          5.00      2.905    -23.587      0.235      0.010     -0.075     -0.369
+         10.00      2.776    -22.631      0.233      0.032     -0.239     -0.409
+         15.00      2.694    -22.026      0.208      0.066     -0.496     -0.470
+         20.00      2.624    -21.519      0.245      0.112     -0.843     -0.552
 
     YAW AND ROLL RATE DERIVATIVES NON-DIMENSIONALIZED BY R*LATREF/2*V
     FIN PRESSURE DIST. CANNOT BE CALCULATED DATCOM METHOD USED FOR WAVE DRAG
@@ -576,27 +582,27 @@
      MACH NO  =       3.00                REYNOLDS NO = 6.352E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE = 566234.56 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                    ----- LONGITUDINAL -----     -- LATERAL DIRECTIONAL --
          ALPHA       CN        CM        CA        CY       CLN       CLL
 
-          0.00     0.000     0.000     0.297     0.000     0.000     0.000
-          2.00     0.370    -2.223     0.297     0.000     0.000     0.000
-          5.00     1.069    -5.708     0.297     0.000     0.000     0.000
-         10.00     3.001   -12.785     0.298     0.000     0.000     0.000
-         15.00     5.721   -21.865     0.300     0.000     0.000     0.000
-         20.00     8.372   -31.531     0.302     0.000     0.000     0.000
+          0.00     0.000     0.002     0.273     0.082    -0.607     0.072
+          2.00     0.351    -0.698     0.273     0.082    -0.607     0.072
+          5.00     0.976    -1.522     0.274     0.082    -0.609     0.072
+         10.00     2.542    -1.873     0.276     0.083    -0.613     0.072
+         15.00     4.668    -1.714     0.280     0.083    -0.618     0.072
+         20.00     6.753    -2.114     0.285     0.084    -0.621     0.072
 
          ALPHA       CL        CD      CL/CD     X-C.P.
 
-          0.00     0.000     0.297     0.000    -6.739
-          2.00     0.360     0.310     1.160    -6.004
-          5.00     1.039     0.389     2.669    -5.337
-         10.00     2.904     0.815     3.563    -4.260
-         15.00     5.448     1.770     3.078    -3.822
-         20.00     7.764     3.147     2.467    -3.766
+          0.00     0.000     0.273     0.000**********
+          2.00     0.341     0.285     1.194    -1.990
+          5.00     0.949     0.358     2.650    -1.559
+         10.00     2.456     0.714     3.442    -0.737
+         15.00     4.437     1.479     3.000    -0.367
+         20.00     6.248     2.577     2.424    -0.313
 
     X-C.P. MEAS. FROM MOMENT CENTER IN REF. LENGTHS, NEG. AFT OF MOMENT CENTER
 1         ***** THE USAF AUTOMATED MISSILE DATCOM * REV 03/11 *****    CASE   1
@@ -607,21 +613,21 @@
      MACH NO  =       3.00                REYNOLDS NO = 6.352E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE = 566234.56 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                    ---------- DERIVATIVES (PER DEGREE) ----------
          ALPHA       CNA         CMA         CYB         CLNB        CLLB
-          0.00      0.1612     -1.0863     -0.1722      1.0844     -0.0001
-          2.00      0.2090     -1.1362     -0.1874      1.1132      0.0005
-          5.00      0.3081     -1.2808     -0.1980      0.8886      0.0150
-         10.00      0.4627     -1.5978     -0.2161      0.0674      0.0702
-         15.00      0.5370     -1.8732     -0.2353     -0.5942      0.1203
-         20.00      0.5234     -1.9934     -0.2035     -1.3951      0.1731
+          0.00      0.1588     -0.3881     -0.1663      0.3631     -0.0001
+          2.00      0.1919     -0.3120     -0.1768      0.3456      0.0005
+          5.00      0.2602     -0.1707     -0.1840      0.2120      0.0110
+         10.00      0.3682     -0.0192     -0.1748     -0.3910      0.0668
+         15.00      0.4210     -0.0241     -0.1869     -0.7615      0.1036
+         20.00      0.4127     -0.1360     -0.1784     -0.9809      0.1291
 
     PANEL DEFLECTION ANGLES (DEGREES)
     SET    FIN 1   FIN 2   FIN 3   FIN 4   FIN 5   FIN 6   FIN 7   FIN 8
-      1    0.00    0.00    0.00
+      1   -1.72    0.00    0.00
 
     BODY ALONE LINEAR DATA GENERATED FROM SECOND ORDER SHOCK EXPANSION METHOD
 
@@ -633,17 +639,17 @@
      MACH NO  =       3.00                REYNOLDS NO = 6.352E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE = 566234.56 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                     ------------ DYNAMIC DERIVATIVES (PER DEGREE) -----------
          ALPHA       CNQ        CMQ        CAQ       CNAD       CMAD
-          0.00      5.888    -81.501      0.000      2.921    -10.709
-          2.00      5.871    -81.273      0.000      2.921    -10.709
-          5.00      5.797    -80.220      0.000      2.921    -10.709
-         10.00      5.635    -77.872      0.000      2.921    -10.709
-         15.00      5.463    -75.372      0.000      2.921    -10.709
-         20.00      5.284    -72.758      0.000      2.921    -10.709
+          0.00      2.830    -23.108      0.000      1.937     -0.786
+          2.00      2.913    -23.739      0.000      1.937     -0.786
+          5.00      3.021    -24.561      0.000      1.937     -0.786
+         10.00      3.187    -25.821      0.000      1.937     -0.786
+         15.00      3.319    -26.822      0.000      1.937     -0.786
+         20.00      3.310    -26.775      0.000      1.937     -0.786
 
     PITCH RATE DERIVATIVES NON-DIMENSIONALIZED BY Q*LREF/2*V
 1         ***** THE USAF AUTOMATED MISSILE DATCOM * REV 03/11 *****    CASE   1
@@ -654,17 +660,17 @@
      MACH NO  =       3.00                REYNOLDS NO = 6.352E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE = 566234.56 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                     ------------ DYNAMIC DERIVATIVES (PER DEGREE) -----------
          ALPHA       CYR       CLNR       CLLR        CYP       CLNP       CLLP
-          0.00      5.746    -78.917      0.001      0.000     -0.002     -0.297
-          2.00      5.693    -78.136      0.052      0.001     -0.021     -0.300
-          5.00      5.597    -76.733      0.108      0.008     -0.117     -0.313
-         10.00      5.434    -74.339      0.184      0.028     -0.412     -0.351
-         15.00      5.300    -72.367      0.249      0.057     -0.848     -0.407
-         20.00      5.227    -71.307      0.291      0.095     -1.401     -0.475
+          0.00      2.849    -23.543      0.170      0.001     -0.007     -0.292
+          2.00      2.808    -23.240      0.197      0.002     -0.017     -0.295
+          5.00      2.735    -22.695      0.212      0.009     -0.067     -0.308
+         10.00      2.624    -21.877      0.201      0.029     -0.216     -0.346
+         15.00      2.552    -21.348      0.174      0.058     -0.439     -0.403
+         20.00      2.532    -21.206      0.134      0.096     -0.723     -0.472
 
     YAW AND ROLL RATE DERIVATIVES NON-DIMENSIONALIZED BY R*LATREF/2*V
     FIN PRESSURE DIST. CANNOT BE CALCULATED DATCOM METHOD USED FOR WAVE DRAG
@@ -676,27 +682,27 @@
      MACH NO  =       3.50                REYNOLDS NO = 7.411E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE = 770708.19 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                    ----- LONGITUDINAL -----     -- LATERAL DIRECTIONAL --
          ALPHA       CN        CM        CA        CY       CLN       CLL
 
-          0.00     0.000     0.000     0.271     0.000     0.000     0.000
-          2.00     0.338    -1.738     0.271     0.000     0.000     0.000
-          5.00     1.007    -4.583     0.272     0.000     0.000     0.000
-         10.00     2.975   -10.969     0.275     0.000     0.000     0.000
-         15.00     5.316   -18.505     0.280     0.000     0.000     0.000
-         20.00     7.886   -27.335     0.287     0.000     0.000     0.000
+          0.00     0.000     0.002     0.239     0.069    -0.514     0.062
+          2.00     0.321    -0.441     0.239     0.069    -0.514     0.062
+          5.00     0.916    -0.892     0.240     0.070    -0.516     0.062
+         10.00     2.496    -0.671     0.245     0.070    -0.519     0.062
+         15.00     4.343    -0.358     0.254     0.070    -0.522     0.062
+         20.00     6.359    -0.365     0.265     0.071    -0.524     0.062
 
          ALPHA       CL        CD      CL/CD     X-C.P.
 
-          0.00     0.000     0.271     0.000    -5.845
-          2.00     0.328     0.282     1.162    -5.143
-          5.00     0.980     0.358     2.733    -4.550
-         10.00     2.883     0.787     3.661    -3.687
-         15.00     5.062     1.646     3.075    -3.481
-         20.00     7.312     2.967     2.464    -3.466
+          0.00     0.000     0.239     0.000**********
+          2.00     0.312     0.250     1.249    -1.375
+          5.00     0.891     0.319     2.791    -0.974
+         10.00     2.416     0.675     3.578    -0.269
+         15.00     4.129     1.369     3.016    -0.082
+         20.00     5.885     2.424     2.428    -0.057
 
     X-C.P. MEAS. FROM MOMENT CENTER IN REF. LENGTHS, NEG. AFT OF MOMENT CENTER
 1         ***** THE USAF AUTOMATED MISSILE DATCOM * REV 03/11 *****    CASE   1
@@ -707,21 +713,21 @@
      MACH NO  =       3.50                REYNOLDS NO = 7.411E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE = 770708.19 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                    ---------- DERIVATIVES (PER DEGREE) ----------
          ALPHA       CNA         CMA         CYB         CLNB        CLLB
-          0.00      0.1421     -0.8303     -0.1547      0.8373     -0.0001
-          2.00      0.1959     -0.9079     -0.1716      0.8726      0.0005
-          5.00      0.3063     -1.0994     -0.1874      0.6895      0.0140
-         10.00      0.4303     -1.3860     -0.2260      0.0726      0.0621
-         15.00      0.4908     -1.6292     -0.2300     -0.5018      0.1065
-         20.00      0.5373     -1.9028     -0.2100     -1.1555      0.1526
+          0.00      0.1416     -0.2575     -0.1504      0.2348     -0.0001
+          2.00      0.1793     -0.1857     -0.1622      0.2176      0.0005
+          5.00      0.2564     -0.0526     -0.1733      0.0951      0.0103
+         10.00      0.3425      0.0534     -0.1819     -0.4210      0.0591
+         15.00      0.3862      0.0306     -0.1836     -0.7159      0.0921
+         20.00      0.4204     -0.0333     -0.1812     -0.9031      0.1145
 
     PANEL DEFLECTION ANGLES (DEGREES)
     SET    FIN 1   FIN 2   FIN 3   FIN 4   FIN 5   FIN 6   FIN 7   FIN 8
-      1    0.00    0.00    0.00
+      1   -1.72    0.00    0.00
 
     BODY ALONE LINEAR DATA GENERATED FROM SECOND ORDER SHOCK EXPANSION METHOD
 
@@ -733,17 +739,17 @@
      MACH NO  =       3.50                REYNOLDS NO = 7.411E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE = 770708.19 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                     ------------ DYNAMIC DERIVATIVES (PER DEGREE) -----------
          ALPHA       CNQ        CMQ        CAQ       CNAD       CMAD
-          0.00      5.575    -76.908      0.000      2.866    -10.570
-          2.00      5.585    -77.091      0.000      2.866    -10.570
-          5.00      5.555    -76.681      0.000      2.866    -10.570
-         10.00      5.449    -75.147      0.000      2.866    -10.570
-         15.00      5.318    -73.255      0.000      2.866    -10.570
-         20.00      5.178    -71.224      0.000      2.866    -10.570
+          0.00      2.576    -21.199      0.000      1.942     -0.782
+          2.00      2.661    -21.841      0.000      1.942     -0.782
+          5.00      2.768    -22.657      0.000      1.942     -0.782
+         10.00      2.906    -23.703      0.000      1.942     -0.782
+         15.00      3.074    -24.970      0.000      1.942     -0.782
+         20.00      3.238    -26.214      0.000      1.942     -0.782
 
     PITCH RATE DERIVATIVES NON-DIMENSIONALIZED BY Q*LREF/2*V
 1         ***** THE USAF AUTOMATED MISSILE DATCOM * REV 03/11 *****    CASE   1
@@ -754,17 +760,17 @@
      MACH NO  =       3.50                REYNOLDS NO = 7.411E+07 /M
      ALTITUDE =     1000.0 M         DYNAMIC PRESSURE = 770708.19 N/M**2
      SIDESLIP =       0.00 DEG                   ROLL =      0.00 DEG     
-     REF AREA =      0.004 M**2         MOMENT CENTER =     0.840 M
+     REF AREA =      0.004 M**2         MOMENT CENTER =     0.880 M
      REF LENGTH =     0.07 M           LAT REF LENGTH =      0.07 M
 
                     ------------ DYNAMIC DERIVATIVES (PER DEGREE) -----------
          ALPHA       CYR       CLNR       CLLR        CYP       CLNP       CLLP
-          0.00      5.441    -74.416      0.168      0.000     -0.001     -0.258
-          2.00      5.391    -73.680      0.214      0.001     -0.021     -0.261
-          5.00      5.297    -72.298      0.263      0.008     -0.113     -0.273
-         10.00      5.158    -70.258      0.281      0.027     -0.400     -0.310
-         15.00      5.067    -68.928      0.263      0.055     -0.817     -0.364
-         20.00      5.006    -68.048      0.283      0.089     -1.314     -0.427
+          0.00      2.626    -21.896      0.174      0.001     -0.007     -0.254
+          2.00      2.591    -21.635      0.197      0.002     -0.017     -0.257
+          5.00      2.529    -21.180      0.204      0.008     -0.064     -0.269
+         10.00      2.438    -20.502      0.184      0.028     -0.209     -0.306
+         15.00      2.378    -20.066      0.150      0.056     -0.422     -0.360
+         20.00      2.359    -19.929      0.113      0.090     -0.678     -0.425
 
     YAW AND ROLL RATE DERIVATIVES NON-DIMENSIONALIZED BY R*LATREF/2*V
     *** END OF JOB ***
