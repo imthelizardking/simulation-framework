@@ -471,7 +471,7 @@ classdef MunitionFactory
             % m.Guidance   = guid;
             % m.Controller = Controller_LongitudinalFin();
         end
-        %% Guided Rocket with Missile DATCOM Aero Tables (70mm-class)
+        %% Hydra70mm Missile DATCOM Aero Tables (70mm-class)
         function m = createHydra70mm(datcom_name)
             if nargin < 1, datcom_name = 'MISSILEDATCOM_HYDRA70'; end
             % A data/createGuidedRocketDatcom.<ext> file overrides the
@@ -512,8 +512,8 @@ classdef MunitionFactory
             % meaningful with the reference dimensions DATCOM normalized
             % it against.
             m.Aero = ParserDatcom.load(datcom_name, ...
-                FactoryData.getOr(data, 'RefArea', 0.003848451), ...   % 8.85 ft^2
-                FactoryData.getOr(data, 'RefLength', 0.07));    % 2.48 ft
+                FactoryData.getOr(data, 'RefArea', 0.003848451), ...
+                FactoryData.getOr(data, 'RefLength', 0.07));
             m.Propulsion = Propulsion_SolidMotor.MK66Mod4(3.2);
 
             % seeker_fov_deg = FactoryData.getOr(data, 'SeekerFOV_deg', 20);
@@ -525,7 +525,9 @@ classdef MunitionFactory
             % m.Guidance   = guid;
             % m.Controller = Controller_LongitudinalFin();
         end
-        %% Mini Missile - Genuine 6-DoF Rigid Body (Free-Flight Physics Core)
+        
+        %% Mini Missile -
+        Genuine 6-DoF Rigid Body (Free-Flight Physics Core)
         function m = createMiniMissile6DoF()
             % A data/createMiniMissile6DoF.mat file overrides Name/Type/
             % RefArea/RefLength/etc below if present (see FactoryData);

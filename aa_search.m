@@ -3,7 +3,7 @@
 
 % --- Configuration ---
 folderPath = pwd; 
-searchWord = 'i2b';
+searchWord = 'munitionCatalog';
 
 % --- Control Variables ---
 matchWholeWord = false;  % true = exact word only, false = includes (partial match)
