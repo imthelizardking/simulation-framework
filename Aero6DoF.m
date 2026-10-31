@@ -127,9 +127,9 @@ classdef Aero6DoF < BaseAero
             % No inverted hacks. Positive q = pitch up.
             alpha_dot = q_rate; % Bypass tan(beta) asymptote for planar stability
 
-            disp(strcat('--- Alpha: ', num2str((alpha)), ' ---'));
-            disp(strcat('--- Alpha_dot: ', num2str((alpha_dot)), ' ---'));
-            disp(strcat('--- Beta: ', num2str((beta)), ' ---'));
+            % disp(strcat('--- Alpha: ', num2str((alpha)), ' ---'));
+            % disp(strcat('--- Alpha_dot: ', num2str((alpha_dot)), ' ---'));
+            % disp(strcat('--- Beta: ', num2str((beta)), ' ---'));
 
             % Interpolate static, damping, and control coefficients at (Mach, Alpha)
             coeffs = obj.evaluateCoefficients(flow.mach, alpha);
