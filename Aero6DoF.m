@@ -51,6 +51,11 @@ classdef Aero6DoF < BaseAero
 
         % Linear lift-curve slope for simplified control design
         CL_alpha (1,1) double = 3.0
+
+        % --- Dual-Phase Aerodynamic Blending ---
+        Phase2Aero = [] % Optional secondary Aero6DoF object for deployed canards
+        T_deployment (1,1) double = 1.2
+        T_DeployDuration (1,1) double = 0.15
     end
 
     methods
@@ -99,8 +104,8 @@ classdef Aero6DoF < BaseAero
             w = v_body(3); % Down (belly)
 
             % 4. Aerodynamic angles
-            alpha = atan2(w, u);            
-            
+            alpha = atan2(w, u);
+
             % Kinematic sideslip: beta = asin(v / V_mag) with floating-point clamp
             if flow.v_mag > 1e-3
                 v_ratio = v / flow.v_mag;
@@ -109,7 +114,7 @@ classdef Aero6DoF < BaseAero
             else
                 beta = 0.0;
             end
-            
+
             % Angular rates P, Q, R (rad/s)
             p_rate = 0.0; q_rate = 0.0; r_rate = 0.0;
             if numel(X) >= 12
@@ -121,14 +126,34 @@ classdef Aero6DoF < BaseAero
             % --- CLEANED KINEMATICS ---
             % No inverted hacks. Positive q = pitch up.
             alpha_dot = q_rate; % Bypass tan(beta) asymptote for planar stability
-            
+
             disp(strcat('--- Alpha: ', num2str((alpha)), ' ---'));
             disp(strcat('--- Alpha_dot: ', num2str((alpha_dot)), ' ---'));
             disp(strcat('--- Beta: ', num2str((beta)), ' ---'));
 
             % Interpolate static, damping, and control coefficients at (Mach, Alpha)
             coeffs = obj.evaluateCoefficients(flow.mach, alpha);
+            % --- Phase 2 Aerodynamic Blending (Canard Deployment) ---
+            if ~isempty(obj.Phase2Aero) && (t > obj.T_Burnout)
+                if t >= (obj.T_Burnout + obj.T_DeployDuration)
+                    eta = 1.0; % Fully deployed
+                else
+                    % Normalized progress through the deployment window [0, 1]
+                    tau = (t - obj.T_Burnout) / obj.T_DeployDuration;
+                    % Smooth-step function for mechanical arms
+                    eta = 3 * (tau^2) - 2 * (tau^3);
+                end
 
+                if eta > 0
+                    coeffs_p2 = obj.Phase2Aero.evaluateCoefficients(flow.mach, alpha);
+                    fnames = fieldnames(coeffs);
+                    for i = 1:numel(fnames)
+                        fn = fnames{i};
+                        coeffs.(fn) = (1 - eta) * coeffs.(fn) + eta * coeffs_p2.(fn);
+                    end
+                end
+            end
+            % --------------------------------------------------------
             % Reference dimensions and Non-dimensional angular rate factors
             s_ref = obj.RefArea;
             d_ref = obj.RefLength;
@@ -155,7 +180,8 @@ classdef Aero6DoF < BaseAero
 
             % Total Moment Coefficients (Body Axes)
             % Standard non-hacked moment assignment
-            Cl_total = coeffs.CLL + (coeffs.CLB * beta) + (coeffs.CLLP * p_hat) + (coeffs.CLLR * r_hat) + (coeffs.CLLD * del_p);
+            WAF_efficiency = 0.05;
+            Cl_total = (coeffs.CLL*WAF_efficiency) + (coeffs.CLB * beta) + (coeffs.CLLP * p_hat) + (coeffs.CLLR * r_hat) + (coeffs.CLLD * del_p);
             Cm_total = coeffs.CM  + (coeffs.CMQ * q_hat)  + (coeffs.CMAD * adot_hat) + (coeffs.CMD * del_q);
             Cn_total = coeffs.CLN + (coeffs.CNB * beta) + (coeffs.CLNP * p_hat) + (coeffs.CLNR * r_hat) + (coeffs.CLND * del_r);
 

@@ -33,6 +33,14 @@ missile.Dynamics.InitialState = missile.buildLaunchState(launcher_pos, v0_rail, 
 
 fprintf('Launch elevation: %.1f mils\n', FireControlComputer.rad2mil(launch_elev));
 
+aero_closed = ParserDatcom.load('MISSILEDATCOM_HYDRA70APKWS_motorfull_canardsclosed.dat', 0.003848, 0.07);
+aero_deployed = ParserDatcom.load('MISSILEDATCOM_HYDRA70APKWS_motorburnout_canardsdeployed.dat', 0.003848, 0.07);
+
+aero_closed.Phase2Aero = aero_deployed;
+aero_closed.T_deployment = 1.2;
+aero_closed.T_DeployDuration = 0.15;
+
+missile.Aero = aero_closed;
 % 5. Assemble Simulation & Execute
 sim = Simulation(missile, target, env, [0 60], 0.005);
 % sim.Termination.ImpactDistance = 3.0;
