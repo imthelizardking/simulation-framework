@@ -37,6 +37,7 @@ sim = Simulation(missile, [], env, [0 60], 0.05);
 % sim.Termination.MaxTime = 1.5;
 sim.Termination.MinAltitude = 0;
 sim.Visualizer = Visualizer_Basic(20,[0, 20000, 0, 6000]);
+sim.Logger = BaseLogger(true,true,'yusuf.txt');
 sim.Visualizer.Frame = 'NED';
 sim.Frame = 'NED';
 sim.TimeSpan = [0 100];

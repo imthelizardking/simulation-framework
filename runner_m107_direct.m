@@ -20,7 +20,7 @@ v0 = shell.Charge.MuzzleVelocity;
 launcher_pos = [0; 0; 0];
 
 % 3. Fire Control: direct fire - no solving, just wraps the given angles
-fcc = FireControlComputer(env.Gravity, 'Z-Up');
+fcc = FireControlComputer(env.Gravity, 'FDR');
 sol = fcc.solveDirect(elevation_mil, azimuth_mil);
 
 if ~sol.IsValid

@@ -12,6 +12,7 @@ classdef Simulation < handle
         TimeSpan  (1,2) double    = [0 25]
         Dt        (1,1) double    = 0.01
         Telemetry       struct    = struct()
+        Logger = [];
         % Termination criteria; a field set to [] is disabled. Default is
         % ground-impact only (MinAltitude) - the one criterion that applies
         % to every scenario, guided or not. Target-relative criteria
@@ -213,11 +214,11 @@ classdef Simulation < handle
 
                 % Integrate
                 X = obj.Integrator.step(@(tt, XX) obj.evalDerivatives(tt, XX), t, X, dt);
-                disp(strcat('--- Time: ', num2str(t), ' ---'));
-                % disp(strcat('--- Inertia: ', num2str(X(15), '%.6f'), ' ---'));
-                % disp(strcat('--- Mass: ', num2str((X(14))), ' ---'));
-                % disp(strcat('--- Velo: ', num2str((norm(X(4:6)))), ' ---'));
-                % disp(strcat('--- Roll rate: ', num2str((X(10))), ' ---'));
+
+                if ~isempty(obj.Logger)
+                    obj.Logger.writeLine('Time: %.2f s | Alt: %.1f m', t, X(3));
+                end
+                
             end
 
             % Truncate telemetry
@@ -275,6 +276,7 @@ classdef Simulation < handle
 
             obj.TerminationReason = 'ExternalModel';
             obj.LastState = [tel.pos(end, :)'; tel.vel(end, :)'];
+
         end
 
         function [is_term, reason] = checkTermination(obj, t, X, target_pos, target_vel)

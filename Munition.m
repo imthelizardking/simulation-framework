@@ -42,11 +42,11 @@ classdef Munition < handle
         function X0 = buildLaunchState(obj, launcher_pos, v0, elevation, azimuth, spin_init, inertiaMatrix)
             % Assembles the Dynamics-specific launch state, adding the
             % muzzle spin rate (from TwistRate + the round's bore
-            % diameter) on top for a Dynamics3DofSpin or DynamicsMPMM
+            % diameter) on top for a DynamicsMPMM or DynamicsMPMM
             % munition - so callers get one call site regardless of
             % whether the munition spins or not.
-            if (isa(obj.Dynamics, 'Dynamics3DofSpin') || isa(obj.Dynamics, 'DynamicsMPMM')) && obj.TwistRate > 0
-                spin0 = Dynamics3DofSpin.spinRateFromTwist(v0, obj.TwistRate, obj.Aero.RefLength);
+            if (isa(obj.Dynamics, 'DynamicsMPMM') || isa(obj.Dynamics, 'DynamicsMPMM')) && obj.TwistRate > 0
+                spin0 = DynamicsMPMM.spinRateFromTwist(v0, obj.TwistRate, obj.Aero.RefLength);
                 X0 = obj.Dynamics.buildLaunchState(launcher_pos, v0, elevation, azimuth, obj.MassProperties.Mass, spin0);
             elseif (isa(obj.Dynamics, 'Dynamics6DoF'))
                 X0 = obj.Dynamics.buildLaunchState(launcher_pos, v0, elevation, azimuth, obj.MassProperties.Mass, spin_init, inertiaMatrix);
@@ -198,7 +198,7 @@ classdef Munition < handle
             % Releases obj.ParticleModel's particles at burst state X.
             % Builds a body frame from the velocity vector: forward/spin
             % axis = velocity unit vector, same coincident-spin-axis
-            % assumption Dynamics3DofSpin already documents, so this adds
+            % assumption DynamicsMPMM already documents, so this adds
             % no new approximation. The lateral axes are an arbitrary (but
             % consistent) Gram-Schmidt completion - the particle pattern is
             % rotationally symmetric about this axis, so the true (untracked)

@@ -145,5 +145,9 @@ classdef DynamicsMPMM < BaseDynamics
                                -cosd(latitude_deg) * sin(azimuth)];
             acc_coriolis = 2 * cross(v_omega, vel);
         end
+
+        function spin_init = spinRateFromTwist(v0, TwistRate, RefLength)
+            spin_init = (2*pi*v0)/(TwistRate*RefLength);
+        end
     end
 end

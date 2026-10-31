@@ -3,8 +3,8 @@
 clear; clc;
 % --- Configuration ---
 folderPath = pwd; 
-oldWord = 'Visualizer_LiveEngagement';
-newWord = 'Visualizer_LiveEngagement';
+oldWord = 'DynamicsMPMM';
+newWord = 'DynamicsMPMM';
 % ---------------------
 
 % Create the regex pattern for exact word boundary match

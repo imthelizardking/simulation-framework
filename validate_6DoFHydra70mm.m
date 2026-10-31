@@ -10,4 +10,4 @@ test_matrix = [
 factory_handle = @() MunitionFactory.createHydra70mm('MISSILEDATCOM_HYDRA70');
 dt = 0.005; % 1000 Hz requirement for stable rolling 6DoF integration
 
-results = run_validation_suite(factory_handle, test_matrix, dt);
+results = validate_wrapper.m(factory_handle, test_matrix, dt);

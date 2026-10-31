@@ -1,4 +1,4 @@
-classdef Dynamics3DofSpin < Dynamics3Dof
+classdef DynamicsMPMM < Dynamics3Dof
     % Dynamics3Dof plus a 9th state, spin rate p (rad/s) about the
     % velocity axis - the one thing Dynamics3Dof has no notion of. Pitch
     % is still handled by the same first-order pitch-follower heuristic as
@@ -9,7 +9,7 @@ classdef Dynamics3DofSpin < Dynamics3Dof
     % yaw of repose stays small - a full yaw-of-repose treatment lives in
     % DynamicsMPMM instead.
     methods
-        function obj = Dynamics3DofSpin()
+        function obj = DynamicsMPMM()
             obj = obj@Dynamics3Dof();
             obj.StateDimension = 9; % [x; y; z; vx; vy; vz; pitch; mass; spin]
         end
